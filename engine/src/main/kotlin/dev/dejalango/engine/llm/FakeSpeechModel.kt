@@ -32,6 +32,13 @@ class FakeSpeechModel(
         private set
     val requests = ArrayList<GenerateRequest>()
 
+    @Volatile var prepareCalls: Int = 0
+        private set
+
+    override suspend fun prepare() {
+        prepareCalls++
+    }
+
     override val info: ModelInfo = ModelInfo(name = "fake-gemma", backend = "fake", file = null, lastDecodeTokensPerSec = 999.0)
 
     private val defaultTurns: List<ScriptedTurn> = if (l2 == "zh") listOf(

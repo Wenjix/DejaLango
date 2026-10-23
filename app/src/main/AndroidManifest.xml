@@ -22,6 +22,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DejaLango">
 
+        <!-- LiteRT-LM's GPU backend (OpenCL) needs these declared; harmless when absent. -->
+        <uses-native-library android:name="libvndksupport.so" android:required="false" />
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
+
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"

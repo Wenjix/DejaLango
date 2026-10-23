@@ -106,6 +106,21 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `prepare runs after each finished turn and schemas ride along when structured output is on`() = runBlocking {
+        val rig = Rig(PipelineConfig(structuredOutput = true))
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals(1, rig.model.prepareCalls)
+            assertTrue(rig.model.requests.all { it.jsonSchema != null })
+            assertTrue(rig.model.requests.first { it.tag == RequestTag.STAGE_B }.jsonSchema!!.contains("\"replies\""))
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `my turn that matches a suggestion counts as learned`() = runBlocking {
         val rig = Rig()
         try {

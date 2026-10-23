@@ -60,6 +60,7 @@ data class PipelineConfig(
     val generationTimeoutMs: Long = 8_000,
     val thinking: Boolean = false,
     val speakReplies: Boolean = false, // TTS the chosen reply into an earbud
+    val structuredOutput: Boolean = false, // constrained JSON decoding where the runtime supports it
 ) {
     val maxUnitsText: String
         get() = if (l2.cjk) "$maxReplyChars ${l2.name} characters" else "$maxReplyWords words"

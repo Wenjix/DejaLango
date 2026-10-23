@@ -147,6 +147,22 @@ SENTENCES:
     }
 }
 
+/**
+ * JSON Schemas matching the prompts' return formats, for runtimes with constrained decoding
+ * (LiteRT-LM `ResponseFormat.json`). Nullable fields are plain strings ("" means none) because
+ * constrained decoders rarely support union types; the parser maps "" to null.
+ */
+object Schemas {
+    private const val REPLY = """{"type":"object","properties":{"plain":{"type":"string"},"yours":{"type":"string"},"roman":{"type":"string"},"back":{"type":"string"}},"required":["plain","yours","roman","back"]}"""
+
+    const val STAGE_A = """{"type":"object","properties":{"speaker":{"type":"string","enum":["me","them"]},"lang":{"type":"string"},"heard":{"type":"string"},"heard_l1":{"type":"string"}},"required":["speaker","lang","heard","heard_l1"]}"""
+    val STAGE_B = """{"type":"object","properties":{"replies":{"type":"array","items":$REPLY}},"required":["replies"]}"""
+    val SINGLE = """{"type":"object","properties":{"speaker":{"type":"string","enum":["me","them"]},"lang":{"type":"string"},"heard":{"type":"string"},"heard_l1":{"type":"string"},"replies":{"type":"array","items":$REPLY}},"required":["speaker","lang","heard","heard_l1","replies"]}"""
+    const val WORD = """{"type":"object","properties":{"word":{"type":"string"},"alternatives":{"type":"array","items":{"type":"string"}},"confidence":{"type":"number"}},"required":["word","alternatives","confidence"]}"""
+    const val TRANSCRIBE = """{"type":"object","properties":{"lang":{"type":"string"},"text":{"type":"string"}},"required":["lang","text"]}"""
+    const val VOICE_CARD = """{"type":"object","properties":{"register":{"type":"integer"},"directness":{"type":"integer"},"warmth":{"type":"integer"},"humor":{"type":"integer"},"avgSentenceWords":{"type":"integer"},"fillers":{"type":"array","items":{"type":"string"}},"openers":{"type":"array","items":{"type":"string"}},"closers":{"type":"array","items":{"type":"string"}},"signaturePhrases":{"type":"array","items":{"type":"string"}},"avoids":{"type":"array","items":{"type":"string"}},"notes":{"type":"string"}},"required":["register","directness","warmth","humor","avgSentenceWords","fillers","openers","closers","signaturePhrases","avoids","notes"]}"""
+}
+
 /** Assembles prompts from engine state. The only place that knows what the model is told. */
 class PromptBuilder(private val set: PromptSet = PromptSet.DEFAULT) {
 

@@ -26,7 +26,7 @@ lifecycle = "2.10.0"
 room = "2.8.3"
 datastore = "1.2.0"
 
-litertlm = "0.18.0"        # VERIFY: com.google.ai.edge.litertlm:litertlm-android — pin to the current release on first sync
+litertlm = "0.18.1"        # Validated with the Kotlin adapters; keep inference builds reproducible.
 onnxruntime = "1.23.0"     # VERIFY: com.microsoft.onnxruntime:onnxruntime-android — 1.22+ is fine
 nanohttpd = "2.3.1"
 

@@ -79,6 +79,7 @@ class ConfigStore(private val context: Context, private val scope: CoroutineScop
             generationTimeoutMs = this[K.timeoutMs] ?: d.generationTimeoutMs,
             thinking = this[K.thinking] ?: d.thinking,
             speakReplies = this[K.speakReplies] ?: d.speakReplies,
+            structuredOutput = this[K.structuredOutput] ?: d.structuredOutput,
         )
     }
 
@@ -103,6 +104,7 @@ class ConfigStore(private val context: Context, private val scope: CoroutineScop
         this[K.timeoutMs] = c.generationTimeoutMs
         this[K.thinking] = c.thinking
         this[K.speakReplies] = c.speakReplies
+        this[K.structuredOutput] = c.structuredOutput
     }
 
     private fun androidx.datastore.preferences.core.MutablePreferences.write(s: AppSettings) {
@@ -126,6 +128,7 @@ class ConfigStore(private val context: Context, private val scope: CoroutineScop
         val timeoutMs = longPreferencesKey("timeoutMs")
         val thinking = booleanPreferencesKey("thinking")
         val speakReplies = booleanPreferencesKey("speakReplies")
+        val structuredOutput = booleanPreferencesKey("structuredOutput")
         val useFakeModel = booleanPreferencesKey("useFakeModel")
         val replayFixture = stringPreferencesKey("replayFixture")
         val hudPort = intPreferencesKey("hudPort")

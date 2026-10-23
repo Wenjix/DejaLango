@@ -7,6 +7,11 @@ plugins {
     alias(libs.plugins.room)
 }
 
+// The LiteRT-LM adapter is compiled only when -PwithLiteRtLm is passed. Until the Day-2 spike has
+// verified the adapter against the current litertlm-android API, the default build uses the fake
+// model and still exercises every other layer. See docs/ARCHITECTURE.md §5.3.
+val withLiteRtLm = project.hasProperty("withLiteRtLm")
+
 android {
     namespace = "dev.dejalango.app"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -18,6 +23,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("boolean", "WITH_LITERTLM", withLiteRtLm.toString())
     }
 
     flavorDimensions += "device"
@@ -63,6 +69,15 @@ android {
         noCompress += listOf("onnx", "litertlm")
     }
 
+    sourceSets {
+        getByName("main") {
+            // The adapter lives in its own source root so the default build never sees it.
+            // AppGraph instantiates it by class name, guarded by BuildConfig.WITH_LITERTLM.
+            if (withLiteRtLm) {
+                kotlin.srcDir("src/litertlm/kotlin")
+            }
+        }
+    }
 }
 
 // AGP 9 built-in Kotlin exposes the `kotlin` extension (KotlinAndroidProjectExtension) without the
@@ -105,6 +120,9 @@ dependencies {
     implementation(libs.onnxruntime.android)
     implementation(libs.nanohttpd)
     implementation(libs.nanohttpd.websocket)
+    if (withLiteRtLm) {
+        implementation(libs.litertlm.android)
+    }
 
     testImplementation(libs.junit4)
     androidTestImplementation(libs.androidx.test.ext.junit)

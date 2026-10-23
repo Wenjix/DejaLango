@@ -2,6 +2,8 @@ package dev.dejalango.app.di
 
 import android.content.Context
 import android.util.Log
+import dev.dejalango.app.BuildConfig
+import dev.dejalango.app.platform.ModelFiles
 import dev.dejalango.app.platform.audio.MicAudioSource
 import dev.dejalango.app.platform.audio.WavFixtureAudioSource
 import dev.dejalango.app.platform.config.ConfigStore
@@ -11,6 +13,7 @@ import dev.dejalango.app.platform.trace.TraceWriter
 import dev.dejalango.app.platform.tts.AndroidVoiceOutput
 import dev.dejalango.app.platform.vad.SileroVad
 import dev.dejalango.engine.audio.AudioSource
+import dev.dejalango.engine.config.Backend
 import dev.dejalango.engine.config.PipelineConfig
 import dev.dejalango.engine.hud.VoiceOutput
 import dev.dejalango.engine.llm.FakeSpeechModel
@@ -33,6 +36,7 @@ class AppGraph(private val context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val configStore: ConfigStore by lazy { ConfigStore(context, appScope) }
+    val modelFiles: ModelFiles by lazy { ModelFiles(context) }
     val db: DejaLangoDb by lazy { DejaLangoDb.open(context) }
     val exemplarStore: RoomExemplarStore by lazy { RoomExemplarStore(db) }
     val traceWriter: TraceWriter by lazy { TraceWriter(context) }
@@ -66,10 +70,33 @@ class AppGraph(private val context: Context) {
         return MicAudioSource()
     }
 
-    fun createSpeechModel(cfg: PipelineConfig, useFake: Boolean): SpeechLanguageModel =
-        FakeSpeechModel(l1 = cfg.l1.code, l2 = cfg.l2.code)
+    /** The real adapter is loaded by name so the default build (without -PwithLiteRtLm) never references it. */
+    fun createSpeechModel(cfg: PipelineConfig, useFake: Boolean): SpeechLanguageModel {
+        val file = modelFiles.gemma
+        if (!useFake && BuildConfig.WITH_LITERTLM && file.exists()) {
+            try {
+                val cls = Class.forName("dev.dejalango.app.platform.llm.litertlm.LiteRtLmModel")
+                return cls.getConstructor(Context::class.java, File::class.java, Backend::class.java, Int::class.javaPrimitiveType, Backend::class.java, Int::class.javaPrimitiveType)
+                    .newInstance(context, file, cfg.backend, 2048, Backend.CPU, 2) as SpeechLanguageModel
+            } catch (t: Throwable) {
+                Log.e(TAG, "LiteRT-LM adapter failed to load; falling back to the fake model", t)
+            }
+        }
+        return FakeSpeechModel(l1 = cfg.l1.code, l2 = cfg.l2.code)
+    }
 
-    fun createEmbedder(useFake: Boolean): TextEmbedder = HashingEmbedder()
+    fun createEmbedder(useFake: Boolean): TextEmbedder {
+        val file = modelFiles.embedder
+        if (!useFake && BuildConfig.WITH_LITERTLM && file.exists()) {
+            try {
+                val cls = Class.forName("dev.dejalango.app.platform.llm.litertlm.LiteRtLmEmbedder")
+                return cls.getConstructor(Context::class.java, File::class.java).newInstance(context, file) as TextEmbedder
+            } catch (t: Throwable) {
+                Log.e(TAG, "LiteRT-LM embedder failed to load; falling back to hashing embedder", t)
+            }
+        }
+        return HashingEmbedder()
+    }
 
     fun createVoiceOutput(): VoiceOutput = runCatching<VoiceOutput> { AndroidVoiceOutput(context) }.getOrDefault(VoiceOutput.None)
 

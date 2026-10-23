@@ -12,3 +12,8 @@ Run the engine tests with `./gradlew :engine:test`.
 Run `./gradlew :app:installMobileDebug` to install the Android listening bench.
 The fake model is enabled by default. Start listening, run `scripts/hud_forward.sh`,
 and open `http://localhost:8765/hud` to view the HUD on your laptop.
+
+Real inference is optional: build with `-PwithLiteRtLm`, download the models with
+`scripts/fetch_models.sh`, and push them with `scripts/push_models.sh`.
+Model files and application data belong to the new application ID; existing installs
+are separate. Real-device behavior requires device validation.

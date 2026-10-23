@@ -9,6 +9,7 @@ import dev.dejalango.engine.llm.SpeechLanguageModel
 import dev.dejalango.engine.llm.generateText
 import dev.dejalango.engine.pipeline.TurnResultParser
 import dev.dejalango.engine.prompts.PromptBuilder
+import dev.dejalango.engine.prompts.Schemas
 
 /**
  * Builds a [VoiceCard] from sentences (the hour-of-transcript path) or from a minute of audio
@@ -28,7 +29,7 @@ class VoiceCardBuilder(
         require(clean.isNotEmpty()) { "Need at least one sentence" }
         val sample = if (clean.size > MAX_SENTENCES) clean.shuffled().take(MAX_SENTENCES) else clean
         val text = model.generateText(
-            GenerateRequest(text = prompts.voiceCard(config, sample), maxTokens = 400, tag = RequestTag.VOICE_CARD),
+            GenerateRequest(text = prompts.voiceCard(config, sample), maxTokens = 400, tag = RequestTag.VOICE_CARD, jsonSchema = if (config.structuredOutput) Schemas.VOICE_CARD else null),
             clock,
         ).text
         val card = parser.parseVoiceCard(text, config.l1.code, config.l2.code, confidence)
@@ -41,7 +42,7 @@ class VoiceCardBuilder(
         val sentences = ArrayList<String>()
         for (t in turns) {
             val out = model.generateText(
-                GenerateRequest(audio = t, text = prompts.transcribe(), maxTokens = 240, tag = RequestTag.TRANSCRIBE),
+                GenerateRequest(audio = t, text = prompts.transcribe(), maxTokens = 240, tag = RequestTag.TRANSCRIBE, jsonSchema = if (config.structuredOutput) Schemas.TRANSCRIBE else null),
                 clock,
             ).text
             val tr = parser.parseTranscript(out)?.text ?: parser.rawFallback(out)

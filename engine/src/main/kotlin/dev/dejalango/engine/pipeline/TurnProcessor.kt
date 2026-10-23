@@ -20,6 +20,7 @@ import dev.dejalango.engine.llm.RequestTag
 import dev.dejalango.engine.llm.SpeechLanguageModel
 import dev.dejalango.engine.llm.generateText
 import dev.dejalango.engine.prompts.PromptBuilder
+import dev.dejalango.engine.prompts.Schemas
 import dev.dejalango.engine.trace.TurnTrace
 import dev.dejalango.engine.turn.EndReason
 import dev.dejalango.engine.turn.TurnEvent
@@ -30,6 +31,8 @@ import dev.dejalango.engine.voice.VoiceCard
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -178,8 +181,12 @@ class TurnProcessor(
             trace.tRendered = clock.nowMs()
             _hud.update { it.copy(trace = trace.copy()) }
             _traces.tryEmit(trace.copy())
+            // Idle-time prep (e.g. pre-prefilling the base prompt). Skipped when a newer turn is waiting.
+            if (!trace.cancelled) runCatching { withContext(NonCancellable) { model.prepare() } }
         }
     }
+
+    private fun schema(cfg: PipelineConfig, s: String): String? = if (cfg.structuredOutput) s else null
 
     // ---- two-stage ------------------------------------------------------------------------------
 
@@ -187,7 +194,7 @@ class TurnProcessor(
         stage = Stage.A
         trace.tStageAStart = clock.nowMs()
         val ctx = conversation.window(cfg.contextTurns)
-        val gen = generateOrNull(cfg, GenerateRequest(audio = turn, text = prompts.stageA(cfg, ctx), maxTokens = 160, thinking = cfg.thinking, tag = RequestTag.STAGE_A))
+        val gen = generateOrNull(cfg, GenerateRequest(audio = turn, text = prompts.stageA(cfg, ctx), maxTokens = 160, thinking = cfg.thinking, tag = RequestTag.STAGE_A, jsonSchema = schema(cfg, Schemas.STAGE_A)))
         if (gen == null) {
             trace.timedOut = true
             _hud.update { it.copy(phase = restingPhase(it), error = "transcription timed out") }
@@ -231,7 +238,7 @@ class TurnProcessor(
         val retrieved = retrieve(query, cfg)
         trace.tRetrieved = clock.nowMs()
         val prompt = build(retrieved.map { it.exemplar })
-        val gen = generateOrNull(cfg, GenerateRequest(text = prompt, maxTokens = 220, thinking = cfg.thinking, tag = RequestTag.STAGE_B))
+        val gen = generateOrNull(cfg, GenerateRequest(text = prompt, maxTokens = 220, thinking = cfg.thinking, tag = RequestTag.STAGE_B, jsonSchema = schema(cfg, Schemas.STAGE_B)))
         if (gen == null) {
             trace.timedOut = true
             _hud.update { it.copy(phase = Phase.SHOWING, replies = emptyList(), selectedReply = null, error = "replies timed out") }
@@ -274,7 +281,7 @@ class TurnProcessor(
         // One turn stale by design: exemplars for what THEY said last time.
         val retrieved = conversation.lastHeardL1?.let { retrieve(it, cfg) } ?: emptyList()
         trace.tRetrieved = clock.nowMs()
-        val gen = generateOrNull(cfg, GenerateRequest(audio = turn, text = prompts.single(cfg, ctx, retrieved.map { it.exemplar }, voiceCard), maxTokens = 320, thinking = cfg.thinking, tag = RequestTag.SINGLE))
+        val gen = generateOrNull(cfg, GenerateRequest(audio = turn, text = prompts.single(cfg, ctx, retrieved.map { it.exemplar }, voiceCard), maxTokens = 320, thinking = cfg.thinking, tag = RequestTag.SINGLE, jsonSchema = schema(cfg, Schemas.SINGLE)))
         if (gen == null) {
             trace.timedOut = true
             _hud.update { it.copy(phase = restingPhase(it), error = "generation timed out") }
@@ -309,7 +316,7 @@ class TurnProcessor(
     private suspend fun processWord(turn: AudioTurn, cfg: PipelineConfig, trace: TurnTrace) {
         stage = Stage.WORD
         trace.tStageAStart = clock.nowMs()
-        val gen = generateOrNull(cfg, GenerateRequest(audio = turn, text = prompts.word(cfg, emptyList(), voiceCard), maxTokens = 60, thinking = cfg.thinking, tag = RequestTag.WORD))
+        val gen = generateOrNull(cfg, GenerateRequest(audio = turn, text = prompts.word(cfg, emptyList(), voiceCard), maxTokens = 60, thinking = cfg.thinking, tag = RequestTag.WORD, jsonSchema = schema(cfg, Schemas.WORD)))
         if (gen == null) {
             trace.timedOut = true
             _hud.update { it.copy(phase = restingPhase(it)) }

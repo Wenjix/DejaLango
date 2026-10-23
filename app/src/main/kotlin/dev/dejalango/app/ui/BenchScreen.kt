@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dejalango.app.di.AppGraph
 import dev.dejalango.app.service.ListenService
+import dev.dejalango.engine.config.Backend
 import dev.dejalango.engine.config.Mode
 import dev.dejalango.engine.config.PipelineShape
 import dev.dejalango.engine.hud.HudAction
@@ -187,10 +188,16 @@ private fun Knobs(graph: AppGraph) {
     val config by graph.configStore.config.collectAsStateWithLifecycle()
     val settings by graph.configStore.settings.collectAsStateWithLifecycle()
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        KnobRow("fake model (restart listening to apply)") { Switch(checked = settings.useFakeModel, onCheckedChange = { v -> graph.configStore.updateSettings { it.copy(useFakeModel = v) } }) }
         KnobRow("HUD on LAN (default: localhost only)") { Switch(checked = settings.hudOnLan, onCheckedChange = { v -> graph.configStore.updateSettings { it.copy(hudOnLan = v) } }) }
         KnobRow("pipeline shape") {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 PipelineShape.values().forEach { s -> FilterChip(selected = config.shape == s, onClick = { graph.configStore.update { it.copy(shape = s) } }, label = { Text(s.name.lowercase()) }) }
+            }
+        }
+        KnobRow("backend (restart to apply)") {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Backend.values().forEach { b -> FilterChip(selected = config.backend == b, onClick = { graph.configStore.update { it.copy(backend = b) } }, label = { Text(b.name) }) }
             }
         }
         KnobRow("replies") {
@@ -204,6 +211,7 @@ private fun Knobs(graph: AppGraph) {
             }
         }
         KnobRow("thinking") { Switch(checked = config.thinking, onCheckedChange = { v -> graph.configStore.update { it.copy(thinking = v) } }) }
+        KnobRow("constrained JSON output (LiteRT-LM ResponseFormat)") { Switch(checked = config.structuredOutput, onCheckedChange = { v -> graph.configStore.update { it.copy(structuredOutput = v) } }) }
         KnobRow("speak chosen reply (TTS)") { Switch(checked = config.speakReplies, onCheckedChange = { v -> graph.configStore.update { it.copy(speakReplies = v) } }) }
         KnobRow("replay fixture (assets/fixtures)") {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
