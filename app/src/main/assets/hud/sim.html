@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DejaLango — glasses simulator</title>
+<style>
+  /*
+    A self-hosted stand-in for the Ray-Ban Display simulator at hud.xyz (600×600, D-pad, additive display).
+    The HUD page (/hud) renders bright text on black; here it is composited over the laptop camera with
+    mix-blend-mode: screen, so black becomes transparent and the text floats over the room — which is what
+    an additive see-through display does. Served by the phone itself; reachable at http://localhost:8765/sim
+    after `scripts/hud_forward.sh`. Query: ?bg=cam (default) | ?bg=photo | ?bg=black   ?hint=0 hides the key hint.
+  */
+  :root { --bezel: #0d0f12; }
+  html, body { margin: 0; height: 100%; background: #000; color: #cfd4da; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+  #stage { position: fixed; inset: 0; display: grid; place-items: center; }
+  #glasses { position: relative; width: 600px; height: 600px; border-radius: 28px; overflow: hidden; box-shadow: 0 0 0 10px var(--bezel), 0 0 0 12px #2a2f36, 0 30px 80px rgba(0,0,0,.8); background: #000; }
+  #bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.55) saturate(.8); transform: scaleX(-1); }
+  #bg.photo { transform: none; }
+  #hud { position: absolute; inset: 0; width: 600px; height: 600px; border: 0; background: transparent; mix-blend-mode: screen; pointer-events: none; }
+  #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%); }
+  #hint { position: fixed; left: 0; right: 0; bottom: 18px; text-align: center; font-size: 13px; color: #7d858d; letter-spacing: .02em; }
+  #hint kbd { background: #1a1e24; border: 1px solid #2c323a; border-radius: 4px; padding: 1px 6px; color: #cfd4da; font-family: inherit; }
+  #banner { position: fixed; top: 14px; left: 0; right: 0; text-align: center; font-size: 12px; color: #6e7680; text-transform: uppercase; letter-spacing: .12em; }
+  #camwarn { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: 12px; color: #ffd166; display: none; }
+  @media (max-width: 660px), (max-height: 660px) { #glasses { transform: scale(.75); } }
+</style>
+</head>
+<body>
+<div id="banner">display glasses · simulated · 600 × 600 · additive</div>
+<div id="stage">
+  <div id="glasses">
+    <video id="bg" autoplay playsinline muted></video>
+    <iframe id="hud" src="/hud" title="HUD"></iframe>
+    <div id="vignette"></div>
+    <div id="camwarn">camera unavailable — showing black background (allow camera, or use ?bg=photo)</div>
+  </div>
+</div>
+<div id="hint"><kbd>◀</kbd> <kbd>▶</kbd> select &nbsp;·&nbsp; <kbd>⏎</kbd> I said this one &nbsp;·&nbsp; <kbd>P</kbd> phrasebook ⇄ you &nbsp;·&nbsp; <kbd>C</kbd> cut &nbsp;·&nbsp; <kbd>Esc</kbd> clear &nbsp;·&nbsp; <kbd>F</kbd> fullscreen</div>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var bgMode = params.get('bg') || 'cam';
+  if (params.get('hint') === '0') document.getElementById('hint').style.display = 'none';
+  var video = document.getElementById('bg');
+  var warn = document.getElementById('camwarn');
+
+  function photoBackground() {
+    // A quiet, neutral "room" when no camera is available: soft gradient blocks that read as a wall and a table.
+    var c = document.createElement('canvas'); c.width = 600; c.height = 600;
+    var g = c.getContext('2d');
+    var grad = g.createLinearGradient(0, 0, 0, 600); grad.addColorStop(0, '#3a4452'); grad.addColorStop(.6, '#2b3340'); grad.addColorStop(1, '#1b2028');
+    g.fillStyle = grad; g.fillRect(0, 0, 600, 600);
+    g.fillStyle = '#4a5363'; g.fillRect(0, 380, 600, 220);
+    g.fillStyle = '#5b6678'; g.fillRect(60, 120, 200, 150); g.fillStyle = '#6b778a'; g.fillRect(330, 90, 210, 180);
+    var img = document.createElement('img'); img.id = 'bg'; img.className = 'photo'; img.src = c.toDataURL();
+    video.replaceWith(img);
+  }
+
+  if (bgMode === 'black') { video.remove(); }
+  else if (bgMode === 'photo') { photoBackground(); }
+  else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' }, audio: false })
+      .then(function (stream) { video.srcObject = stream; })
+      .catch(function () { warn.style.display = 'block'; });
+  } else { warn.style.display = 'block'; }
+
+  // Actions go over our own socket; the iframe only renders. The server accepts any number of clients.
+  var ws = null, retry = null;
+  function connect() {
+    try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); }
+    catch (e) { schedule(); return; }
+    ws.onclose = function () { schedule(); };
+    ws.onerror = function () { try { ws.close(); } catch (e) {} };
+  }
+  function schedule() { clearTimeout(retry); retry = setTimeout(connect, 1000); }
+  function act(a, extra) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(Object.assign({ action: a }, extra || {}))); }
+  connect();
+
+  document.addEventListener('keydown', function (e) {
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': act('next'); e.preventDefault(); break;
+      case 'ArrowLeft': case 'ArrowUp': act('prev'); e.preventDefault(); break;
+      case 'Enter': case ' ': act('confirm'); e.preventDefault(); break;
+      case 'p': case 'P': act('togglePlain'); break;
+      case 'c': case 'C': act('cut'); break;
+      case 'Escape': act('clear'); break;
+      case 'f': case 'F': if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); break;
+    }
+  });
+})();
+</script>
+</body>
+</html>

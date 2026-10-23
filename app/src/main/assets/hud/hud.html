@@ -7,6 +7,8 @@
 <style>
   /* Designed for a 600×600 additive display: black is transparent, dark grays are faint. Keep text bright. */
   :root { --fg: #ffffff; --dim: #a9b0b8; --accent: #5cff8a; --warn: #ffd166; --bad: #ff6b6b; }
+  /* Embedded in /sim: the outer page shows the key hint. */
+  html.embedded .foot { display: none; }
   html, body { margin: 0; padding: 0; background: #000; color: var(--fg); width: 600px; height: 600px; overflow: hidden; }
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
   #root { box-sizing: border-box; width: 600px; height: 600px; padding: 22px 26px; display: flex; flex-direction: column; gap: 10px; }
@@ -59,6 +61,7 @@
 (function () {
   var ws = null, state = null, retry = null;
   var $ = function (id) { return document.getElementById(id); };
+  if (window.self !== window.top || new URLSearchParams(location.search).get('embedded') === '1') document.documentElement.classList.add('embedded');
 
   function connect() {
     try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); }

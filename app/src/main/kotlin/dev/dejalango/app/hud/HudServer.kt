@@ -25,7 +25,11 @@ import java.io.IOException
  * 600×600 additive viewport with D-pad input, and the Android XR glasses emulator pairs with a phone AVD
  * rather than a real phone — both want a thin client. `adb forward tcp:PORT tcp:PORT` makes this server
  * reachable as http://localhost:PORT/hud on the laptop (localhost is a secure context, so https pages may
- * embed it). The server binds to 127.0.0.1 unless hudOnLan is set in settings.
+ * embed it and getUserMedia works). The server binds to 127.0.0.1 unless hudOnLan is set in settings.
+ *
+ * Routes: /hud (the raw 600×600 HUD page, what hud.xyz would load), /sim (our own simulator: the HUD
+ * screen-blended over the laptop camera inside a glasses bezel — the fallback when hud.xyz is down),
+ * /state (JSON snapshot), /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
  */
 class HudServer(
     private val assets: AssetManager,
@@ -46,6 +50,7 @@ class HudServer(
     override fun serveHttp(session: IHTTPSession): Response {
         val r = when (session.uri) {
             "/", "/hud", "/hud.html", "/index.html" -> asset("hud/hud.html", "text/html; charset=utf-8")
+            "/sim", "/sim.html" -> asset("hud/sim.html", "text/html; charset=utf-8")
             "/state" -> NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json; charset=utf-8", HudJson.encode(hud.value))
             "/action" -> {
                 session.parameters["a"]?.firstOrNull()?.let { HudJson.decodeAction(it) }?.let(onAction)
