@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dev.dejalango.engine.config.AudioBackend
 import dev.dejalango.engine.config.Backend
 import dev.dejalango.engine.config.Language
 import dev.dejalango.engine.config.Mode
@@ -71,6 +72,7 @@ class ConfigStore(private val context: Context, private val scope: CoroutineScop
             l2 = this[K.l2]?.let { Language.byCode(it) } ?: d.l2,
             shape = this[K.shape]?.let { runCatching { PipelineShape.valueOf(it) }.getOrNull() } ?: d.shape,
             backend = this[K.backend]?.let { runCatching { Backend.valueOf(it) }.getOrNull() } ?: d.backend,
+            audioBackend = this[K.audioBackend]?.let { runCatching { AudioBackend.valueOf(it) }.getOrNull() } ?: d.audioBackend,
             replies = this[K.replies] ?: d.replies,
             maxReplyWords = this[K.maxReplyWords] ?: d.maxReplyWords,
             maxReplyChars = this[K.maxReplyChars] ?: d.maxReplyChars,
@@ -96,6 +98,7 @@ class ConfigStore(private val context: Context, private val scope: CoroutineScop
         this[K.l2] = c.l2.code
         this[K.shape] = c.shape.name
         this[K.backend] = c.backend.name
+        this[K.audioBackend] = c.audioBackend.name
         this[K.replies] = c.replies
         this[K.maxReplyWords] = c.maxReplyWords
         this[K.maxReplyChars] = c.maxReplyChars
@@ -120,6 +123,7 @@ class ConfigStore(private val context: Context, private val scope: CoroutineScop
         val l2 = stringPreferencesKey("l2")
         val shape = stringPreferencesKey("shape")
         val backend = stringPreferencesKey("backend")
+        val audioBackend = stringPreferencesKey("audioBackend")
         val replies = intPreferencesKey("replies")
         val maxReplyWords = intPreferencesKey("maxReplyWords")
         val maxReplyChars = intPreferencesKey("maxReplyChars")

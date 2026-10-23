@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dejalango.app.di.AppGraph
 import dev.dejalango.app.service.ListenService
+import dev.dejalango.engine.config.AudioBackend
 import dev.dejalango.engine.config.Backend
 import dev.dejalango.engine.config.Mode
 import dev.dejalango.engine.config.PipelineShape
@@ -147,6 +148,7 @@ fun BenchScreen(
                 hud.model?.let { m ->
                     Text("${m.name} · ${m.backend}" + (m.lastDecodeTokensPerSec?.let { " · %.1f tok/s".format(it) } ?: ""), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                 }
+                runtime?.let { Text(it.modelStatusLine, fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color(0xFF6E7680)) }
                 Text("${config.l1.code}→${config.l2.code} · ${config.shape.name.lowercase()} · ${config.replies} replies · k=${config.exemplarsK} · learned ${hud.learnedToday}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                 hud.trace?.let { Text(it.summary(), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFFA9B0B8)) }
                 if (hud.exemplarsUsed.isNotEmpty()) {
@@ -198,6 +200,11 @@ private fun Knobs(graph: AppGraph) {
         KnobRow("backend (restart to apply)") {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Backend.values().forEach { b -> FilterChip(selected = config.backend == b, onClick = { graph.configStore.update { it.copy(backend = b) } }, label = { Text(b.name) }) }
+            }
+        }
+        KnobRow("audio encoder backend (restart to apply)") {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                AudioBackend.values().forEach { b -> FilterChip(selected = config.audioBackend == b, onClick = { graph.configStore.update { it.copy(audioBackend = b) } }, label = { Text(b.name.lowercase()) }) }
             }
         }
         KnobRow("replies") {

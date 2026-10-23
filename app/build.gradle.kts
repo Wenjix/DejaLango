@@ -12,6 +12,13 @@ plugins {
 // model and still exercises every other layer. See docs/ARCHITECTURE.md §5.3.
 val withLiteRtLm = project.hasProperty("withLiteRtLm")
 
+// Bundles Google's Tensor TPU runtime (and optionally Qualcomm's) into the APK so a sideloaded debug build can
+// use Backend.GOOGLE_TENSOR / Backend.NPU. Google's own sample delivers these as Play dynamic-feature modules
+// gated by device group (see docs/ARCHITECTURE.md §5.3); for a hackathon APK, plain dependencies are enough.
+// The version must match the LiteRT version LiteRT-LM embeds — marked VERIFY in the catalog.
+val withTensorNpu = project.hasProperty("withTensorNpu")
+val withQualcommNpu = project.hasProperty("withQualcommNpu")
+
 android {
     namespace = "dev.dejalango.app"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -24,6 +31,12 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "WITH_LITERTLM", withLiteRtLm.toString())
+        buildConfigField("boolean", "WITH_TENSOR_NPU", withTensorNpu.toString())
+        buildConfigField("boolean", "WITH_QUALCOMM_NPU", withQualcommNpu.toString())
+        if (withTensorNpu || withQualcommNpu) {
+            // NPU runtimes ship arm64-v8a only.
+            ndk { abiFilters += listOf("arm64-v8a") }
+        }
     }
 
     flavorDimensions += "device"
@@ -122,6 +135,12 @@ dependencies {
     implementation(libs.nanohttpd.websocket)
     if (withLiteRtLm) {
         implementation(libs.litertlm.android)
+    }
+    if (withTensorNpu) {
+        implementation(libs.litert.npu.runtime.google.tensor)
+    }
+    if (withQualcommNpu) {
+        implementation(libs.litert.npu.runtime.qualcomm)
     }
 
     testImplementation(libs.junit4)

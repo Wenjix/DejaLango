@@ -28,6 +28,7 @@ datastore = "1.2.0"
 
 litertlm = "0.18.1"        # Validated with the Kotlin adapters; keep inference builds reproducible.
 onnxruntime = "1.23.0"     # VERIFY: com.microsoft.onnxruntime:onnxruntime-android — 1.22+ is fine
+litertNpu = "2.3.0"        # VERIFY: must match the LiteRT version embedded in litertlm-android (google-ai-edge/litert-samples pins 2.3.0)
 nanohttpd = "2.3.1"
 
 junit4 = "4.13.2"
@@ -59,6 +60,8 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
 litertlm-android = { group = "com.google.ai.edge.litertlm", name = "litertlm-android", version.ref = "litertlm" }
+litert-npu-runtime-google-tensor = { group = "com.google.ai.edge.litert", name = "litert-npu-runtime-google-tensor", version.ref = "litertNpu" }
+litert-npu-runtime-qualcomm = { group = "com.google.ai.edge.litert", name = "litert-npu-runtime-qualcomm", version.ref = "litertNpu" }
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 nanohttpd = { group = "org.nanohttpd", name = "nanohttpd", version.ref = "nanohttpd" }
 nanohttpd-websocket = { group = "org.nanohttpd", name = "nanohttpd-websocket", version.ref = "nanohttpd" }

@@ -17,3 +17,6 @@ Real inference is optional: build with `-PwithLiteRtLm`, download the models wit
 `scripts/fetch_models.sh`, and push them with `scripts/push_models.sh`.
 Model files and application data belong to the new application ID; existing installs
 are separate. Real-device behavior requires device validation.
+
+Backend AUTO tries supported device accelerators before CPU. Use `-PwithTensorNpu`
+or `-PwithQualcommNpu` to bundle the corresponding runtime alongside `-PwithLiteRtLm`.

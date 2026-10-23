@@ -20,7 +20,15 @@ enum class PipelineShape {
     SINGLE,
 }
 
-enum class Backend { CPU, GPU, NPU }
+/**
+ * Where the decoder runs. [AUTO] lets the adapter pick a ladder for the device
+ * (Pixel: GOOGLE_TENSOR → NPU → GPU → CPU; Qualcomm: NPU → GPU → CPU; else GPU → CPU);
+ * an explicit value is tried first with CPU as the only fallback. The winner is reported in ModelInfo.
+ */
+enum class Backend { AUTO, CPU, GPU, NPU, GOOGLE_TENSOR }
+
+/** Where the audio encoder runs. TPU bundles may or may not carry it; CPU is the safe default. */
+enum class AudioBackend { CPU, GPU, SAME_AS_MAIN }
 
 /** A language the app knows how to prompt for. Add entries, not special cases. */
 data class Language(
@@ -51,7 +59,8 @@ data class PipelineConfig(
     val l1: Language = Language.EN,
     val l2: Language = Language.ZH,
     val shape: PipelineShape = PipelineShape.TWO_STAGE,
-    val backend: Backend = Backend.GPU,
+    val backend: Backend = Backend.AUTO,
+    val audioBackend: AudioBackend = AudioBackend.CPU,
     val replies: Int = 2,
     val maxReplyWords: Int = 12,
     val maxReplyChars: Int = 20,       // CJK cap

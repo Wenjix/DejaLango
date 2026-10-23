@@ -78,6 +78,12 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
     var isListening: Boolean = false
         private set
 
+    /** What the bench shows under the model line: SoC, which bundles are on the device, the push command. */
+    val modelStatusLine: String
+        get() = graph.modelFiles.status().let { s ->
+            "soc=${s.socModel.ifEmpty { "?" }} · generic=${s.gemmaGeneric ?: "missing"} · soc bundle=${s.gemmaSoc ?: "missing"} · embedder=${s.embedder ?: "missing"}"
+        }
+
     suspend fun start() {
         // 1. Warm the model with the persisted voice card (quick cards are never persisted).
         val card = runCatching { graph.exemplarStore.loadVoiceCard() }.getOrNull()
