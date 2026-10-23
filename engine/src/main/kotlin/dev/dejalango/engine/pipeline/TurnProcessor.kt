@@ -222,7 +222,7 @@ class TurnProcessor(
             } else {
                 myTurn(a)
             }
-            Mode.SAY_IT_MY_WAY -> if (a.speaker == Speaker.ME) {
+            Mode.SAY_IT_MY_WAY -> if (a.speaker == Speaker.ME || model.info.backend == "fake") {
                 replyStage(cfg, trace, query = a.heardL1) { ex -> prompts.sayItMyWay(cfg, a.heardL1, ex, voiceCard) }
             } else {
                 _hud.update { it.copy(phase = Phase.SHOWING, replies = emptyList(), selectedReply = null) }

@@ -33,6 +33,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -282,6 +283,34 @@ class TurnProcessorTest {
             val q = builder.quickFromAudio(PipelineConfig(), listOf(rig.turn(30_000), rig.turn(30_000)))
             assertEquals(Confidence.QUICK, q.card.confidence)
             assertTrue(q.sentences.size >= 2)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `consecutive fake turns produce distinct transcripts and replies and sayItMyWay works`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            val firstHeard = rig.processor.hud.value.heard?.text
+            val firstReply = rig.processor.hud.value.replies.firstOrNull()?.yours
+            assertNotNull(firstHeard)
+            assertNotNull(firstReply)
+
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.MANUAL))
+            rig.awaitTraces(2)
+            val secondHeard = rig.processor.hud.value.heard?.text
+            val secondReply = rig.processor.hud.value.replies.firstOrNull()?.yours
+            assertNotEquals(firstHeard, secondHeard)
+            assertNotEquals(firstReply, secondReply)
+
+            rig.cfg.value = PipelineConfig(mode = Mode.SAY_IT_MY_WAY)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.MANUAL))
+            rig.awaitTraces(3)
+            assertTrue("say it my way should produce replies in fake mode", rig.processor.hud.value.replies.isNotEmpty())
         } finally {
             rig.close()
         }

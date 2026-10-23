@@ -14,6 +14,8 @@ import dev.dejalango.engine.hud.HudState
 import dev.dejalango.engine.llm.SpeechLanguageModel
 import dev.dejalango.engine.pipeline.TurnProcessor
 import dev.dejalango.engine.prompts.PromptBuilder
+import dev.dejalango.engine.turn.EndReason
+import dev.dejalango.engine.turn.TurnEvent
 import dev.dejalango.engine.turn.TurnPolicy
 import dev.dejalango.engine.turn.TurnSegmenter
 import dev.dejalango.engine.turn.VoiceActivityDetector
@@ -156,7 +158,19 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
     fun onAction(a: HudAction) {
         when (a) {
             is HudAction.SetMode -> graph.configStore.update { it.copy(mode = a.mode) }
-            HudAction.CutNow -> serviceScope.launch(audioDispatcher) { segmenter.cutNow(ring.endMs ?: 0L).forEach(processor::onEvent) }
+            HudAction.CutNow -> serviceScope.launch(audioDispatcher) {
+                val endMs = ring.endMs ?: 0L
+                val events = segmenter.cutNow(endMs)
+                if (events.isNotEmpty()) {
+                    events.forEach(processor::onEvent)
+                } else {
+                    // If VAD was not currently latched in Speech when the user tapped Cut, slice the recent
+                    // audio window from the ring buffer so Cut still forces a manual turn immediately.
+                    val fromMs = maxOf(ring.startMs ?: 0L, endMs - 3_000L)
+                    val turn = if (endMs > fromMs) ring.turn(fromMs, endMs) else AudioTurn(FloatArray(16_000), 0L, 1_000L, 16_000)
+                    processor.onEvent(TurnEvent.TurnEnded(turn, EndReason.MANUAL))
+                }
+            }
             else -> processor.onAction(a)
         }
     }

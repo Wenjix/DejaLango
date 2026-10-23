@@ -12,10 +12,14 @@ import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import dev.dejalango.app.appGraph
 import dev.dejalango.app.service.ListenService
@@ -45,13 +49,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
-                val svc by service.collectAsState()
-                BenchScreen(
-                    service = svc,
-                    graph = appGraph,
-                    onStartListening = ::startListening,
-                    onStopListening = { ListenService.stop(this) },
-                )
+                Surface(modifier = Modifier.fillMaxSize(), color = Color.Black, contentColor = Color.White) {
+                    val svc by service.collectAsState()
+                    BenchScreen(
+                        service = svc,
+                        graph = appGraph,
+                        onStartListening = ::startListening,
+                        onStopListening = { ListenService.stop(this) },
+                    )
+                }
             }
         }
     }
