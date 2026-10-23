@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Horizon OS overlay (Quest 3/3S today, Meta VR Glasses in spring 2027). The Meta Horizon Android Studio
+  plugin ("Add Meta VR flavor to existing project") regenerates this file with the panel sizing and app id
+  it wants; keep it minimal here so a regeneration is a diff, not a conflict.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <meta-data
+            android:name="com.oculus.supportedDevices"
+            android:value="quest3|quest3s|vrglasses" />
+    </application>
+</manifest>

@@ -8,3 +8,7 @@ adapters and rendering (`:app`). The mobile and Meta VR variants use application
 `dev.dejalango` and `dev.dejalango.metavr`.
 
 Run the engine tests with `./gradlew :engine:test`.
+
+Run `./gradlew :app:installMobileDebug` to install the Android listening bench.
+The fake model is enabled by default. Start listening, run `scripts/hud_forward.sh`,
+and open `http://localhost:8765/hud` to view the HUD on your laptop.

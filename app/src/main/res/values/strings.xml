@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DejaLango</string>
+    <string name="notification_channel">Listening</string>
+    <string name="notification_title">DejaLango is listening</string>
+    <string name="notification_text">On-device only. Tap to open the bench.</string>
+</resources>
