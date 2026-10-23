@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Exposes the phone's HUD server on the laptop as http://localhost:PORT/hud, for the hud.xyz
-# Ray-Ban Display simulator or any browser tab. Usage: scripts/hud_forward.sh [port]
+# Exposes the phone's HUD server on the laptop as http://localhost:LOCAL_PORT/hud, for the hud.xyz
+# Ray-Ban Display simulator or any browser tab. Usage: scripts/hud_forward.sh [local_port] [phone_port]
 set -euo pipefail
 PORT="${1:-8765}"
-adb forward "tcp:$PORT" "tcp:$PORT"
+REMOTE_PORT="${2:-8765}"
+adb forward "tcp:$PORT" "tcp:$REMOTE_PORT"
 cat <<EOF
 forwarded: http://localhost:$PORT/hud
 
