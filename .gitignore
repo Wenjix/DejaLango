@@ -1,0 +1,28 @@
+# Gradle / build
+.gradle/
+build/
+**/build/
+local.properties
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild
+.cxx
+
+# Models — never commit weights. scripts/fetch_models.sh populates ./models; scripts/push_models.sh pushes them.
+models/
+*.litertlm
+*.onnx
+!app/src/main/assets/silero_vad.onnx
+
+# Traces and recordings exported from devices
+traces/
+*.wav
+!app/src/debug/assets/fixtures/*.wav
+
+# Offline compile scratch (see scripts/engine_offline_test.sh)
+.offline-build/
