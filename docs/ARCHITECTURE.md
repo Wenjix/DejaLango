@@ -312,9 +312,13 @@ manifest overlay. Both share the bench and engine.
 
 The manifest requests microphone, foreground-service and notification permissions, plus
 `INTERNET` for the local HTTP/WebSocket server. The server binds to `127.0.0.1` by default. The
-optional LAN setting changes that binding. Model inference uses downloaded local weights; the app
-does not require a cloud inference service. HUD state, including text and card details, is sent to
-connected renderers.
+optional LAN setting changes that binding. Each request, WebSocket handshakes included, passes
+`HudRequestGuard` or gets 403: `Host` must be `localhost` or an IP literal, which rules out DNS
+rebinding; any `Origin` must be the server's own; `/action` needs a loopback `Host`, because
+browsers send no `Sec-Fetch-Site` to a plain-http LAN address; and on `/action` and handshakes,
+any `Sec-Fetch-Site` must be `same-origin` or `none`. Responses carry no CORS header. Model
+inference uses downloaded local weights; the app does not require a cloud inference service. HUD
+state, including text and card details, is sent to connected renderers.
 
 Room stores exemplars and owner cards. Quick cards and raw captured audio stay in memory. **Wipe**
 clears exemplars, stored cards and conversation state; it does not remove model weights or trace

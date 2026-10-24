@@ -27,6 +27,10 @@ import java.io.IOException
  * reachable as http://localhost:PORT/hud on the laptop (localhost is a secure context, so https pages may
  * embed it and getUserMedia works). The server binds to 127.0.0.1 unless hudOnLan is set in settings.
  *
+ * It answers only its own pages and local clients: every request, WebSocket handshakes included, must pass
+ * [HudRequestGuard], and no response carries a CORS header, so other websites can neither read the
+ * conversation nor, in current browsers, send actions.
+ *
  * Routes: /hud (the raw 600×600 HUD page, what hud.xyz would load), /sim (our own simulator: the HUD
  * screen-blended over the laptop camera inside a glasses bezel — the fallback when hud.xyz is down),
  * /state (JSON snapshot), /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
@@ -47,6 +51,15 @@ class HudServer(
         Log.i(TAG, "HUD server at $url")
     }
 
+    /** NanoWSD's serve answers WebSocket handshakes and passes the rest to [serveHttp]; the guard goes first. */
+    override fun serve(session: IHTTPSession): Response {
+        val refusal = HudRequestGuard.refusal(session.uri, session.headers)
+        if (refusal == null) return super.serve(session)
+        // The decoded path can come from a hostile page: keep the warning to one short printable line.
+        Log.w(TAG, "refused ${session.uri.filter { it in ' '..'~' }.take(80)}: $refusal")
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "forbidden")
+    }
+
     override fun serveHttp(session: IHTTPSession): Response {
         val r = when (session.uri) {
             "/", "/hud", "/hud.html", "/index.html" -> asset("hud/hud.html", "text/html; charset=utf-8")
@@ -58,7 +71,6 @@ class HudServer(
             }
             else -> NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found")
         }
-        r.addHeader("Access-Control-Allow-Origin", "*")
         r.addHeader("Cache-Control", "no-store")
         return r
     }

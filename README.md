@@ -67,7 +67,9 @@ If multiple devices are connected, set `ANDROID_SERIAL` before running the helpe
 
 Inference stays on the Android device. The HUD server sends conversation state to the connected
 browser over USB forwarding. It binds to localhost by default; the optional LAN setting exposes it
-to the local network. The simulator camera is a browser background and is not sent to the model.
+to the local network. It answers only its own pages and local clients such as curl, not other
+websites in current browsers. With the LAN setting, `/action` still answers only on localhost. The
+simulator camera is a browser background and is not sent to the model.
 
 ## Install model weights
 
