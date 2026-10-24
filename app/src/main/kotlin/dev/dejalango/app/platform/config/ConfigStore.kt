@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -130,6 +131,9 @@ class ConfigStore(private val store: DataStore<Preferences>, private val scope: 
             speakReplies = this[K.speakReplies] ?: d.speakReplies,
             structuredOutput = this[K.structuredOutput] ?: d.structuredOutput,
             catchForgottenTaps = this[K.catchForgottenTaps] ?: d.catchForgottenTaps,
+            playbookScene = this[K.playbookScene] ?: d.playbookScene,
+            playbookThreshold = this[K.playbookThreshold] ?: d.playbookThreshold,
+            playbookMargin = this[K.playbookMargin] ?: d.playbookMargin,
         )
     }
 
@@ -158,6 +162,9 @@ class ConfigStore(private val store: DataStore<Preferences>, private val scope: 
         this[K.speakReplies] = c.speakReplies
         this[K.structuredOutput] = c.structuredOutput
         this[K.catchForgottenTaps] = c.catchForgottenTaps
+        this[K.playbookScene] = c.playbookScene
+        this[K.playbookThreshold] = c.playbookThreshold
+        this[K.playbookMargin] = c.playbookMargin
     }
 
     private fun androidx.datastore.preferences.core.MutablePreferences.write(s: AppSettings) {
@@ -189,6 +196,9 @@ class ConfigStore(private val store: DataStore<Preferences>, private val scope: 
         val hudPort = intPreferencesKey("hudPort")
         val hudOnLan = booleanPreferencesKey("hudOnLan")
         val catchForgottenTaps = booleanPreferencesKey("catchForgottenTaps")
+        val playbookScene = stringPreferencesKey("playbookScene")
+        val playbookThreshold = floatPreferencesKey("playbookThreshold")
+        val playbookMargin = floatPreferencesKey("playbookMargin")
         val coachingSeen = booleanPreferencesKey("coachingSeen")
     }
 }

@@ -40,6 +40,23 @@ class ConfigStoreTest {
         assertFalse(store.settings.value.useFakeModel)
     }
 
+    @Test fun `playbook scene, threshold and margin load with defaults and save like the other knobs`() = runTest {
+        val disk = Disk(); disk.loaded.complete(Unit)
+        val store = ConfigStore(disk, backgroundScope); runCurrent()
+        assertEquals("", store.config.value.playbookScene)
+        assertEquals(0.85f, store.config.value.playbookThreshold)
+        assertEquals(0.03f, store.config.value.playbookMargin)
+        store.update { it.copy(playbookScene = "restaurant", playbookThreshold = 0.88f, playbookMargin = 0.05f) }; runCurrent()
+        assertEquals("restaurant", disk.saved.value[stringPreferencesKey("playbookScene")])
+        assertEquals(0.88f, disk.saved.value[floatPreferencesKey("playbookThreshold")])
+        assertEquals(0.05f, disk.saved.value[floatPreferencesKey("playbookMargin")])
+        val reopened = Disk(disk.saved.value); reopened.loaded.complete(Unit)
+        val again = ConfigStore(reopened, backgroundScope); runCurrent()
+        assertEquals("restaurant", again.config.value.playbookScene)
+        assertEquals(0.88f, again.config.value.playbookThreshold)
+        assertEquals(0.05f, again.config.value.playbookMargin)
+    }
+
     @Test fun `failed save keeps committed pair and surfaces recovery without publishing false success`() = runTest {
         val disk = Disk(); disk.loaded.complete(Unit)
         val store = ConfigStore(disk, backgroundScope); runCurrent()

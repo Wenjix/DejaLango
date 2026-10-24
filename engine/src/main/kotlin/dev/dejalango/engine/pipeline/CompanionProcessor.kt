@@ -9,6 +9,9 @@ import dev.dejalango.engine.conversation.Speaker
 import dev.dejalango.engine.conversation.Turn
 import dev.dejalango.engine.hud.*
 import dev.dejalango.engine.llm.*
+import dev.dejalango.engine.playbook.MissReason
+import dev.dejalango.engine.playbook.PlaybookIndex
+import dev.dejalango.engine.playbook.PlaybookMatch
 import dev.dejalango.engine.prompts.CompanionPrompts
 import dev.dejalango.engine.prompts.CompanionSchemas
 import dev.dejalango.engine.prompts.PromptBuilder
@@ -33,13 +36,14 @@ class CompanionProcessor(
     private val clock: Clock = Clock.system(),
     private val hintOutcome: (Long, Long, Boolean) -> Unit = { _, _, _ -> },
     private val audioSlice: suspend (Long, Long) -> AudioTurn? = { _, _ -> null },
+    private val playbook: () -> PlaybookIndex? = { null }, // a provider: the app builds the index after start
 ) {
     data class UsedReply(val text: String, val language: String, val offerId: Long)
     private data class Offer(val id: Long, val replies: List<Reply>, val source: Long)
     private data class Frozen(val cfg: PipelineConfig, val revision: Long, val offer: Offer?)
     private data class Work(val event: CaptureEvent.Ended, val frozen: Frozen, val version: Long)
     private data class Record(val line: Line, val capture: CaptureEvent.Ended?, val cfg: PipelineConfig, val usedOffer: Long? = null)
-    private data class Running(val work: Work, val job: Job, var writing: Boolean = false)
+    private data class Running(val work: Work, val job: Job, var writing: Boolean = false, var keepStatus: Boolean = false)
     private data class BeforeCorrection(val id: Long, val source: Record, val hud: HudState, val records: List<Record>, val offer: Offer?, val spent: Set<Long>, val aside: Record?)
 
     private val gate = Any()
@@ -87,6 +91,9 @@ class CompanionProcessor(
     }
 
     suspend fun <T> ownerOperation(block: suspend (SpeechLanguageModel) -> T): T = ownerOperations.run { block(ownerModel) }
+
+    /** Lets the app run embedder work, such as building the playbook index, without overlapping a generation. */
+    suspend fun <T> exclusive(block: suspend () -> T): T = modelLock.withLock { block() }
 
     /** Keep the model dispatcher alive until all SDK-flow and owner-operation cleanup has completed. */
     suspend fun awaitIdle() { stoppedOwners.joinAll(); modelLock.withLock {} }
@@ -205,9 +212,9 @@ class CompanionProcessor(
         running[work.version] = Running(work, job)
         job.invokeOnCompletion {
             val busy = synchronized(gate) {
-                running.remove(work.version); versions.remove(work.event.id, work.version)
+                val keep = running.remove(work.version)?.keepStatus == true; versions.remove(work.event.id, work.version)
                 val hasWork = pending.decrementAndGet() > 0
-                mutableHud.update { it.copy(processing = hasWork, phase = if (hasWork) Phase.THINKING else rest(it), statusLine = if (hasWork) it.statusLine else null) }
+                mutableHud.update { it.copy(processing = hasWork, phase = if (hasWork) Phase.THINKING else rest(it), statusLine = if (hasWork || keep) it.statusLine else null) }
                 hasWork
             }
             if (!busy) prepareNext()
@@ -290,12 +297,9 @@ class CompanionProcessor(
                 trace.shape = "ME_L1_CAUGHT"
                 write(work, result, ReplyKind.VARIANTS, trace)
             } else {
-                val line = Line(result.heard, if (cfg.catchForgottenTaps) cfg.l2.tag else result.lang.ifBlank { cfg.l2.tag }, result.heardL1, work.event.id, Speaker.THEM, result.roman)
-                commit(work) {
-                    record(Record(line, work.event, cfg))
-                    it.copy(heard = line, aside = null, wearer = null, matched = false, hint = HintState())
-                }
+                recordTheirs(work, result, cfg)
                 if (single) { trace.shape = "THEM_SINGLE"; show(work, parser.parseReplies(gen.text), ReplyKind.REPLIES, trace) }
+                else if (cfg.playbookScene.isNotBlank() && playbookReplies(work, result, trace)) return
                 else write(work, result, ReplyKind.REPLIES, trace)
             }
         } catch (_: TimeoutCancellationException) {
@@ -308,6 +312,16 @@ class CompanionProcessor(
             commit(work) { it.copy(trace = trace.copy(), model = model.info) }
             traceEvents.tryEmit(trace.copy())
         }
+    }
+
+    /** Records their line and shows it as heard: the one way a THEM line is kept, before replies are written or prepared. */
+    private fun recordTheirs(work: Work, result: StageAResult, cfg: PipelineConfig): Line {
+        val line = Line(result.heard, if (cfg.catchForgottenTaps) cfg.l2.tag else result.lang.ifBlank { cfg.l2.tag }, result.heardL1, work.event.id, Speaker.THEM, result.roman)
+        commit(work) {
+            record(Record(line, work.event, cfg))
+            it.copy(heard = line, aside = null, wearer = null, matched = false, hint = HintState())
+        }
+        return line
     }
 
     private fun match(work: Work, result: StageAResult): Boolean = synchronized(gate) {
@@ -352,7 +366,58 @@ class CompanionProcessor(
         show(work, parsed, kind, trace)
     }
 
-    private fun show(work: Work, parsed: List<Reply>, kind: ReplyKind, trace: TurnTrace) = synchronized(gate) {
+    /**
+     * Shows the active scene's prepared replies when their line matches a moment of it, and takes one of my seeded answers,
+     * said without a tap after their line, as mine. False leaves the turn to Stage B.
+     */
+    private suspend fun playbookReplies(work: Work, result: StageAResult, trace: TurnTrace): Boolean {
+        val cfg = work.frozen.cfg
+        val index = playbook() ?: return false
+        // A repaired transcript may be cut short; a playbook for another pair holds other languages' lines.
+        if (result.repaired || index.playbook.l1 != cfg.l1.tag || index.playbook.l2 != cfg.l2.tag) return false
+        if (!valid(work) || work.event.id != latestWritingId) return false
+        synchronized(gate) { running[work.version]?.writing = true }
+        trace.tBStart = clock.nowMs()
+        val scene = cfg.playbookScene.takeUnless { it == PipelineConfig.ALL_SCENES } // null matches every scene
+        val found = try {
+            modelLock.withLock { index.match(result.heard, scene, cfg.playbookThreshold, cfg.playbookMargin) }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (e: Exception) {
+            commit(work) { it.copy(playbookNote = "match failed: ${e.message ?: e.javaClass.simpleName}") }
+            return false
+        }
+        trace.tRetrieved = clock.nowMs()
+        // No exemplar shapes prepared cards, so a hit drops the last written turn's from the bench.
+        commit(work) { it.copy(playbookNote = found.describe(), exemplarsUsed = if (found is PlaybookMatch.Hit) emptyList() else it.exemplarsUsed) }
+        if (found is PlaybookMatch.Miss && cfg.catchForgottenTaps && found.reason == MissReason.WEARER_LINE &&
+            found.score >= cfg.playbookThreshold && found.score - found.bestLocal >= cfg.playbookMargin) {
+            // My seeded answer, and clear of every line of the local's: a forgotten tap. A weaker reading stays theirs, for Stage B.
+            return recordAsMine(work, result, trace)
+        }
+        if (found !is PlaybookMatch.Hit) return false
+        trace.shape = "THEM_PLAYBOOK"
+        trace.tBEnd = clock.nowMs()
+        show(work, found.moment.replyCards(), ReplyKind.REPLIES, trace, ReplySource.PLAYBOOK)
+        return true
+    }
+
+    /** Records their line as mine, as ME_L2 records a tapped one, in place of their record under the same id: no writing. */
+    private fun recordAsMine(work: Work, result: StageAResult, trace: TurnTrace): Boolean = synchronized(gate) {
+        if (!valid(work) || work.event.id != latestWritingId) return@synchronized false
+        // Only on my turn, after theirs: right after my line, one like my answer is their echo of it ("一位是吧？").
+        if (records.lastOrNull { it.line.id != work.event.id }?.line?.speaker != Speaker.THEM) return@synchronized false
+        val cfg = work.frozen.cfg
+        val line = Line(result.heard, cfg.l2.tag, result.heardL1, work.event.id, Speaker.ME, result.roman)
+        trace.shape = "ME_PLAYBOOK"
+        record(Record(line, work.event, cfg)); offer = null
+        // Heard goes back to their line I answered; the partner cue waits for my line's id, as after a tapped one.
+        mutableHud.update { it.copy(heard = records.lastOrNull { r -> r.line.speaker == Speaker.THEM }?.line, wearer = line, aside = null, replies = emptyList(), selectedReply = null, hint = HintState(), matched = false, lastWearerTurnId = work.event.id, statusLine = "Caught your forgotten tap. Tap before speaking next time.") }
+        // Nothing is written, so the turn ends at once: keep the notice until the next turn replaces it.
+        running[work.version]?.keepStatus = true
+        true
+    }
+
+    private fun show(work: Work, parsed: List<Reply>, kind: ReplyKind, trace: TurnTrace, source: ReplySource = ReplySource.MODEL) = synchronized(gate) {
         if (!valid(work) || work.event.id != latestWritingId) return@synchronized
         val cfg = work.frozen.cfg
         val replies = parsed.mapNotNull { r -> when {
@@ -363,7 +428,7 @@ class CompanionProcessor(
         offer = replies.takeIf { it.isNotEmpty() }?.let { Offer(++offerSequence, it, work.event.id) }
         if (replies.isEmpty()) trace.parseFailed = true
         val question = if (kind == ReplyKind.REPLIES) records.lastOrNull { it.line.id == work.event.id }?.line else null
-        mutableHud.update { it.copy(heard = question ?: it.heard, replies = replies, selectedReply = if (replies.isEmpty()) null else 0, replyKind = kind, offerId = offer?.id ?: 0, error = if (replies.isEmpty()) "No usable reply came back. Try another line." else null) }
+        mutableHud.update { it.copy(heard = question ?: it.heard, replies = replies, selectedReply = if (replies.isEmpty()) null else 0, replyKind = kind, replySource = source, offerId = offer?.id ?: 0, error = if (replies.isEmpty()) "No usable reply came back. Try another line." else null) }
     }
 
     private suspend fun generate(cfg: PipelineConfig, request: GenerateRequest): Generated = modelLock.withLock {

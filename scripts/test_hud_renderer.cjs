@@ -24,7 +24,8 @@ const context = {
   WebSocket:Socket, setTimeout, clearTimeout,
 };
 vm.runInNewContext(fs.readFileSync(path.join(root, 'app/src/main/assets/hud/hud.js'), 'utf8'), context);
-const render = name => socket.onmessage({data:JSON.stringify(fixtures[name])});
+const show = state => socket.onmessage({data:JSON.stringify(state)});
+const render = name => show(fixtures[name]);
 render('split');
 assert.match(node('receipt').textContent, /Moved to them: “要加糖嗎？”/);
 assert.match(node('receipt').textContent, /U Undo/);
@@ -44,6 +45,13 @@ assert.doesNotMatch(node('receipt').textContent, /whole line on phone/);
 render('undo');
 assert.equal(node('receipt').textContent, '');
 assert.equal(node('receiptRoman').textContent, '');
+// Cards answer the heard line; a state without "source", from an older phone, is the model's.
+const replies = [{yours:'不用，謝謝。', roman:'Bú yòng, xièxie.', back:'No, thanks.'}, {yours:'要一點。', roman:'Yào yìdiǎn.', back:'A little.'}];
+for (const [extra, label] of [[{source:undefined}, 'Reply'], [{source:'MODEL'}, 'Reply'], [{source:'PLAYBOOK'}, 'Prepared'], [{source:'PLAYBOOK', kind:'VARIANTS'}, 'Say it']]) {
+  show({...fixtures.undo, replies, ...extra});
+  assert.equal(node('position').textContent, label + ' · 1/2');
+  assert.equal(node('replyText').textContent, '不用，謝謝。');
+}
 render('paused');
 assert.equal(node('lens').hidden, true);
-console.log('PASS: actual HudJson split, unavailable, whole-line, Undo and display-pause payloads');
+console.log('PASS: actual HudJson split, unavailable, whole-line, Undo and display-pause payloads; model, playbook and variant card labels');

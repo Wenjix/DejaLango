@@ -27,7 +27,7 @@ object HudJson {
             put("yours", r.yours); put("roman", r.roman.takeIf { s.pair.them.romanization != null }.orEmpty()); put("back", r.back.orEmpty())
         }) } })
         put("selected", s.selectedReply?.let(::JsonPrimitive) ?: JsonNull)
-        put("kind", s.replyKind.name); put("matched", s.matched)
+        put("kind", s.replyKind.name); put("source", s.replySource.name); put("matched", s.matched)
         put("hint", buildJsonObject { put("phase", s.hint.phase.name); put("word", s.hint.word); put("roman", s.hint.roman.orEmpty()); put("meaning", s.hint.meaning.orEmpty()) })
         put("correction", s.correction?.let { r -> buildJsonObject {
             put("id", r.id); put("lineId", r.lineId); put("text", r.text); put("roman", r.roman.orEmpty())

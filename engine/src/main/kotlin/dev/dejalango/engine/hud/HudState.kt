@@ -35,6 +35,8 @@ data class CaptureState(
 enum class HintPhase { NONE, PENDING, READY }
 data class HintState(val phase: HintPhase = HintPhase.NONE, val word: String = "", val roman: String? = null, val meaning: String? = null, val pauseId: Long = 0)
 enum class ReplyKind { REPLIES, VARIANTS }
+/** Who wrote the reply cards: Gemma, or the playbook moment their line matched. */
+enum class ReplySource { MODEL, PLAYBOOK }
 data class CorrectionReceipt(
     val id: Long,
     val lineId: Long,
@@ -92,6 +94,8 @@ data class HudState(
     val pairRevision: Long = 0,
     val offerId: Long = 0,
     val replyKind: ReplyKind = ReplyKind.REPLIES,
+    val replySource: ReplySource = ReplySource.MODEL, // where the current cards came from
+    val playbookNote: String? = null,            // (bench) the last playbook match, as PlaybookMatch.describe() puts it
     val hint: HintState = HintState(),
     val correction: CorrectionReceipt? = null,
     val displayPaused: Boolean = false,
@@ -104,7 +108,7 @@ data class HudState(
     val sessionId: String = "",
 ) {
     /** What a 600×600 additive display should show: at most two lines of context and two replies. */
-    fun forGlasses(): HudState = copy(exemplarsUsed = emptyList(), voiceCard = null, trace = null, model = null)
+    fun forGlasses(): HudState = copy(exemplarsUsed = emptyList(), voiceCard = null, trace = null, model = null, playbookNote = null)
 }
 
 /** Input coming back from a renderer: D-pad on glasses, taps on the bench, Neural Band one day. */

@@ -111,8 +111,19 @@ data class PipelineConfig(
     val speakReplies: Boolean = false, // TTS the chosen reply into an earbud
     val structuredOutput: Boolean = false, // constrained JSON decoding where the runtime supports it
     val catchForgottenTaps: Boolean = true,
+    /** The active playbook scene's id, or [ALL_SCENES] for every scene. Blank turns the playbook off, so Stage B writes every reply. */
+    val playbookScene: String = "",
+    /** The least score a playbook hit needs: the cosine between their line and the nearest seeded one. */
+    val playbookThreshold: Float = 0.85f,
+    /** How far a playbook hit must beat every other moment's local lines. */
+    val playbookMargin: Float = 0.03f,
 ) {
     val pair: LanguagePair get() = LanguagePair(l1, l2)
     val maxUnitsText: String
         get() = if (l2.cjk) "$maxReplyChars ${l2.name} characters" else "$maxReplyWords words"
+
+    companion object {
+        /** The [playbookScene] that matches their line against every scene of the playbook. */
+        const val ALL_SCENES = "*"
+    }
 }

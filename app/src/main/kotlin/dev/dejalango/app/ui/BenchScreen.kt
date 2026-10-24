@@ -53,12 +53,14 @@ import dev.dejalango.app.service.ListenService
 import dev.dejalango.app.service.PipelineRuntime
 import dev.dejalango.engine.config.AudioBackend
 import dev.dejalango.engine.config.Backend
+import dev.dejalango.engine.config.PipelineConfig
 import dev.dejalango.engine.config.PipelineShape
 import dev.dejalango.engine.hud.HudAction
 import dev.dejalango.engine.hud.HudState
 import dev.dejalango.engine.hud.Phase
 import dev.dejalango.engine.voice.VoiceCard
 import java.net.URI
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -194,6 +196,7 @@ fun BenchScreen(
                     hud.exemplarsUsed.forEach { e -> Text("• ${e.text}  (%.2f)".format(e.score), fontSize = 13.sp, color = Color(0xFFD0D5DA)) }
                 }
                 hud.voiceCard?.let { c -> Text("voice card: " + c.describe().replace("\n", " · "), fontSize = 12.sp, color = Color(0xFFA9B0B8)) }
+                PlaybookKnobs(graph, runtime, hud.playbookNote)
                 hudUrl?.let { url ->
                     Text("HUD: $url", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFF5CFF8A))
                     TextButton(onClick = { scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Current HUD link", url))) } }) { Text("Copy current HUD link") }
@@ -299,6 +302,50 @@ private fun Knobs(graph: AppGraph) {
         }
     }
 }
+
+/** The playbook: whether it is ready, which scene's prepared replies (or all scenes') answer their lines, and how near a line must be. */
+@Composable
+private fun PlaybookKnobs(graph: AppGraph, runtime: PipelineRuntime?, note: String?) {
+    val config by graph.configStore.config.collectAsStateWithLifecycle()
+    val statusFlow = remember(runtime) { runtime?.playbookStatus ?: MutableStateFlow("playbook: off") }
+    val status by statusFlow.collectAsStateWithLifecycle()
+    val scenesFlow = remember(runtime) { runtime?.playbookScenes ?: MutableStateFlow(emptyList<PipelineRuntime.PlaybookScene>()) }
+    val scenes by scenesFlow.collectAsStateWithLifecycle()
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(status, fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFFD0D5DA))
+        KnobSection("playbook scene") {
+            FilterChip(selected = config.playbookScene.isBlank(), onClick = { graph.configStore.update { it.copy(playbookScene = "") } }, label = { Text("Off", maxLines = 1, softWrap = false) })
+            FilterChip(selected = config.playbookScene == PipelineConfig.ALL_SCENES, onClick = { graph.configStore.update { it.copy(playbookScene = PipelineConfig.ALL_SCENES) } }, label = { Text("All", maxLines = 1, softWrap = false) })
+            scenes.forEach { s ->
+                FilterChip(selected = config.playbookScene == s.id, onClick = { graph.configStore.update { it.copy(playbookScene = s.id) } }, label = { Text(s.title, maxLines = 1, softWrap = false) })
+            }
+        }
+        KnobRow("playbook threshold") {
+            Stepper(config.playbookThreshold,
+                onMinus = { graph.configStore.update { it.copy(playbookThreshold = stepped(it.playbookThreshold, -1, 50..99)) } },
+                onPlus = { graph.configStore.update { it.copy(playbookThreshold = stepped(it.playbookThreshold, 1, 50..99)) } })
+        }
+        KnobRow("playbook margin") {
+            Stepper(config.playbookMargin,
+                onMinus = { graph.configStore.update { it.copy(playbookMargin = stepped(it.playbookMargin, -1, 0..20)) } },
+                onPlus = { graph.configStore.update { it.copy(playbookMargin = stepped(it.playbookMargin, 1, 0..20)) } })
+        }
+        note?.let { Text("last line: $it", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color(0xFFA9B0B8)) }
+    }
+}
+
+/** A value in hundredths between small − and + buttons. */
+@Composable
+private fun Stepper(value: Float, onMinus: () -> Unit, onPlus: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextButton(onClick = onMinus) { Text("−") }
+        Text("%.2f".format(value), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+        TextButton(onClick = onPlus) { Text("+") }
+    }
+}
+
+/** [value] moved by [steps] hundredths and kept in [range], also in hundredths: whole steps, so repeated taps never drift. */
+private fun stepped(value: Float, steps: Int, range: IntRange): Float = ((value * 100).roundToInt() + steps).coerceIn(range) / 100f
 
 @Composable
 private fun KnobRow(label: String, control: @Composable () -> Unit) {
