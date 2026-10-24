@@ -210,6 +210,85 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `an aside after a confirmed reply waits for their response`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE)) // 你是第一次来北京吗？
+            rig.awaitTraces(1)
+            rig.processor.onAction(HudAction.Select(0))
+            rig.processor.onAction(HudAction.Confirm)
+
+            // Not my reading of the confirmed reply, so an aside, while the used cards are still up.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "I need a minute.", "I need a minute."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            assertEquals(listOf("THEM", "ME", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+            assertEquals("listening for their response…", rig.processor.hud.value.statusLine)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `a reply not on offer prompts no turn and cannot be confirmed`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            // Stage B answers in English prose, not JSON: the raw fallback card shows, but it is not in L2, so not on offer.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "一起去喝咖啡吧", "Let's go for coffee together", "Sure! You could say you'd love to come along."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals(listOf("Sure! You could say you'd love to come along."), rig.processor.hud.value.replies.map { it.yours })
+            assertNull("nothing to read aloud or tap", rig.processor.hud.value.statusLine)
+
+            // Tapping the card and "I said this one" counts nothing, records nothing and changes nothing.
+            rig.processor.onAction(HudAction.Select(0))
+            val selected = rig.processor.hud.value
+            rig.processor.onAction(HudAction.Confirm)
+            assertEquals(0, rig.processor.hud.value.learnedToday)
+            assertEquals(selected, rig.processor.hud.value)
+            assertEquals(listOf("THEM"), rig.conversation.snapshot().map { it.speaker.name })
+
+            // An aside: no card was used, so the status does not wait for their response either.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "I need a minute.", "I need a minute."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            assertEquals(listOf("THEM", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+            assertNull(rig.processor.hud.value.statusLine)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `a card used from the earlier set does not make an aside wait for their response`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE)) // 你是第一次来北京吗？
+            rig.awaitTraces(1)
+            rig.processor.onAction(HudAction.Select(0))
+            rig.processor.onAction(HudAction.Confirm)
+
+            // Their next line gets only the raw fallback card, which is not on offer.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "一起去喝咖啡吧", "Let's go for coffee together", "Sure! You could say you'd love to come along."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            assertEquals(listOf("Sure! You could say you'd love to come along."), rig.processor.hud.value.replies.map { it.yours })
+            assertNull(rig.processor.hud.value.statusLine)
+
+            // The confirmed card was in the old set, so an aside now does not wait for their response.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "I need a minute.", "I need a minute."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(3)
+            assertNull(rig.processor.hud.value.statusLine)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `say it my way only generates replies for ME lines`() = runBlocking {
         val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
         try {

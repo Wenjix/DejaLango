@@ -115,6 +115,13 @@ class TurnProcessor(
     private var lastLevelMs = 0L
 
     /**
+     * A card of the set on screen was used: read aloud or confirmed. [HudState.selectedReply] can't tell, since a tap or
+     * the D-pad selects a card too. New cards reset it; a new line and Clear remove the cards it is about.
+     */
+    @Volatile
+    private var replyUsed = false
+
+    /**
      * Load the model and set the base prompt (system instruction) from [card]. Call again with a new card to change it;
      * a re-warm waits for the turn in flight, so it never resets that turn's HUD.
      */
@@ -167,6 +174,7 @@ class TurnProcessor(
                 // The echo to expect is the card as offered, so a plain in my language can't absorb my next line.
                 val offered = conversation.lastSuggested.getOrNull(idx) ?: return
                 if (conversation.confirm(offered).isEmpty()) return
+                replyUsed = true
                 cancel()
                 val spoken = if (s.showPlain) r.plain else r.yours
                 conversation.add(Speaker.ME, config.value.l2.code, spoken, r.back ?: spoken, clock.nowMs())
@@ -428,13 +436,15 @@ class TurnProcessor(
         val offer = replies.filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }.map { r ->
             SuggestedReply(yours = r.yours, plain = if (VoiceCardBuilder.inScriptOf(cfg.l2, r.plain)) r.plain else r.yours)
         }
+        replyUsed = false
         conversation.suggest(offer)
         _hud.update {
             it.copy(
                 phase = Phase.SHOWING,
                 replies = replies,
                 selectedReply = null,
-                statusLine = YOUR_TURN,
+                // Reading aloud and Confirm only take cards on offer, so with none the prompt would lead nowhere.
+                statusLine = if (offer.isNotEmpty()) YOUR_TURN else null,
                 exemplarsUsed = retrieved.map { r -> ExemplarView(r.exemplar.id, r.exemplar.text, r.score) },
                 trace = trace.copy(),
             )
@@ -486,7 +496,8 @@ class TurnProcessor(
     /**
      * Records a line of mine that gets no replies. The cards on screen answer their line, so that line stays above
      * them; with no cards, mine shows, so I see it was heard. The turn began on "transcribing speech…", so the status
-     * becomes my turn while the cards are on offer, or waiting for their response once one was used.
+     * becomes my turn while the cards are on offer, waiting for their response once one was used, and blank for cards
+     * that never went on offer.
      */
     private fun recordAside(a: StageAResult, tMs: Long, trace: TurnTrace) {
         conversation.add(Speaker.ME, a.lang, a.heard, a.heardL1, tMs)
@@ -497,7 +508,8 @@ class TurnProcessor(
                 statusLine = when {
                     !cards -> null
                     conversation.lastSuggested.isNotEmpty() -> YOUR_TURN
-                    else -> THEIR_TURN
+                    replyUsed -> THEIR_TURN
+                    else -> null
                 },
                 trace = trace.copy(),
             ).let { s -> s.copy(phase = restingPhase(s)) }
@@ -540,6 +552,7 @@ class TurnProcessor(
         // One pass over both phrasings, so the closest wins; a tie goes to the earlier reply, then to yours.
         val idx = ReplyMatcher.match(a.heard, offered.flatMap { listOf(it.yours, it.plain) })?.let { it / 2 } ?: return false
         if (conversation.takeSuggestions().isEmpty()) return false // confirmed or cleared on the HUD meanwhile
+        replyUsed = true
         conversation.add(Speaker.ME, a.lang, a.heard, a.heardL1, tMs)
         conversation.markReplyUsed()
         _usedReplies.tryEmit(offered[idx].yours)
