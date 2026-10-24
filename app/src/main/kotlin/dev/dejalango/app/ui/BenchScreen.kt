@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.dejalango.app.di.AppGraph
 import dev.dejalango.app.service.ListenService
+import dev.dejalango.app.service.PipelineRuntime
 import dev.dejalango.engine.config.AudioBackend
 import dev.dejalango.engine.config.Backend
 import dev.dejalango.engine.config.Mode
@@ -54,6 +55,7 @@ import dev.dejalango.engine.config.PipelineShape
 import dev.dejalango.engine.hud.HudAction
 import dev.dejalango.engine.hud.HudState
 import dev.dejalango.engine.hud.Phase
+import dev.dejalango.engine.voice.VoiceCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -61,6 +63,7 @@ import kotlinx.coroutines.launch
  * The glass box: everything the glasses show, plus everything they hide — exemplars used, the voice
  * card, stage timings, model/backend/tok-s, and every knob. Judges watch this; the wearer wears the HUD.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun BenchScreen(
     service: ListenService?,
@@ -75,9 +78,12 @@ fun BenchScreen(
     val config by graph.configStore.config.collectAsStateWithLifecycle()
     val settings by graph.configStore.settings.collectAsStateWithLifecycle()
     val hudUrl by (runtime?.hudUrl ?: MutableStateFlow<String?>(null)).collectAsStateWithLifecycle()
+    val exemplarCountsFlow = remember(runtime) { runtime?.exemplarCounts ?: MutableStateFlow(PipelineRuntime.ExemplarCounts()) }
+    val exemplarCounts by exemplarCountsFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var showKnobs by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf<String?>(null) }
+    var note by remember { mutableStateOf<String?>(null) } // outcome of the last card/index action
     val act: (HudAction) -> Unit = { a -> runtime?.onAction(a) }
     val isListening = runtime != null
 
@@ -205,6 +211,9 @@ fun BenchScreen(
                 }
                 runtime?.let { Text(it.modelStatusLine, fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color(0xFF6E7680)) }
                 Text("${config.l1.code}→${config.l2.code} · ${config.shape.name.lowercase()} · ${config.replies} replies · k=${config.exemplarsK} · learned ${hud.learnedToday}", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFFD0D5DA))
+                if (runtime != null) {
+                    Text("exemplars indexed: ${exemplarCounts.total} · ${config.l1.code} for retrieval: ${exemplarCounts.l1}", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFFD0D5DA))
+                }
                 hud.trace?.let { Text(it.summary(), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFFA9B0B8)) }
                 if (hud.exemplarsUsed.isNotEmpty()) {
                     Text("because you say:", color = Color.Gray, fontSize = 12.sp)
@@ -215,24 +224,43 @@ fun BenchScreen(
                     Text("HUD: $url", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFF5CFF8A))
                     Text("laptop: adb forward tcp:${settings.hudPort} tcp:${settings.hudPort}  then load the URL in hud.xyz", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Gray)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { showKnobs = !showKnobs }) { Text(if (showKnobs) "hide knobs" else "knobs") }
                     TextButton(
                         enabled = runtime != null && busy == null,
                         onClick = {
                             scope.launch {
                                 busy = "building quick card from the last 60 s…"
-                                runCatching { runtime?.buildQuickCardFromRecentAudio(60) }
+                                note = runCatching { runtime?.buildQuickCardFromRecentAudio(60) }
+                                    .fold({ c -> cardNote("quick card", c, runtime, config.l1.code) }, { "quick card failed: ${it.message}" })
                                 busy = null
                             }
                         },
                     ) { Text("quick card (60 s)") }
                     TextButton(
                         enabled = runtime != null && busy == null,
-                        onClick = { scope.launch { busy = "wiping…"; runCatching { runtime?.wipe() }; busy = null } },
+                        onClick = {
+                            scope.launch {
+                                busy = "seeding voice card & indexing exemplars…"
+                                note = runCatching { runtime?.seedDefaultVoiceCard() }
+                                    .fold({ c -> cardNote("seeded voice card", c, runtime, config.l1.code) }, { "seed voice failed: ${it.message}" })
+                                busy = null
+                            }
+                        },
+                    ) { Text("seed voice") }
+                    TextButton(
+                        enabled = runtime != null && busy == null,
+                        onClick = {
+                            scope.launch {
+                                busy = "wiping…"
+                                note = runCatching { runtime?.wipe() }.fold({ "wiped exemplars and voice card" }, { "wipe failed: ${it.message}" })
+                                busy = null
+                            }
+                        },
                     ) { Text("wipe") }
                 }
                 busy?.let { Text(it, color = Color(0xFFFFD166), fontSize = 12.sp) }
+                if (busy == null) note?.let { Text(it, color = Color(0xFFA9B0B8), fontSize = 12.sp) }
 
                 if (showKnobs) Knobs(graph)
             }
@@ -330,6 +358,14 @@ private fun PhaseDot(phase: Phase, isListening: Boolean) {
     }
     Box(Modifier.width(10.dp).height(10.dp).background(color, shape = CircleShape))
 }
+
+/** "seeded voice card: full · 40 en exemplars indexed" — the card's confidence says whether Gemma's card parsed. */
+private fun cardNote(what: String, card: VoiceCard?, runtime: PipelineRuntime?, l1: String): String =
+    "$what: ${card?.confidence?.name?.lowercase() ?: "—"}" + when {
+        runtime == null -> ""
+        !runtime.savesVoice -> " · fake model: in memory only, nothing saved"
+        else -> " · ${runtime.exemplarCounts.value.l1} $l1 exemplars indexed"
+    }
 
 private fun phaseLabel(phase: Phase, isListening: Boolean): String = when {
     !isListening -> "stopped"
