@@ -718,6 +718,38 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `clearing the hud during stage B does not leave the generating status up`() = runBlocking {
+        val rig = Rig(stageB = 400)
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            withTimeout(5_000) { rig.processor.hud.first { it.statusLine == "generating replies…" } }
+            rig.processor.onAction(HudAction.Clear) // cancels the turn in stage B
+            rig.awaitTraces(1)
+            assertTrue(rig.traces[0].cancelled)
+            assertNotEquals("generating replies…", rig.processor.hud.value.statusLine)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `clearing the hud while cards are up clears the status`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals("your turn: read a reply aloud (or tap it + 'I said this one')", rig.processor.hud.value.statusLine)
+            rig.processor.onAction(HudAction.Clear)
+            assertTrue(rig.processor.hud.value.replies.isEmpty())
+            assertNull("no prompt over the emptied hud", rig.processor.hud.value.statusLine)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `turns never share the model, even after a resume cancel or a pile-up`() = runBlocking {
         val model = UninterruptibleModel(prefillMs = 200)
         val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -796,6 +828,23 @@ class TurnProcessorTest {
             // and the next turn works
             rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
             rig.awaitPhase(Phase.SHOWING)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `timed-out replies do not leave the generating status up`() = runBlocking {
+        // Stage A answers in time; stage B's first words would come after the timeout.
+        val rig = Rig(PipelineConfig(generationTimeoutMs = 300), stageB = 3_000)
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertTrue(rig.traces[0].timedOut)
+            val s = rig.processor.hud.value
+            assertEquals("replies timed out", s.error)
+            assertNotEquals("generating replies…", s.statusLine)
         } finally {
             rig.close()
         }

@@ -192,7 +192,7 @@ class TurnProcessor(
             HudAction.Clear -> {
                 cancel()
                 conversation.dismissSuggestions()
-                _hud.update { it.copy(phase = Phase.IDLE, heard = null, replies = emptyList(), selectedReply = null, wordHint = null, wordAlternatives = emptyList(), exemplarsUsed = emptyList(), error = null) }
+                _hud.update { it.copy(phase = Phase.IDLE, heard = null, replies = emptyList(), selectedReply = null, wordHint = null, wordAlternatives = emptyList(), exemplarsUsed = emptyList(), statusLine = null, error = null) }
             }
             is HudAction.SetMode, HudAction.CutNow -> Unit // app-level: config and segmenter are owned there
         }
@@ -267,9 +267,10 @@ class TurnProcessor(
         } finally {
             stage = Stage.NONE
             trace.tRendered = clock.nowMs()
-            // Some paths set no status (an empty transcript, word finding, a timeout, a cancel) and would leave the
-            // turn looking busy. Turns run one at a time under modelLock, so TRANSCRIBING here is still this turn's.
-            _hud.update { it.copy(statusLine = if (it.statusLine == TRANSCRIBING) null else it.statusLine, trace = trace.copy()) }
+            // Some paths set no status after TRANSCRIBING or GENERATING (an empty transcript, word finding, a timeout, a
+            // cancel, a failure) and would leave the turn looking busy. Turns run one at a time under modelLock, so
+            // either one here is still this turn's.
+            _hud.update { it.copy(statusLine = if (it.statusLine == TRANSCRIBING || it.statusLine == GENERATING) null else it.statusLine, trace = trace.copy()) }
             _traces.tryEmit(trace.copy())
         }
     }
@@ -374,7 +375,7 @@ class TurnProcessor(
                 heard = Line(a.heard, a.lang, a.heardL1),
                 replies = emptyList(),
                 selectedReply = null,
-                statusLine = "generating replies…",
+                statusLine = GENERATING,
                 trace = trace.copy(),
             )
         }
@@ -616,6 +617,7 @@ class TurnProcessor(
 
     companion object {
         private const val TRANSCRIBING = "transcribing speech…"
+        private const val GENERATING = "generating replies…"
         private const val YOUR_TURN = "your turn: read a reply aloud (or tap it + 'I said this one')"
         private const val THEIR_TURN = "listening for their response…"
         const val LEVEL_THROTTLE_MS = 100L
