@@ -20,13 +20,15 @@ port_busy() {
   fi
 }
 
-# Prints the laptop port of a forward to the phone port (only ANDROID_SERIAL's forwards when that is set).
+# Prints the laptop port of a forward to the phone port on the device adb would pick: ANDROID_SERIAL's, or the only
+# one. When adb can't pick one, nothing is reused, and adb forward below gives adb's error.
 # Lines read "<serial> tcp:<laptop> tcp:<phone>"; if adb can't list them, nothing is reused.
 forwarded_port() {
-  local list
+  local serial list
+  serial="$(adb get-serialno 2>/dev/null)" || return 0
   list="$(adb forward --list 2>/dev/null)" || return 0
-  awk -v serial="${ANDROID_SERIAL:-}" -v phone="tcp:$PHONE_PORT" \
-    '(serial == "" || $1 == serial) && $2 ~ /^tcp:[0-9]+$/ && $3 == phone { print substr($2, 5); exit }' <<<"$list"
+  awk -v serial="$serial" -v phone="tcp:$PHONE_PORT" \
+    '$1 == serial && $2 ~ /^tcp:[0-9]+$/ && $3 == phone { print substr($2, 5); exit }' <<<"$list"
 }
 
 EXISTING=""
