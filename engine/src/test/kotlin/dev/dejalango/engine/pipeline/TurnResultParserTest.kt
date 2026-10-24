@@ -46,6 +46,34 @@ class TurnResultParserTest {
     }
 
     @Test
+    fun `a dangling key opened before a closing brace is repaired`() {
+        // Seen on device from Gemma 4 E2B: `"back":"…time.","},{…`
+        val text = """{"replies":[{"plain":"你好，我不是第一次来。","yours":"你好呀，我来得还算新鲜。","roman":"Nǐ hǎo ya.","back":"Hello, it's not my first time.","},{"plain":"你呢？","yours":"你呢？你来过吗？","roman":"Nǐ ne?","back":"And you?",}]}"""
+        val e = p.extract(text)
+        assertNotNull(e)
+        assertTrue(e!!.repaired)
+        val replies = p.parseReplies(e.obj)
+        assertEquals(2, replies.size)
+        assertEquals("Hello, it's not my first time.", replies[0].back)
+        assertEquals("你呢？你来过吗？", replies[1].yours)
+    }
+
+    @Test
+    fun `a transcript copied from the prompt is empty`() {
+        assertEquals("", p.parseTranscript("""{"lang":"en","text":"<verbatim transcript>"}""")!!.text)
+        assertEquals("No worries.", p.parseTranscript("""{"lang":"en","text":"No worries."}""")!!.text)
+    }
+
+    @Test
+    fun `values copied from the prompt skeleton count as missing`() {
+        val replies = p.parseReplies("""{"replies":[{"plain":"¿Qué necesitas?","yours":"<plain in my voice>","roman":"...","back":"What do you need?"},{"plain":"<neutral phrasebook line>","yours":"…","roman":"…","back":"<literal English translation of yours>"}]}""")
+        assertEquals(1, replies.size)
+        assertEquals("¿Qué necesitas?", replies[0].yours) // falls back to plain
+        assertNull(replies[0].roman)
+        assertEquals("What do you need?", replies[0].back)
+    }
+
+    @Test
     fun `garbage returns null and raw fallback gives first line`() {
         assertNull(p.parseStageA("I'm sorry, I couldn't hear that."))
         assertEquals("I'm sorry, I couldn't hear that.", p.rawFallback("\n\nI'm sorry, I couldn't hear that.\nMore text"))
