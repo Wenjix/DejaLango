@@ -153,11 +153,11 @@ class LiteRtLmModel(
         fun gen(b: Backend): Rung? = generic?.let { Rung(b, it) }.also { if (it == null) attempts += "${b.name}: skipped, no generic bundle on device (${ModelFiles.GEMMA_GENERIC})" }
         val rungs: List<Rung?> = when (backend) {
             Backend.AUTO -> when {
-                files.isGoogleTensor -> listOf(acc(Backend.GOOGLE_TENSOR), acc(Backend.NPU), gen(Backend.GPU), gen(Backend.CPU))
+                files.isGoogleTensor -> listOf(acc(Backend.NPU), gen(Backend.GPU), gen(Backend.CPU))
                 files.isQualcomm -> listOf(acc(Backend.NPU), gen(Backend.GPU), gen(Backend.CPU))
                 else -> listOf(gen(Backend.GPU), gen(Backend.CPU))
             }
-            Backend.GOOGLE_TENSOR, Backend.NPU -> listOf(acc(backend), gen(Backend.CPU))
+            Backend.GOOGLE_TENSOR, Backend.NPU -> listOf(acc(backend), gen(Backend.GPU), gen(Backend.CPU))
             Backend.GPU -> listOf(gen(Backend.GPU), gen(Backend.CPU))
             Backend.CPU -> listOf(gen(Backend.CPU))
         }
@@ -170,26 +170,33 @@ class LiteRtLmModel(
         check(rungs.isNotEmpty()) { "no Gemma bundle on device — ${files.pushCommand}" }
         var last: Throwable? = null
         for (rung in rungs) {
-            val t0 = System.nanoTime()
-            val cfg = EngineConfig(
-                modelPath = rung.file.absolutePath,
-                backend = rung.backend.toLlm(),
-                audioBackend = audioBackendFor(rung.backend),
-                maxNumTokens = maxTokens,
-                cacheDir = context.cacheDir.absolutePath,
-            )
-            val e = Engine(cfg)
-            try {
-                e.initialize()
-                winner = rung
-                attempts += "${rung.backend.name} + ${rung.file.name}: OK in ${(System.nanoTime() - t0) / 1_000_000} ms"
-                Log.i(TAG, "engine ready: $ladderReport")
-                return e
-            } catch (t: Throwable) {
-                last = t
-                attempts += "${rung.backend.name} + ${rung.file.name}: FAILED (${t.message?.lineSequence()?.firstOrNull()})"
-                Log.w(TAG, "backend ${rung.backend.name} failed: ${t.message}")
-                runCatching { e.close() }
+            val requestedAudio = audioBackendFor(rung.backend)
+            val audioCandidates = if (requestedAudio is LlmBackend.CPU) listOf(requestedAudio) else listOf(requestedAudio, LlmBackend.CPU())
+            for (audioB in audioCandidates) {
+                val t0 = System.nanoTime()
+                val cfg = EngineConfig(
+                    modelPath = rung.file.absolutePath,
+                    backend = rung.backend.toLlm(),
+                    audioBackend = audioB,
+                    maxNumTokens = maxTokens,
+                    cacheDir = context.cacheDir.absolutePath,
+                )
+                val e = Engine(cfg)
+                try {
+                    e.initialize()
+                    // LiteRT-LM builds the audio encoder with the engine's first conversation. Here a failure still falls
+                    // through to the next audio backend, and the first turn doesn't pay for it (~150 ms).
+                    e.createConversation(ConversationConfig()).close()
+                    winner = rung
+                    attempts += "${rung.backend.name} (audio=${audioB.javaClass.simpleName}) + ${rung.file.name}: OK in ${(System.nanoTime() - t0) / 1_000_000} ms"
+                    Log.i(TAG, "engine ready: $ladderReport")
+                    return e
+                } catch (t: Throwable) {
+                    last = t
+                    attempts += "${rung.backend.name} (audio=${audioB.javaClass.simpleName}) + ${rung.file.name}: FAILED (${t.message?.lineSequence()?.firstOrNull()})"
+                    Log.w(TAG, "backend ${rung.backend.name} (audio=${audioB.javaClass.simpleName}) failed: ${t.message}")
+                    runCatching { e.close() }
+                }
             }
         }
         throw IllegalStateException("no backend could load Gemma:\n$ladderReport", last)
@@ -224,8 +231,7 @@ class LiteRtLmModel(
     private fun Backend.toLlm(): LlmBackend = when (this) {
         Backend.CPU, Backend.AUTO -> LlmBackend.CPU()
         Backend.GPU -> LlmBackend.GPU()
-        Backend.NPU -> LlmBackend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir)
-        Backend.GOOGLE_TENSOR -> LlmBackend.GOOGLE_TENSOR()
+        Backend.NPU, Backend.GOOGLE_TENSOR -> LlmBackend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir)
     }
 
     private companion object {
