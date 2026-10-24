@@ -17,6 +17,17 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CompanionContractsTest {
+    @Test fun `transcription asks for a language code without a choice to copy`() {
+        val prompts = CompanionPrompts()
+        for (me in Language.VARIETIES) for (them in Language.VARIETIES.filter { it.base != me.base }) {
+            val cfg = PipelineConfig(l1 = me, l2 = them)
+            for (p in listOf(prompts.transcribe(cfg, mine = true), prompts.transcribe(cfg, mine = false), prompts.single(cfg, emptyList(), emptyList()))) {
+                assertFalse(p, p.contains("${me.base}|${them.base}"))
+                assertTrue(p, p.contains("\"lang\":\"<language code>\""))
+            }
+        }
+    }
+
     @Test fun `all regional pairs fit the system budget and role-free constrained schemas`() {
         var count = 0
         for (me in Language.VARIETIES) for (them in Language.VARIETIES.filter { it.base != me.base }) {

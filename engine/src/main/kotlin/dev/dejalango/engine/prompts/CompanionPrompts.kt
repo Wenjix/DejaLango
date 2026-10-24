@@ -24,7 +24,9 @@ class CompanionPrompts(private val legacy: PromptBuilder = PromptBuilder()) {
         else append("Expect ${cfg.l2.promptName}. ")
         if (retry) append("Keep the actual spoken script. Use Simplified/Traditional characters as selected. ")
         append("Translate heard into ${cfg.l1.promptName}. Roman is pinyin with tone marks for Mandarin, otherwise null. ")
-        val language = if (mine || cfg.catchForgottenTaps) "\"lang\":\"${cfg.l1.base}|${cfg.l2.base}\"," else ""
+        // A choice written as the value ("en|zh") is copied as is by a 2B model, so the codes go in a sentence.
+        val language = if (mine || cfg.catchForgottenTaps) "\"lang\":\"<language code>\"," else ""
+        if (language.isNotEmpty()) append("Set lang to ${cfg.l1.base} for ${cfg.l1.promptName} or ${cfg.l2.base} for ${cfg.l2.promptName}. ")
         append("Return only {$language\"heard\":\"<verbatim transcript>\",\"heard_l1\":\"<meaning>\",\"roman\":null}. No speech means empty heard.")
     }
 

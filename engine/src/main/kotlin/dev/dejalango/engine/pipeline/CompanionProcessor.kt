@@ -277,6 +277,9 @@ class CompanionProcessor(
                         it.copy(wearer = line, aside = null, replies = emptyList(), selectedReply = null, hint = HintState(), matched = false)
                     }
                 } else commit(work) { it.copy(error = "Couldn't tell which language you used. Tap Talk and try the line again.") }
+            } else if (cfg.catchForgottenTaps && language.isEmpty() && cfg.l1.cjk == cfg.l2.cjk) {
+                // No language code, and one script for both languages: a forgotten tap reads like their line, so ask, don't guess.
+                commit(work) { it.copy(error = "Couldn't tell whose line that was. Tap Talk before you speak, then try again.") }
             } else if (cfg.catchForgottenTaps && (language == cfg.l1.base || cfg.l1.cjk != cfg.l2.cjk && VoiceCardBuilder.inScriptOf(cfg.l1, result.heard))) {
                 commit(work) {
                     val line = Line(result.heard, cfg.l1.tag, id = work.event.id, speaker = Speaker.ME)
