@@ -30,8 +30,13 @@ traces/
 # Language-server and editor output (copies of the sources)
 **/bin/
 
-# Design-tool state and review records (impeccable)
-.impeccable/
+# Internal docs live in internal/, a separate private repo (Wenjix/DejaLango-internal).
+# docs/superpowers, docs/design and .impeccable are where tools write them by default;
+# they become symlinks into internal/, so these patterns match a symlink or a directory.
+/internal/
+/docs/superpowers
+/docs/design
+/.impeccable
 
 # macOS text-to-speech fixture: Apple's licence limits system-voice output to personal,
 # non-commercial use, so it stays local. ElevenLabs fixtures can be committed here.
