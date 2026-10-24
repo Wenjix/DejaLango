@@ -32,7 +32,7 @@ import java.util.Collections
  * settings are replaced in memory only, so nothing saved changes. It takes about two minutes, so it runs only when
  * asked, with the default backend (AUTO) or a named one:
  *
- *     adb shell am instrument -w -e fixtureRun true [-e backend GPU] \
+ *     adb shell am instrument -w -e fixtureRun true [-e backend GPU] [-e fixture playbook_social_zh-CN.wav -e playbookScene social] \
  *       -e class dev.dejalango.app.FixtureRunAndroidTest dev.dejalango.test/androidx.test.runner.AndroidJUnitRunner
  *
  * Keep the screen on meanwhile (`adb shell settings put global stay_on_while_plugged_in 7`, restored afterwards): no
@@ -48,7 +48,9 @@ class FixtureRunAndroidTest {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
         val graph = ctx.appGraph
         val backend = args.getString("backend")?.let { Backend.valueOf(it) } ?: Backend.AUTO
-        overrideInMemory(graph.configStore, PipelineConfig(backend = backend)) { it.copy(useFakeModel = false, replayFixture = FIXTURE) }
+        val fixture = args.getString("fixture") ?: FIXTURE
+        val scene = args.getString("playbookScene").orEmpty() // e.g. social, or * for every scene; blank keeps the playbook off
+        overrideInMemory(graph.configStore, PipelineConfig(backend = backend, playbookScene = scene)) { it.copy(useFakeModel = false, replayFixture = fixture) }
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val runtime = PipelineRuntime(ctx, graph, scope)
@@ -80,6 +82,7 @@ class FixtureRunAndroidTest {
                 t.decodeTpsB?.let { "%.1f".format(it) } ?: "–",
             ))
         }
+        if (scene.isNotBlank()) Log.i(TAG, "${runtime.playbookStatus.value} · ${done.count { it.shape == "THEM_PLAYBOOK" }} playbook hits · last note ${runtime.hud.value.playbookNote}")
         fun median(xs: List<Long>) = xs.sorted().let { if (it.isEmpty()) null else it[it.size / 2] }
         Log.i(TAG, "%s: %d turns, %d with replies, %d cancelled · median turn end → transcript %s ms, → replies %s ms".format(
             backend, done.size, done.count { it.tBEnd != null }, done.count { it.cancelled },
