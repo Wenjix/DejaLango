@@ -334,11 +334,7 @@ class TurnProcessor(
 
         // Matching runs first because Stage A labels my Mandarin as THEM; this language-based label still decides who gets Stage B.
         if (cfg.mode == Mode.REPLY_OPTIONS && a.speaker == Speaker.ME) {
-            conversation.add(a.speaker, a.lang, a.heard, a.heardL1, turn.endMs)
-            _hud.update {
-                it.copy(heard = Line(a.heard, a.lang, a.heardL1), trace = trace.copy())
-                    .let { s -> s.copy(phase = restingPhase(s)) }
-            }
+            recordAside(a, turn.endMs, trace)
             return
         }
         if (cfg.mode == Mode.SAY_IT_MY_WAY && a.speaker == Speaker.THEM) {
@@ -426,7 +422,7 @@ class TurnProcessor(
                 phase = Phase.SHOWING,
                 replies = replies,
                 selectedReply = null,
-                statusLine = "your turn: read a reply aloud (or tap it + 'I said this one')",
+                statusLine = YOUR_TURN,
                 exemplarsUsed = retrieved.map { r -> ExemplarView(r.exemplar.id, r.exemplar.text, r.score) },
                 trace = trace.copy(),
             )
@@ -467,16 +463,23 @@ class TurnProcessor(
             return
         }
         if (a.speaker == Speaker.ME) {
-            conversation.add(a.speaker, a.lang, a.heard, a.heardL1, turn.endMs)
-            _hud.update {
-                it.copy(heard = Line(a.heard, a.lang, a.heardL1), trace = trace.copy())
-                    .let { s -> s.copy(phase = restingPhase(s)) }
-            }
+            recordAside(a, turn.endMs, trace)
             return
         }
         conversation.add(a.speaker, a.lang, a.heard, a.heardL1, turn.endMs)
         _hud.update { it.copy(heard = Line(a.heard, a.lang, a.heardL1), statusLine = null) }
         showReplies(obj?.let { parser.parseReplies(it) } ?: emptyList(), gen.text, cfg, retrieved, trace)
+    }
+
+    private fun recordAside(a: StageAResult, tMs: Long, trace: TurnTrace) {
+        conversation.add(a.speaker, a.lang, a.heard, a.heardL1, tMs)
+        _hud.update {
+            it.copy(
+                heard = Line(a.heard, a.lang, a.heardL1),
+                statusLine = if (it.replies.isNotEmpty() && conversation.lastSuggested.isNotEmpty()) YOUR_TURN else null,
+                trace = trace.copy(),
+            ).let { s -> s.copy(phase = restingPhase(s)) }
+        }
     }
 
     // ---- word-finding ---------------------------------------------------------------------------
@@ -577,6 +580,7 @@ class TurnProcessor(
     }
 
     companion object {
+        private const val YOUR_TURN = "your turn: read a reply aloud (or tap it + 'I said this one')"
         const val LEVEL_THROTTLE_MS = 100L
     }
 }

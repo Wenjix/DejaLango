@@ -173,6 +173,7 @@ class TurnProcessorTest {
             assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
             assertEquals(replies, rig.processor.hud.value.replies)
             assertEquals("I need a minute.", rig.processor.hud.value.heard?.text)
+            assertEquals("your turn: read a reply aloud (or tap it + 'I said this one')", rig.processor.hud.value.statusLine)
             assertEquals(listOf("THEM", "ME"), rig.conversation.snapshot().map { it.speaker.name })
         } finally {
             rig.close()
@@ -604,6 +605,7 @@ class TurnProcessorTest {
 
             assertTrue(rig.processor.hud.value.replies.isEmpty())
             assertEquals("I need a minute.", rig.processor.hud.value.heard?.text)
+            assertNull(rig.processor.hud.value.statusLine)
             assertFalse(rig.traces[0].parseFailed)
         } finally {
             rig.close()
