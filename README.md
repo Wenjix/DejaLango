@@ -95,7 +95,8 @@ scripts/push_models.sh dev.dejalango
 # ./gradlew :app:installMobileDebug -PwithTensorNpu=false
 ```
 
-Without `ANDROID_SERIAL`, `push_models.sh` pushes to every connected phone. Each phone gets the
+Without `ANDROID_SERIAL`, `push_models.sh` pushes to every connected phone; an Android Studio
+emulator gets weights only when `ANDROID_SERIAL` names it. Each phone gets the
 generic weights and the bundles compiled for its own SoC; another chip's bundles stay on the
 computer. A bundle already on the phone at full size is not sent again. Every connected phone must
 allow USB debugging from the computer.

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Pushes ./models/*.litertlm into the app's internal storage (files/models/ in its data directory) on every connected
-# phone, or only on $ANDROID_SERIAL when that is set. Each phone gets the generic bundles and those compiled for its own
+# phone, or only on $ANDROID_SERIAL when that is set; an emulator gets them only when named there, since the walkthrough
+# build it runs has no inference. Each phone gets the generic bundles and those compiled for its own
 # SoC (ro.soc.model, the Build.SOC_MODEL that app/.../ModelFiles.kt matches on); another chip's bundle runs only on that
 # chip's accelerator, so it stays behind. A bundle already on the phone at full size is not sent again.
 # Streamed through run-as, so the installed app must be a debug build. Not the external files dir
@@ -21,12 +22,30 @@ if [ ${#files[@]} -eq 0 ]; then echo "no models in $ROOT/models — run scripts/
 normalize() { printf '%s' "$1" | tr 'A-Z -' 'a-z__'; }
 is_soc_bundle() { case "$1" in *_google_* | *_qualcomm_* | *_mediatek_* | *_intel_* | *tensor_g*) return 0 ;; *) return 1 ;; esac; }
 
+# emulator-<port> is a local AVD, even before it is ready; one attached otherwise (adb connect) sets ro.boot.qemu, or
+# ro.kernel.qemu before Android 12. </dev/null: adb shell would read the device list this runs inside of. Returns 2
+# when it can't tell: a failed read must not pass for a phone.
+is_emulator() {
+  case "$1" in emulator-*) return 0 ;; esac
+  [ "$2" = device ] || return 1
+  local qemu
+  qemu=$(adb -s "$1" shell 'getprop ro.boot.qemu; getprop ro.kernel.qemu' </dev/null | tr -d '\r') || return 2
+  [[ "$qemu" == *1* ]]
+}
+
 # States come from the device list on stdout only: adb writes "* daemon not running; starting now" to stderr.
-serials=() not_ready=()
+serials=() not_ready=() emulators=()
 while IFS=$'\t' read -r serial state; do
   [ -z "${ANDROID_SERIAL:-}" ] || [ "$serial" = "$ANDROID_SERIAL" ] || continue
+  if [ -z "${ANDROID_SERIAL:-}" ]; then
+    emulator=0
+    is_emulator "$serial" "$state" || emulator=$?
+    if [ "$emulator" -eq 0 ]; then emulators+=("$serial"); continue; fi
+    if [ "$emulator" -eq 2 ]; then not_ready+=("$serial: did not answer getprop"); continue; fi
+  fi
   if [ "$state" = device ]; then serials+=("$serial"); else not_ready+=("$serial: $state"); fi
 done < <(adb devices | awk -F'\t' 'NF == 2')
+if [ ${#emulators[@]} -gt 0 ]; then echo "skipping emulator ${emulators[*]}: name one in ANDROID_SERIAL to push to it"; fi
 if [ -n "${ANDROID_SERIAL:-}" ] && [ ${#serials[@]} -eq 0 ] && [ ${#not_ready[@]} -eq 0 ]; then
   not_ready=("$ANDROID_SERIAL: not connected")
 fi
