@@ -33,7 +33,7 @@ import java.io.IOException
  *
  * Routes: /hud (the raw 600×600 HUD page, what hud.xyz would load), /sim (our own simulator: the HUD
  * screen-blended over the laptop camera inside a glasses bezel — the fallback when hud.xyz is down),
- * /state (JSON snapshot), /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
+ * /state (JSON snapshot), POST /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
  */
 class HudServer(
     private val assets: AssetManager,
@@ -53,7 +53,7 @@ class HudServer(
 
     /** NanoWSD's serve answers WebSocket handshakes and passes the rest to [serveHttp]; the guard goes first. */
     override fun serve(session: IHTTPSession): Response {
-        val refusal = HudRequestGuard.refusal(session.uri, session.headers)
+        val refusal = HudRequestGuard.refusal(session.method.name, session.uri, session.headers)
         if (refusal == null) return super.serve(session)
         // The decoded path can come from a hostile page: keep the warning to one short printable line.
         Log.w(TAG, "refused ${session.uri.filter { it in ' '..'~' }.take(80)}: $refusal")

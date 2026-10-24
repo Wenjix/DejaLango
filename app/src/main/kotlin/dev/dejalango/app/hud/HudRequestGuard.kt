@@ -10,6 +10,8 @@ package dev.dejalango.app.hud
  * - Origin, when present, must be `http://` + Host. Browsers send it with every WebSocket handshake, which CORS
  *   does not cover. Curl sends none, and neither does another site's plain GET, whose response that site cannot
  *   read without a CORS header.
+ * - `/action` accepts POST only: an `<img>` or link can only GET, and a cross-site POST carries an Origin that
+ *   must match the server.
  * - `/action` needs a loopback Host: `localhost`, `127.0.0.1` or `[::1]`. Over plain http, browsers send Fetch
  *   Metadata only to loopback, so another site's GET of the phone's LAN address carries neither Origin nor
  *   Sec-Fetch-Site. Our pages send actions over the WebSocket, whose handshake always carries Origin.
@@ -22,7 +24,8 @@ object HudRequestGuard {
     private val loopbackHosts = setOf("localhost", "127.0.0.1", "[::1]")
 
     /** Null when the request may be served, else a short reason to log. [path] excludes the query string. */
-    fun refusal(path: String, headers: Map<String, String>): String? {
+    fun refusal(method: String, path: String, headers: Map<String, String>): String? {
+        if (path == "/action" && !method.equals("POST", ignoreCase = true)) return "/action not POST"
         val host = headers["host"] ?: return "no Host"
         val server = authority(host) ?: return "Host not localhost or an IP"
         val origin = headers["origin"]

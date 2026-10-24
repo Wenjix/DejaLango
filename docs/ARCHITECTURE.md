@@ -4,7 +4,7 @@ DejaLango turns short audio turns into a transcript and suggested replies in the
 language, phrased in the wearer's voice. A pure Kotlin engine produces `HudState`; the Android app
 supplies audio, inference, storage and displays.
 
-The engine has **85 passing JVM tests** and the app has **18 passing JVM tests**. Mobile and
+The engine has **86 passing JVM tests** and the app has **20 passing JVM tests**. Mobile and
 Meta VR fake-model APKs build successfully, as does the optional mobile build against LiteRT-LM
 0.18.1. Real-device inference, vendor runtime initialization and performance need verification.
 Examples below describe the current design; source types are the authority for exact signatures.
@@ -292,7 +292,7 @@ The Meta VR application ID is `dev.dejalango.metavr` and needs its own model pus
 | `/hud` | Raw HUD page, also available at `/`, `/hud.html` and `/index.html` |
 | `/sim` | Built-in glasses simulator, also at `/sim.html`; camera, generated-photo or black background |
 | `/state` | Current state as JSON |
-| `/action?a=<json>` | One action sent through an HTTP request |
+| `/action?a=<json>` (POST) | One action sent through an HTTP request |
 | `/ws` | State updates out and action messages in over WebSocket |
 
 Run `scripts/hud_forward.sh`, then open `http://localhost:8765/sim`. The simulator uses a local
@@ -314,9 +314,10 @@ The manifest requests microphone, foreground-service and notification permission
 `INTERNET` for the local HTTP/WebSocket server. The server binds to `127.0.0.1` by default. The
 optional LAN setting changes that binding. Each request, WebSocket handshakes included, passes
 `HudRequestGuard` or gets 403: `Host` must be `localhost` or an IP literal, which rules out DNS
-rebinding; any `Origin` must be the server's own; `/action` needs a loopback `Host`, because
-browsers send no `Sec-Fetch-Site` to a plain-http LAN address; and on `/action` and handshakes,
-any `Sec-Fetch-Site` must be `same-origin` or `none`. Responses carry no CORS header. Model
+rebinding; any `Origin` must be the server's own; `/action` accepts POST only (images and links can
+only GET, while cross-site POSTs carry an `Origin`) and needs a loopback `Host`, because browsers
+send no `Sec-Fetch-Site` to a plain-http LAN address; and on `/action` and handshakes, any
+`Sec-Fetch-Site` must be `same-origin` or `none`. Responses carry no CORS header. Model
 inference uses downloaded local weights; the app does not require a cloud inference service. HUD
 state, including text and card details, is sent to connected renderers.
 
@@ -358,7 +359,7 @@ behavior needs measurement; automatic thermal adaptation is not implemented.
 
 The existing engine suite covers turn-policy transitions and timing, ring-buffer behavior, prompt
 building, malformed/truncated JSON, retrieval and pipeline behavior. Run `./gradlew :engine:test`
-or the offline compiler helper. The verified suite has 85 engine tests, 18 Android JVM tests and 4 Android instrumentation
+or the offline compiler helper. The verified suite has 86 engine tests, 20 Android JVM tests and 4 Android instrumentation
 tests. One instrumentation test covers prompt rendering and unresolved-variable rejection using
 Android's regex engine. One loads EmbeddingGemma through `AppGraph` and checks that this phone's
 accelerator build wins and that its vectors match meaning across English and Mandarin. Two load Gemma

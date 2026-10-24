@@ -19,5 +19,5 @@ hud.xyz (Meta Ray-Ban Display simulator, 600×600, D-pad) — when it is up:
 
 raw HUD page in a tab:     open http://localhost:$PORT/hud
 current state as JSON:     curl -s http://localhost:$PORT/state
-send an action without WS: curl -s "http://localhost:$PORT/action?a=%7B%22action%22%3A%22next%22%7D"
+send an action without WS: curl -s -X POST "http://localhost:$PORT/action?a=..."
 EOF

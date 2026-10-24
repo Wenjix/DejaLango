@@ -11,8 +11,8 @@ Built for the Google Gemma Hardware Hackathon at AGI House, October 24, 2026.
 
 | Component | Implementation and verification |
 |---|---|
-| `:engine` | Turn segmentation, prompts, JSON parsing, retrieval, HUD state and traces implemented; **85 JVM tests pass**. |
-| `:app` | Mobile and Meta VR fake-model APKs build successfully; **18 JVM tests and 4 on-device tests pass** (prompt rendering; EmbeddingGemma; Gemma on the TPU). Installed and launched on a Pixel; listening/HUD checks pending. |
+| `:engine` | Turn segmentation, prompts, JSON parsing, retrieval, HUD state and traces implemented; **86 JVM tests pass**. |
+| `:app` | Mobile and Meta VR fake-model APKs build successfully; **20 JVM tests and 4 on-device tests pass** (prompt rendering; EmbeddingGemma; Gemma on the TPU). Installed and launched on a Pixel; listening/HUD checks pending. |
 | LiteRT-LM adapters | Optional mobile APK builds against **LiteRT-LM 0.18.1**, including separate Tensor and Qualcomm runtime variants. Gemma 4 E2B and EmbeddingGemma 2 run on the Pixel 11 Pro XL's TPU; replaying the demo fixture through the app gives replies about 7 s after a turn, against about 10 s on the GPU ([findings](docs/FINDINGS.md)). |
 | Fake model | Default implementation for exercising the pipeline without model weights; replies are canned. |
 | Browser HUD and simulator | `/hud` serves the HUD; `/sim` places it over a laptop camera or a generated background. Device-to-browser verification pending. |
@@ -68,7 +68,7 @@ If multiple devices are connected, set `ANDROID_SERIAL` before running the helpe
 Inference stays on the Android device. The HUD server sends conversation state to the connected
 browser over USB forwarding. It binds to localhost by default; the optional LAN setting exposes it
 to the local network. It answers only its own pages and local clients such as curl, not other
-websites in current browsers. With the LAN setting, `/action` still answers only on localhost. The
+websites in current browsers. `/action` accepts POST only and still answers only on localhost. The
 simulator camera is a browser background and is not sent to the model.
 
 ## Install model weights
