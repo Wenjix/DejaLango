@@ -164,7 +164,9 @@ class TurnProcessor(
                 val idx = s.selectedReply ?: return
                 val r = s.replies.getOrNull(idx) ?: return
                 // A set counts once: replies already matched from my speech (or confirmed) stay on the HUD but are spent.
-                if (conversation.confirm(SuggestedReply(yours = r.yours, plain = r.plain)).isEmpty()) return
+                // The echo to expect is the card as offered, so a plain in my language can't absorb my next line.
+                val offered = conversation.lastSuggested.getOrNull(idx) ?: return
+                if (conversation.confirm(offered).isEmpty()) return
                 cancel()
                 val spoken = if (s.showPlain) r.plain else r.yours
                 conversation.add(Speaker.ME, config.value.l2.code, spoken, r.back ?: spoken, clock.nowMs())
@@ -418,10 +420,15 @@ class TurnProcessor(
         }
         val ids = retrieved.map { it.exemplar.id }
         replies = replies.map { it.copy(usedExemplarIds = ids) }
-        // Offer only lines in L2 for matching and Confirm: a raw fallback in my language (Stage B echoing my line)
-        // would match me saying that line again and count it as a reply. It stays on screen. Every other card passed
-        // the check above, so the offer is all the cards or none, and a matched index is still the card's.
-        conversation.suggest(replies.filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }.map { SuggestedReply(yours = it.yours, plain = it.plain) })
+        // Offer only phrasings in L2 for matching and Confirm: one in my language would match me saying that line
+        // again and count it as a reply. A raw fallback that echoes my line stays on screen but is not offered. Every
+        // other card passed the check above, so the offer is all the cards or none, and a matched index is still the
+        // card's. A plain in my language (a 2B model copies my line there) stays on its card, which is offered with
+        // yours in its place.
+        val offer = replies.filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }.map { r ->
+            SuggestedReply(yours = r.yours, plain = if (VoiceCardBuilder.inScriptOf(cfg.l2, r.plain)) r.plain else r.yours)
+        }
+        conversation.suggest(offer)
         _hud.update {
             it.copy(
                 phase = Phase.SHOWING,

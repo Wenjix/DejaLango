@@ -420,6 +420,58 @@ class TurnProcessorTest {
         }
     }
 
+    @Test
+    fun `in say it my way, my line copied into a variant's phrasebook line is not matched`() = runBlocking {
+        val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
+        try {
+            rig.processor.warm(null)
+            // A 2B model copies my English line into "plain"; only "yours" is Mandarin.
+            val variants = """{"replies":[{"plain":"Yeah, first time.","yours":"对啊，第一次来。","roman":"Duì a, dì yī cì lái.","back":"Yeah, first time."}]}"""
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time.", variants))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals(listOf("对啊，第一次来。"), rig.processor.hud.value.replies.map { it.yours })
+            val used: MutableList<String> = java.util.Collections.synchronizedList(ArrayList())
+            rig.scope.launch { rig.processor.usedReplies.collect { used += it } }
+            delay(20)
+
+            // Saying my line again asks for variants again: it is not the variant read aloud.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            assertEquals(2, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(0, rig.processor.hud.value.learnedToday)
+            delay(100)
+            assertTrue("no reply goes to the app: $used", used.isEmpty())
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `in say it my way, my line copied into a confirmed variant is not its echo`() = runBlocking {
+        val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
+        try {
+            rig.processor.warm(null)
+            val variants = """{"replies":[{"plain":"Yeah, first time.","yours":"对啊，第一次来。","roman":"Duì a, dì yī cì lái.","back":"Yeah, first time."}]}"""
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time.", variants))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            rig.processor.onAction(HudAction.Select(0))
+            rig.processor.onAction(HudAction.Confirm)
+            assertEquals(1, rig.processor.hud.value.learnedToday)
+
+            // The echo to absorb is my reading of the Mandarin variant; my English line again asks for variants again.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            assertEquals(2, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(1, rig.processor.hud.value.learnedToday)
+        } finally {
+            rig.close()
+        }
+    }
+
     /** LiteRT-LM's native prefill runs to completion even when its caller is cancelled; this model does the same. */
     private class UninterruptibleModel(private val prefillMs: Long) : SpeechLanguageModel {
         val inFlight = AtomicInteger()
