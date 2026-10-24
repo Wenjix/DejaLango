@@ -45,7 +45,10 @@ class MicAudioSource(private val clock: Clock = Clock.system()) : AudioSource {
         val minBuf = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         val bufBytes = maxOf(minBuf * 4, RingBuffer.FRAME_SAMPLES * 2 * 8)
         val r = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufBytes)
-        check(r.state == AudioRecord.STATE_INITIALIZED) { "AudioRecord failed to initialize (permission?)" }
+        if (r.state != AudioRecord.STATE_INITIALIZED) {
+            r.release()
+            error("AudioRecord failed to initialize (permission?)")
+        }
         record = r
         running = true
         r.startRecording()

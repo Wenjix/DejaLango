@@ -21,6 +21,39 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class CompanionProcessorTest {
+    @Test fun `level updates are throttled by accepted level time and reset when listening stops`() = runTest {
+        val model = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0)
+        val processor = CompanionProcessor(model, MutableStateFlow(PipelineConfig(l2 = Language.ES)), this)
+        processor.warm()
+        processor.listening(true)
+
+        processor.onInput(CaptureEvent.Level(0.2f, 32))
+        processor.onInput(CaptureEvent.State(CaptureState(frameTimeMs = 32)))
+        processor.onInput(CaptureEvent.Level(0.5f, 64))
+        processor.onInput(CaptureEvent.State(CaptureState(frameTimeMs = 64)))
+        assertEquals(0.2f, processor.hud.value.level, 0f)
+        processor.onInput(CaptureEvent.Level(0.8f, 128))
+        processor.onInput(CaptureEvent.State(CaptureState(frameTimeMs = 128)))
+        assertEquals(0.8f, processor.hud.value.level, 0f)
+
+        processor.listening(false)
+        assertEquals(0f, processor.hud.value.level, 0f)
+    }
+
+    @Test fun `listening restart clears microphone error but stopping preserves it`() = runTest {
+        val model = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0)
+        val processor = CompanionProcessor(model, MutableStateFlow(PipelineConfig(l2 = Language.ES)), this)
+        processor.warm()
+
+        processor.inputError("Microphone stopped…")
+        processor.listening(true)
+        assertEquals(null, processor.hud.value.error)
+
+        processor.inputError("Microphone stopped…")
+        processor.listening(false)
+        assertEquals("Microphone stopped…", processor.hud.value.error)
+    }
+
     @Test fun `their recognized line is retained and the first reply is immediately selected`() = runTest {
         val model = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0)
         model.enqueue(FakeSpeechModel.ScriptedTurn("them", "es", "¿Qué te gustaría tomar?", "What would you like to drink?", REPLIES))
@@ -110,6 +143,25 @@ class CompanionProcessorTest {
         assertEquals(merged, processor.hud.value.wearer?.text)
         assertEquals(null, processor.hud.value.heard)
         assertTrue(processor.hud.value.replies.isEmpty())
+    }
+
+    @Test fun `split with blank prefix keeps the original wearer line`() = runTest {
+        val model = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0)
+        val processor = CompanionProcessor(model, MutableStateFlow(PipelineConfig(l2 = Language.ES)), this,
+            audioSlice = { from, to -> AudioTurn(FloatArray(((to - from) * 16).toInt()), from, to, 16000) })
+        processor.warm()
+        val merged = "Un café con leche. ¿Con azúcar?"
+        model.enqueue(FakeSpeechModel.ScriptedTurn("me", "es", merged, "A coffee with milk. With sugar?"))
+        processor.onInput(CaptureEvent.Ended(2, Speaker.ME, AudioTurn(FloatArray(48_000), 0, 3000, 16000), "MANUAL", listOf(1800)))
+        advanceUntilIdle()
+        model.enqueue(FakeSpeechModel.ScriptedTurn("me", "es", "", ""),
+            FakeSpeechModel.ScriptedTurn("them", "es", "¿Con azúcar?", "With sugar?", REPLIES))
+
+        processor.onAction(HudAction.Repair(2)); advanceUntilIdle()
+
+        assertEquals(merged, processor.hud.value.wearer?.text)
+        assertTrue(processor.hud.value.correction?.message?.contains("Couldn't recover") == true)
+        assertFalse(processor.hud.value.correction!!.pending)
     }
 
     @Test fun `expired split offers whole line instead and stale Undo cannot change a newer turn`() = runTest {

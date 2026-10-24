@@ -55,6 +55,7 @@ class CompanionProcessor(
     private val usageEvents = MutableSharedFlow<UsedReply>(extraBufferCapacity = 16)
     val usedReplies: SharedFlow<UsedReply> = usageEvents.asSharedFlow()
     @Volatile private var active = config.value
+    @Volatile private var levelAtMs: Long? = null
     private var revision = 0L
     private var offer: Offer? = null
     private var offerSequence = 0L
@@ -120,7 +121,16 @@ class CompanionProcessor(
     }
 
     fun listening(value: Boolean) {
-        mutableHud.update { it.copy(listening = value, capture = if (value) it.capture else CaptureState(), hint = HintState()) }
+        levelAtMs = null
+        mutableHud.update {
+            it.copy(
+                listening = value,
+                capture = if (value) it.capture else CaptureState(),
+                hint = HintState(),
+                level = if (value) it.level else 0f,
+                error = if (value) null else it.error,
+            )
+        }
         if (!value) cancelHint()
     }
 
@@ -130,7 +140,13 @@ class CompanionProcessor(
         if (stopped) return
         when (event) {
             is CaptureEvent.State -> mutableHud.update { it.copy(capture = event.capture) }
-            is CaptureEvent.Level -> if (event.atMs - hud.value.capture.frameTimeMs >= 96) mutableHud.update { it.copy(level = event.probability) }
+            is CaptureEvent.Level -> {
+                val last = levelAtMs
+                if (last == null || event.atMs < last || event.atMs - last >= 96) {
+                    levelAtMs = event.atMs
+                    mutableHud.update { it.copy(level = event.probability) }
+                }
+            }
             is CaptureEvent.Started -> synchronized(gate) {
                 abandonCorrection()
                 if (config.value.pair != active.pair) activate(config.value)
@@ -509,7 +525,7 @@ class CompanionProcessor(
                     val prefix = parser.parseStageA(generate(source.cfg, GenerateRequest(prefixAudio, prompts.transcribe(source.cfg, true), 180, tag = RequestTag.YOURS)).text)
                     val tail = parser.parseStageA(generate(source.cfg, GenerateRequest(tailAudio, prompts.transcribe(source.cfg, false), 180, tag = RequestTag.THEIRS)).text)
                     if (!current()) return@launchWork
-                    if (prefix == null || tail == null || tail.heard.isBlank()) {
+                    if (prefix == null || tail == null || prefix.heard.isBlank() || tail.heard.isBlank()) {
                         mutableHud.update { it.copy(correction = it.correction?.copy(pending = false, message = "Couldn't recover that split. Move the whole line or Undo.")) }
                         return@launchWork
                     }
