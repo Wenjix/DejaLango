@@ -76,7 +76,8 @@ class TurnResultParser {
         }
         return StageAResult(
             speaker = speaker,
-            lang = field("lang").orEmpty(),
+            // A choice copied from a template ("en|zh") names no language; callers fall back to the line's script.
+            lang = field("lang")?.takeUnless { '|' in it }.orEmpty(),
             heard = heard,
             heardL1 = field("heard_l1") ?: field("heardL1") ?: field("translation") ?: heard,
             repaired = e.repaired,

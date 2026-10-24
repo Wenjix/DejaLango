@@ -65,6 +65,20 @@ class CompanionProcessorTest {
         assertEquals(0, processor.hud.value.selectedReply)
     }
 
+    @Test fun `their line gets replies when the transcript copies the prompt's language choice`() = runTest {
+        // What Gemma answers on the phone: the template's "en|zh" instead of one code.
+        val model = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0)
+        model.enqueue(FakeSpeechModel.ScriptedTurn("them", "en|zh", "你是第一次来北京吗", "Are you new to Beijing?"))
+        val processor = CompanionProcessor(model, MutableStateFlow(PipelineConfig()), this)
+        processor.warm()
+        processor.onInput(CaptureEvent.Ended(1, Speaker.THEM, audio(), "SILENCE", emptyList()))
+        advanceUntilIdle()
+        assertEquals(null, processor.hud.value.error)
+        assertEquals("你是第一次来北京吗", processor.hud.value.heard?.text)
+        assertEquals(1, model.requests.count { it.tag == RequestTag.STAGE_B })
+        assertTrue(processor.hud.value.replies.isNotEmpty())
+    }
+
     @Test fun `reading a target language suggestion counts once with no writing request`() = runTest {
         val model = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0)
         val processor = CompanionProcessor(model, MutableStateFlow(PipelineConfig(l2 = Language.ES)), this)

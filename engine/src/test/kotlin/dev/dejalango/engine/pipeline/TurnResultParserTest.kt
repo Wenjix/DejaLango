@@ -23,6 +23,12 @@ class TurnResultParserTest {
     }
 
     @Test
+    fun `a language choice copied from the prompt is no language`() {
+        assertEquals("", p.parseStageA("""{"lang":"en|zh","heard":"你是第一次来北京吗","heard_l1":"Are you new to Beijing?","roman":null}""")!!.lang)
+        assertEquals("zh-CN", p.parseStageA("""{"lang":"zh-CN","heard":"你好","heard_l1":"Hello"}""")!!.lang)
+    }
+
+    @Test
     fun `fenced and prefixed json still parses`() {
         val text = "Sure, here you go:\n```json\n{\"speaker\":\"me\",\"lang\":\"en\",\"heard\":\"Yeah first time\",\"heard_l1\":\"Yeah first time\"}\n```\nLet me know if you need anything else."
         val r = p.parseStageA(text)
