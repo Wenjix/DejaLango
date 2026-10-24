@@ -37,12 +37,13 @@ import java.io.File
  *    responseFormat = ResponseFormat.json(schema)): Flow<Message>` — streamed deltas
  * - `conversation.cancelProcess()`, `conversation.close()`, `engine.close()`
  *
- * **Backend ladder.** `Backend.AUTO` tries, in order, every accelerator this phone could have, each with the
- * bundle compiled for it: on a Pixel `GOOGLE_TENSOR` then `NPU` with the `_Google_Tensor_Gx` bundle, then
- * `GPU`/`CPU` with the generic bundle; on a Qualcomm phone `NPU` with the `_qualcomm_smXXXX` bundle, then
- * `GPU`/`CPU`. An explicit backend is tried first with CPU as the only fallback. Every failure is logged with
- * its message and the winner is reported in [info]. TPU/NPU rungs need the vendor runtime in the APK
- * (`-PwithTensorNpu`) and the SoC bundle on the device; without them the rung fails fast and the ladder continues.
+ * **Backend ladder.** `Backend.AUTO` tries this phone's accelerator first, with the bundle compiled for it: on a
+ * Pixel `NPU` with the `_Google_Tensor_Gx` bundle, on a Qualcomm phone `NPU` with the `_qualcomm_smXXXX` bundle,
+ * then `GPU` and `CPU` with the generic bundle; other phones start at `GPU`. An explicit `NPU` or `GOOGLE_TENSOR`
+ * falls back to `GPU`, then `CPU`; `GPU` falls back to `CPU`. Every failure is logged with its message and the
+ * winner is reported in [info]. TPU/NPU rungs need the vendor runtime in the APK (Google Tensor by default,
+ * `-PwithQualcommNpu` for Qualcomm) and the SoC bundle on the device; without them the rung fails fast and the
+ * ladder continues.
  *
  * **Spare conversation.** The Kotlin API has no session cloning, and every request needs a fresh conversation. With
  * `enableResponseFormat`, creating one costs ~2.5 s on the Pixel 11 Pro XL, more than prefilling a whole Stage B

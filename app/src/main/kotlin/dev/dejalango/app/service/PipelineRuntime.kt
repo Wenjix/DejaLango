@@ -48,7 +48,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Wires the engine to the device: audio source → ring/VAD/segmenter → TurnProcessor → HudState,
+ * Wires the engine to the device: audio source → ring/VAD → CompanionInput → CompanionProcessor → HudState,
  * plus the web HUD server, trace CSV, exemplar learning and the voice-card flows. Owned by ListenService.
  *
  * Threads: one for audio (capture + VAD + segmentation), one for the model (not reentrant). HudState is a

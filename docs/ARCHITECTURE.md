@@ -4,10 +4,8 @@ DejaLango turns short audio turns into a transcript and suggested replies in the
 language, phrased in the wearer's voice. A pure Kotlin engine produces `HudState`; the Android app
 supplies audio, inference, storage and displays.
 
-The current runtime is the mode-free Companion path. [The implementation record](implementation/companion-soft-press.md)
-describes its input state machine, model scheduling, correction transaction, native UI and secured HUD.
-[Verification](implementation/verification.md) records the current test/build evidence. Earlier Pixel
-measurements remain in FINDINGS.md; this candidate has not been installed on the demo phone.
+The current runtime is the mode-free Companion path (section 0). Earlier Pixel measurements remain
+in FINDINGS.md. As of October 24, the Companion build has not run on a phone.
 
 ## 0. Current Companion path
 
@@ -148,9 +146,10 @@ The caller serializes model work on a dedicated dispatcher.
 
 The LiteRT-LM adapter:
 
-- Initializes an engine from a model file and selected backend. `AUTO` tries Tensor, NPU, GPU and
-  CPU where appropriate for the device; Qualcomm starts with NPU, and generic devices use GPU/CPU.
-  Explicit backend selection falls back to CPU. The winner appears in `ModelInfo.backend`.
+- Initializes an engine from a model file and selected backend. On a Google Tensor or Qualcomm
+  phone, `AUTO` tries the NPU with the SoC bundle, then GPU, then CPU; other phones use GPU, then
+  CPU. An explicit `NPU` or `GOOGLE_TENSOR` falls back to GPU, then CPU; `GPU` falls back to CPU.
+  The winner appears in `ModelInfo.backend`.
 - Loads bundles from the app's internal storage first (5.3). On the FUSE-backed external files
   directory, Google Tensor's TPU runtime can't read Gemma's `_Google_Tensor_Gx` bundle (`preadv2`
   fails with EOPNOTSUPP), and `AUTO` then lands on the GPU.
@@ -238,7 +237,7 @@ up to 12 words or 20 CJK characters each. Constrained JSON decoding is disabled 
 ### 4.8 Configuration
 
 `PipelineConfig` defaults to reply mode, English/Mandarin, `TWO_STAGE`, backend `AUTO`, CPU audio
-encoding, two replies, six examples, six context turns and an 8-second generation timeout. Thinking,
+encoding, two replies, six examples, six context turns and a 20-second generation timeout. Thinking,
 TTS and constrained JSON are off. DataStore persists the configuration.
 
 The bench exposes mode, pipeline shape, main/audio backend, reply count, exemplar count, thinking,
@@ -343,8 +342,8 @@ behavior needs measurement; automatic thermal adaptation is not implemented.
 
 | Failure | Current behavior or recovery |
 |---|---|
-| Missing real model or adapter | `AppGraph` can choose fake speech or hashing embeddings; inspect the model and logs |
-| Backend initialization fails | Try the remaining configured backend order; an explicit backend falls back to CPU |
+| Missing real model or adapter | Without Gemma, listening stops with an error that asks for model setup; the fake model runs only when turned on in **knobs**. Without EmbeddingGemma, retrieval uses hashing embeddings |
+| Backend initialization fails | Try the remaining backends in order; an explicit `NPU` or `GOOGLE_TENSOR` falls back to GPU, then CPU |
 | Model warm fails | HUD enters error state with the failure text |
 | Generation times out | Cancel that generation and show an error while retaining available context |
 | Output cannot be parsed | Flag `parseFailed`; use raw text when available |
@@ -355,13 +354,13 @@ behavior needs measurement; automatic thermal adaptation is not implemented.
 
 ## 8. Verification of the earlier bench pipeline
 
-Current Companion checks are in [verification](implementation/verification.md). The following records
-the earlier installed build and must not be read as new candidate measurements.
+For the Companion build, 127 engine and 31 app JVM tests pass, and the app has 14 instrumentation
+tests in 8 classes. The rest of this section records the earlier installed build and must not be
+read as measurements of the Companion build.
 
 The earlier engine suite covers turn-policy transitions and timing, ring-buffer behavior, prompt
-building, malformed/truncated JSON, retrieval and pipeline behavior. Run `./gradlew :engine:test`
-or the offline compiler helper. The verified suite has 67 engine tests, 9 Android JVM tests and 4 Android instrumentation
-tests. One instrumentation test covers prompt rendering and unresolved-variable rejection using
+building, malformed/truncated JSON, retrieval and pipeline behavior. Run `./gradlew :engine:test`.
+On October 23 the device ran four instrumentation tests. One covers prompt rendering and unresolved-variable rejection using
 Android's regex engine. One loads EmbeddingGemma through `AppGraph` and checks that this phone's
 accelerator build wins and that its vectors match meaning across English and Mandarin. Two load Gemma
 with `AUTO`: one checks that it lands on this phone's accelerator bundle and runs a Stage A turn from
@@ -373,28 +372,26 @@ afterwards and deletes the pushed models.
 
 The app includes JVM adapter tests and a WAV replay source. Debug fixture locations are documented,
 but recorded WAVs are not supplied by default. A fixture-based demo requires adding the intended
-audio first. Gradle 9.7.1 configuration, both fake-model flavor builds and the optional LiteRT-LM
-mobile build pass with JDK 22. Installation and activity launch succeeded on a Pixel 11 Pro XL.
-Listening and live HUD checks could not run while the device was locked. Remaining checks are:
+audio first. On October 23 the earlier build listened, transcribed and replied on a Pixel 11 Pro XL
+with the real models. Real audio inference ran on the GPU and the TPU, and embeddings on the TPU and
+CPU. The demo fixture replayed through the app gave replies about 7 s after a turn on the TPU,
+against the 3-second budget in section 6. Still open:
 
-- Separate Tensor and Qualcomm runtime APK builds pass. The Tensor runtime initializes on a Pixel 11
-  Pro XL; initialize the Qualcomm one on hardware.
-- Launch, grant permissions, start/stop listening and exercise fake-model actions on the phone/HUD.
-- Real audio inference runs on the GPU and the TPU, and embeddings on the TPU and CPU (instrumentation
-  tests). The demo fixture replayed through the app gives replies about 7 s after a turn on the TPU,
-  against the 3-second budget in section 6.
+- Initialize the Qualcomm runtime on hardware.
 - Measure latency, cancellation and repeated turns; export traces and rehearse the demo.
 
 ## 9. Toolchain and dependencies
 
 The repository declares AGP 9.4.1 with built-in Kotlin, Kotlin 2.3.0, KSP 2.3.6, Gradle 9.7.1,
 Compose BOM 2025.09.01, Room 2.8.3, coroutines 1.10.1, compile/target SDK 36, minimum SDK 31 and
-JVM target 17. Gradle configuration, the default flavor builds and the optional LiteRT-LM mobile
-build use the wrapper’s full JDK 25 daemon criteria; Java/Kotlin bytecode remains 17.
+JVM target 17. Both flavors build with the LiteRT-LM adapter and the Google Tensor runtime by
+default (gradle.properties), on the wrapper’s full JDK 25 daemon criteria; Java/Kotlin bytecode
+remains 17.
 
-LiteRT-LM is pinned to `0.18.1`, which resolves and compiles with the app's optional adapters.
-Vendor NPU runtimes are pinned to `2.3.0`; separate Tensor and Qualcomm APKs build successfully.
-Runtime initialization and compatibility still require hardware validation. ONNX Runtime resolves for the default app builds.
+LiteRT-LM is pinned to `0.18.1`, which resolves and compiles with the app's adapters. Vendor NPU
+runtimes are pinned to `2.3.0`. The Google Tensor runtime ships in every default APK and runs on a
+Pixel 11 Pro XL's TPU (FINDINGS.md); the Qualcomm runtime is opt-in (`-PwithQualcommNpu`) and not yet
+initialized on hardware. ONNX Runtime resolves for the default app builds.
 Core dependencies are coroutines and serialization in the engine, and AndroidX/Compose, Room,
 DataStore, ONNX Runtime and NanoHTTPD in the app. See `THIRD_PARTY.md` for component notices.
 

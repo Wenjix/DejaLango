@@ -1,10 +1,10 @@
 # Companion demo and validation
 
-This feature branch adds the native Companion Soft press app. The October 24 demo phone and its installed build are unchanged. Its earlier measurements remain in [FINDINGS.md](FINDINGS.md); do not present the new native walkthrough as a measurement of that build.
+The native Companion Soft press app replaced the bench flow on October 24. That day the demo phone still ran the earlier build, whose measurements are in [FINDINGS.md](FINDINGS.md); do not present the native walkthrough as a measurement of that build.
 
 ## Native walkthrough
 
-Use an explicitly selected emulator and the debug APK described in the [implementation record](implementation/companion-soft-press.md). Open Settings → Developer tools → Open synthetic walkthrough. It requests no microphone, runs no inference, and never saves a profile.
+Use an explicitly selected emulator and the preview APK from the README's "Build and preview" section. Open Settings → Developer tools → Open synthetic walkthrough. It requests no microphone, runs no inference, and never saves a profile.
 
 1. Choose Colombia. “Next beat” moves through their question, replies, Talk, speech, word help, Done, capture closure and recognition.
 2. Tap Talk and Done individually. Show that the fixed controls remain on Today, Live and Your voice, and distinguish the glasses display pause from listening pause.
@@ -15,7 +15,9 @@ Use an explicitly selected emulator and the debug APK described in the [implemen
 
 ## Real-model rehearsal after device validation is authorized
 
-Use a full JDK 25 and build the mobile APK with `-PwithLiteRtLm=true -PwithTensorNpu=true` for the Tensor path. Select a device explicitly for every install, model push and trace export. Avoid `connectedAndroidTest`, which may uninstall app data and weights.
+Known issue, October 24: on a Pixel 10 Pro XL this build wrote no replies. The transcription prompt shows the language field as `en|zh`, the model copied it, and the language-pair check rejected every line. Rehearse with real models only after that is fixed.
+
+Use a full JDK 25. A default build includes LiteRT-LM and the Tensor runtime. Select a device explicitly for every install, model push and trace export. Avoid `connectedAndroidTest`, which may uninstall app data and weights.
 
 Choose English (US) ⇄ Spanish (Colombia), start listening and check the actual model/backend in the developer bench. Ask the partner to speak, read a suggested reply after a Talk tap, and optionally press Done. Capture closure should appear immediately; recognition and use counting must wait for actual model results. Test original Spanish, an English aside and a spoken translated variant. Do not use a manual confirmation or mode switch.
 

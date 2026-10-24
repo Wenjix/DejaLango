@@ -1,9 +1,9 @@
 # Version catalog.
 #
-# Pins follow android/nowinandroid@main as of Oct 2026 (AGP 9.3.2 with built-in Kotlin,
+# Pins started from android/nowinandroid@main as of Oct 2026 (AGP 9.3.2, since raised, with built-in Kotlin,
 # Kotlin 2.3.0, Compose BOM 2025.09.01, Room 2.8.3). Android Studio will offer newer patches;
-# accept them freely. Two pins are *not* from that source and must be checked on the first
-# sync, marked VERIFY below.
+# accept them freely. Two pins are *not* from that source: onnxruntime, still marked VERIFY
+# below, and litertNpu.
 #
 # Adding the Android XR renderer (:hud-xr, androidx.xr.glimmer) later requires raising
 # compileSdk to 37.1 — see docs/ARCHITECTURE.md §9.
@@ -28,7 +28,7 @@ datastore = "1.2.0"
 
 litertlm = "0.18.1"        # Validated with the Kotlin adapters; keep inference builds reproducible.
 onnxruntime = "1.23.0"     # VERIFY: com.microsoft.onnxruntime:onnxruntime-android — 1.22+ is fine
-litertNpu = "2.3.0"        # VERIFY: must match the LiteRT version embedded in litertlm-android (google-ai-edge/litert-samples pins 2.3.0)
+litertNpu = "2.3.0"        # matches the LiteRT inside litertlm-android 0.18.1; the Google Tensor runtime runs on a Pixel 11 Pro XL (docs/FINDINGS.md)
 nanohttpd = "2.3.1"
 
 junit4 = "4.13.2"

@@ -24,9 +24,6 @@ traces/
 *.wav
 !app/src/debug/assets/fixtures/*.wav
 
-# Offline compile scratch (see scripts/engine_offline_test.sh)
-.offline-build/
-
 # Language-server and editor output (copies of the sources)
 **/bin/
 
@@ -36,6 +33,7 @@ traces/
 /internal/
 /docs/superpowers
 /docs/design
+/docs/implementation
 /.impeccable
 
 # macOS text-to-speech fixture: Apple's licence limits system-voice output to personal,

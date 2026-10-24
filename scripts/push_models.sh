@@ -32,4 +32,4 @@ for f in "${files[@]}"; do
   done
 done
 adb shell run-as "$APP_ID" ls -la files/models
-echo "done. In the app: knobs → fake model OFF → Stop → Start listening (build with -PwithLiteRtLm)."
+echo "done. In the app, start listening; Settings → Developer tools → Bench shows the model and backend."

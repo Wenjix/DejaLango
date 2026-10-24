@@ -7,9 +7,9 @@ plugins {
     alias(libs.plugins.room)
 }
 
-// The LiteRT-LM adapter is compiled only when -PwithLiteRtLm is passed. Until the Day-2 spike has
-// verified the adapter against the current litertlm-android API, the default build uses the fake
-// model and still exercises every other layer. See docs/ARCHITECTURE.md §5.3.
+// gradle.properties turns on the LiteRT-LM adapter and the Google Tensor NPU runtime; -PwithX=false turns
+// one off, and a bare -PwithQualcommNpu adds the Qualcomm runtime. Without the adapter, only the fake
+// model can run. See docs/ARCHITECTURE.md §5.3.
 val withLiteRtLm = project.findProperty("withLiteRtLm")?.toString()?.let { it.isEmpty() || it.toBoolean() } ?: true
 val withTensorNpu = project.findProperty("withTensorNpu")?.toString()?.let { it.isEmpty() || it.toBoolean() } ?: false
 val withQualcommNpu = project.findProperty("withQualcommNpu")?.toString()?.let { it.isEmpty() || it.toBoolean() } ?: false

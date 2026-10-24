@@ -22,8 +22,8 @@ enum class PipelineShape {
 
 /**
  * Where the decoder runs. [AUTO] lets the adapter pick a ladder for the device
- * (Pixel: GOOGLE_TENSOR → NPU → GPU → CPU; Qualcomm: NPU → GPU → CPU; else GPU → CPU);
- * an explicit value is tried first with CPU as the only fallback. The winner is reported in ModelInfo.
+ * (Google Tensor or Qualcomm: NPU → GPU → CPU; else GPU → CPU); an explicit NPU or GOOGLE_TENSOR
+ * falls back to GPU, then CPU, and GPU to CPU. The winner is reported in ModelInfo.
  */
 enum class Backend { AUTO, CPU, GPU, NPU, GOOGLE_TENSOR }
 
