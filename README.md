@@ -11,8 +11,8 @@ Built for the Google Gemma Hardware Hackathon at AGI House, October 24, 2026.
 
 | Component | Implementation and verification |
 |---|---|
-| `:engine` | Turn segmentation, prompts, JSON parsing, retrieval, HUD state and traces implemented; **67 JVM tests pass**. |
-| `:app` | Mobile and Meta VR fake-model APKs build successfully; **9 JVM tests and 4 on-device tests pass** (prompt rendering; EmbeddingGemma; Gemma on the TPU). Installed and launched on a Pixel; listening/HUD checks pending. |
+| `:engine` | Turn segmentation, prompts, JSON parsing, retrieval, HUD state and traces implemented; **85 JVM tests pass**. |
+| `:app` | Mobile and Meta VR fake-model APKs build successfully; **18 JVM tests and 4 on-device tests pass** (prompt rendering; EmbeddingGemma; Gemma on the TPU). Installed and launched on a Pixel; listening/HUD checks pending. |
 | LiteRT-LM adapters | Optional mobile APK builds against **LiteRT-LM 0.18.1**, including separate Tensor and Qualcomm runtime variants. Gemma 4 E2B and EmbeddingGemma 2 run on the Pixel 11 Pro XL's TPU; replaying the demo fixture through the app gives replies about 7 s after a turn, against about 10 s on the GPU ([findings](docs/FINDINGS.md)). |
 | Fake model | Default implementation for exercising the pipeline without model weights; replies are canned. |
 | Browser HUD and simulator | `/hud` serves the HUD; `/sim` places it over a laptop camera or a generated background. Device-to-browser verification pending. |
