@@ -889,6 +889,25 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `a transcript copied from the stage A prompt ends the turn like an empty one`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            // The second copy is verbatim: the prompt's "me"|"them" is not JSON.
+            for ((i, speaker) in listOf("them", "me\"|\"them").withIndex()) {
+                rig.model.enqueue(FakeSpeechModel.ScriptedTurn(speaker, "<language code>", "<verbatim transcript in the language spoken (Mandarin Chinese stays Mandarin Chinese), never translated>", "<English translation, or the transcript if already English>"))
+                rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+                rig.awaitTraces(i + 1)
+                assertEquals(0, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+                assertNull("the skeleton is not their line", rig.processor.hud.value.heard)
+                assertNull(rig.processor.hud.value.statusLine)
+            }
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `a hung model times out and the hud recovers`() = runBlocking<Unit> {
         val rig = Rig(PipelineConfig(generationTimeoutMs = 200))
         try {
