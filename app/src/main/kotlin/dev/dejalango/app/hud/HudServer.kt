@@ -51,8 +51,9 @@ class HudServer(
         Log.i(TAG, "HUD server at $url")
     }
 
-    /** NanoWSD's serve answers WebSocket handshakes and passes the rest to [serveHttp]; the guard goes first. */
+    /** NanoWSD's serve answers WebSocket handshakes and passes the rest to [serveHttp]; the body check and the guard go first. */
     override fun serve(session: IHTTPSession): Response {
+        bodyRefusal(session.headers)?.let { return it }
         val refusal = HudRequestGuard.refusal(session.method.name, session.uri, session.headers)
         if (refusal == null) return super.serve(session)
         // The decoded path can come from a hostile page: keep the warning to one short printable line.
@@ -65,10 +66,7 @@ class HudServer(
             "/", "/hud", "/hud.html", "/index.html" -> asset("hud/hud.html", "text/html; charset=utf-8")
             "/sim", "/sim.html" -> asset("hud/sim.html", "text/html; charset=utf-8")
             "/state" -> NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json; charset=utf-8", HudJson.encode(hud.value))
-            "/action" -> {
-                session.parameters["a"]?.firstOrNull()?.let { HudJson.decodeAction(it) }?.let(onAction)
-                NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/plain", "ok")
-            }
+            "/action" -> serveAction(session.parameters, onAction)
             else -> NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found")
         }
         r.addHeader("Cache-Control", "no-store")
@@ -122,8 +120,29 @@ class HudServer(
         }
     }
 
-    private companion object {
-        const val TAG = "HudServer"
-        const val PING_MS = 3_000L
+    companion object {
+        private const val TAG = "HudServer"
+        private const val PING_MS = 3_000L
+
+        /**
+         * A 400 that closes the connection, for a request that carries a body (any Transfer-Encoding, or a
+         * Content-Length other than 0): no route reads a body, and NanoHTTPD would read an unread one as the
+         * connection's next request. Null for a request without one. Header names are lower case, as NanoHTTPD
+         * stores them.
+         */
+        internal fun bodyRefusal(headers: Map<String, String>): Response? {
+            // A Content-Length that doesn't parse counts as a body: it can't show where the next request starts.
+            val body = "transfer-encoding" in headers || (headers["content-length"] ?: "0").toLongOrNull() != 0L
+            if (!body) return null
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "no body expected").apply { closeConnection(true) }
+        }
+
+        /** POST /action takes its action in the query string, `a=<json>`; a missing or unreadable one gets 400. */
+        internal fun serveAction(parameters: Map<String, List<String>>, onAction: (HudAction) -> Unit): Response {
+            val action = parameters["a"]?.firstOrNull()?.let { HudJson.decodeAction(it) }
+                ?: return NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "bad action")
+            onAction(action)
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/plain", "ok")
+        }
     }
 }

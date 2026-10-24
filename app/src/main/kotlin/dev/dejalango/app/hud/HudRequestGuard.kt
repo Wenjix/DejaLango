@@ -10,14 +10,14 @@ package dev.dejalango.app.hud
  * - Origin, when present, must be `http://` + Host. Browsers send it with every WebSocket handshake, which CORS
  *   does not cover. Curl sends none, and neither does another site's plain GET, whose response that site cannot
  *   read without a CORS header.
- * - `/action` accepts POST only: an `<img>` or link can only GET, and a cross-site POST carries an Origin that
- *   must match the server.
- * - `/action` needs a loopback Host: `localhost`, `127.0.0.1` or `[::1]`. Over plain http, browsers send Fetch
- *   Metadata only to loopback, so another site's GET of the phone's LAN address carries neither Origin nor
- *   Sec-Fetch-Site. Our pages send actions over the WebSocket, whose handshake always carries Origin.
- * - Sec-Fetch-Site, when present on `/action` or a WebSocket upgrade, must be `same-origin` or `none` (a typed
- *   URL). Current browsers send Fetch Metadata to loopback and mark another site's
- *   `<img src=".../action?a=...">` `cross-site`, so it fires no action.
+ * - `/action` accepts POST only, which stops images, links and typed URLs: they can only GET. A cross-site POST
+ *   carries an Origin that must match the server.
+ * - `/action` needs a loopback Host: `localhost`, `127.0.0.1` or `[::1]`. This backs up the Origin check for
+ *   POST where Sec-Fetch-Site can't: over plain http, browsers send Fetch Metadata only to loopback, not to the
+ *   phone's LAN address. Our pages send actions over the WebSocket, whose handshake always carries Origin.
+ * - Sec-Fetch-Site, when present on `/action` or a WebSocket upgrade, must be `same-origin` or `none`. Current
+ *   browsers send Fetch Metadata to loopback and mark another origin's requests `same-site` or `cross-site`, so
+ *   this covers WebSocket handshakes and is a second layer behind the Origin check for POST `/action`.
  */
 object HudRequestGuard {
 

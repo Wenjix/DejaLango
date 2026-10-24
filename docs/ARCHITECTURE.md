@@ -312,7 +312,8 @@ manifest overlay. Both share the bench and engine.
 
 The manifest requests microphone, foreground-service and notification permissions, plus
 `INTERNET` for the local HTTP/WebSocket server. The server binds to `127.0.0.1` by default. The
-optional LAN setting changes that binding. Each request, WebSocket handshakes included, passes
+optional LAN setting changes that binding. A request with a body gets 400 and its connection
+closes, since no route reads one. Every other request, WebSocket handshakes included, passes
 `HudRequestGuard` or gets 403: `Host` must be `localhost` or an IP literal, which rules out DNS
 rebinding; any `Origin` must be the server's own; `/action` accepts POST only (images and links can
 only GET, while cross-site POSTs carry an `Origin`) and needs a loopback `Host`, because browsers

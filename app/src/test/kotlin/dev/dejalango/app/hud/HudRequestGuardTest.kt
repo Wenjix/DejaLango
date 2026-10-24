@@ -42,7 +42,7 @@ class HudRequestGuardTest {
         assertNull(refusal(*upgrade, *ownPage, path = "/ws"))
         // A link on another site opens /hud: a cross-site navigation, without an Origin, and not an upgrade.
         assertNull(refusal("host" to "localhost:8765", "sec-fetch-site" to "cross-site", "upgrade-insecure-requests" to "1", path = "/hud"))
-        // Same-origin POSTs and POSTs without Fetch Metadata remain allowed.
+        // A POST to /action marked same-origin or none passes.
         assertNull(refusal("host" to "localhost:8765", "sec-fetch-site" to "same-origin", path = "/action", method = "POST"))
         assertNull(refusal("host" to "localhost:8765", "sec-fetch-site" to "none", path = "/action", method = "POST"))
     }
