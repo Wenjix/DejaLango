@@ -11,9 +11,9 @@ Built for the Google Gemma Hardware Hackathon at AGI House, October 24, 2026.
 
 | Component | Implementation and verification |
 |---|---|
-| `:engine` | Turn segmentation, prompts, JSON parsing, retrieval, HUD state and traces implemented; **42 JVM tests pass**. |
-| `:app` | Mobile and Meta VR fake-model APKs build successfully; **3 JVM adapter tests and 1 Android prompt-rendering test pass**. Installed and launched on a Pixel; listening/HUD checks pending. |
-| LiteRT-LM adapters | Optional mobile APK builds against **LiteRT-LM 0.18.1**, including separate Tensor and Qualcomm runtime variants. Real inference and accelerator initialization need device verification. |
+| `:engine` | Turn segmentation, prompts, JSON parsing, retrieval, HUD state and traces implemented; **67 JVM tests pass**. |
+| `:app` | Mobile and Meta VR fake-model APKs build successfully; **9 JVM tests and 4 on-device tests pass** (prompt rendering; EmbeddingGemma; Gemma on the TPU). Installed and launched on a Pixel; listening/HUD checks pending. |
+| LiteRT-LM adapters | Optional mobile APK builds against **LiteRT-LM 0.18.1**, including separate Tensor and Qualcomm runtime variants. Gemma 4 E2B and EmbeddingGemma 2 run on the Pixel 11 Pro XL's TPU; replaying the demo fixture through the app gives replies about 7 s after a turn, against about 10 s on the GPU ([findings](docs/FINDINGS.md)). |
 | Fake model | Default implementation for exercising the pipeline without model weights; replies are canned. |
 | Browser HUD and simulator | `/hud` serves the HUD; `/sim` places it over a laptop camera or a generated background. Device-to-browser verification pending. |
 
@@ -29,8 +29,14 @@ enabled. Dependency resolution needs network access on the first build.
 ```bash
 ./gradlew :engine:test
 ./gradlew :app:testMobileDebugUnitTest
-# With a device connected:
-./gradlew :app:connectedMobileDebugAndroidTest
+# With a device connected. Not connectedMobileDebugAndroidTest: it uninstalls the app afterwards, and the
+# pushed models with it. EmbedderAndroidTest is skipped until the EmbeddingGemma bundles are pushed.
+./gradlew :app:installMobileDebug :app:installMobileDebugAndroidTest
+adb shell am instrument -w dev.dejalango.test/androidx.test.runner.AndroidJUnitRunner
+# Replay demo_zh.wav through the whole app (about two minutes; -e backend GPU to compare). Keep the phone awake.
+adb shell am instrument -w -e fixtureRun true -e class dev.dejalango.app.FixtureRunAndroidTest \
+  dev.dejalango.test/androidx.test.runner.AndroidJUnitRunner
+adb uninstall dev.dejalango.test
 # Offline alternative, using compiler/runtime jars from a local Gradle distribution:
 scripts/engine_offline_test.sh /path/to/gradle-distribution
 
@@ -65,8 +71,10 @@ to the local network. The simulator camera is a browser background and is not se
 
 ## Install model weights
 
-First install and launch DejaLango so Android creates its application directories. Authenticate
-with `hf auth login` and accept the model terms before downloading weights.
+First install a debug build of DejaLango: `push_models.sh` streams the weights into its internal
+storage through `run-as`. Google Tensor's TPU can't load Gemma from the shared external directory,
+where the weights used to go. Authenticate with `hf auth login` and accept the model terms before
+downloading weights.
 
 ```bash
 scripts/fetch_models.sh tensor_g6
@@ -89,13 +97,13 @@ In **knobs**, disable the fake model, tap **Stop**, then **Start listening**. Ch
 and backend in the glass box: unavailable weights or adapters can select the fake model as a
 fallback. `AUTO` tries a device-specific accelerator order and ends with CPU; selecting a backend
 explicitly tries that backend, then CPU. The audio encoder defaults to CPU. Vendor runtime versions
-are pinned to 2.3.0; vendor-runtime APK builds pass. Accelerator initialization and hardware
-compatibility remain to be verified.
+are pinned to 2.3.0; vendor-runtime APK builds pass. On a Pixel 11 Pro XL, `AUTO` puts Gemma on
+the TPU (`NPU`); Qualcomm initialization remains to be verified.
 
 Verify real inference in this order: generic GPU audio input, CPU fallback, optional Tensor or
 Qualcomm backend, then embeddings. Compare the same turns with `TWO_STAGE` and `SINGLE`, and pull
 the measurements with `scripts/pull_traces.sh dev.dejalango`. The repository does not include model
-weights or measured device-performance claims.
+weights; [findings](docs/FINDINGS.md) records dated measurements from one Pixel 11 Pro XL.
 
 ## Repository map
 
