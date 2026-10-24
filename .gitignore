@@ -33,6 +33,7 @@ traces/
 /internal/
 /docs/superpowers
 /docs/design
+/docs/implementation
 /.impeccable
 
 # macOS text-to-speech fixture: Apple's licence limits system-voice output to personal,
