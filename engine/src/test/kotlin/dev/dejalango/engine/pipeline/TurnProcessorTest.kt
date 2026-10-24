@@ -202,6 +202,33 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `in say it my way, reading a variant aloud counts as mine and as learned`() = runBlocking {
+        val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
+        try {
+            rig.processor.warm(null)
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            val shown = rig.processor.hud.value.replies
+            assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertTrue(shown.isNotEmpty())
+
+            // Stage A labels my Mandarin "them": reading variant #1 aloud is still my line, not theirs.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", shown[0].yours, "Yeah, first time, still wandering around"))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            val s = rig.processor.hud.value
+            assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(listOf("ME", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+            assertEquals(1, s.learnedToday)
+            assertEquals(0, s.selectedReply)
+            assertEquals("the variants stay up after a match", shown, s.replies)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `a consumed suggestion set never matches again, so their next line gets replies`() = runBlocking {
         val rig = Rig()
         try {

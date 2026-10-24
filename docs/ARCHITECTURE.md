@@ -97,7 +97,10 @@ noise-calibration controls.
 
 `ConversationState` retains a bounded turn history, the previous suggestions and a learned count.
 The model returns `speaker` and `lang`; there is no separate audio diarization system. Reply mode
-responds to `THEM`, while the two-stage say-it-my-way path responds to `ME`.
+responds to `THEM`, while the two-stage say-it-my-way path responds to `ME`. Stage A labels the
+speaker by language, so the wearer reading an L2 card aloud comes back as `THEM`. Both modes
+therefore match the transcript against the cards on offer, replies or say-it-my-way variants,
+before they use the label.
 
 Confirming a selected reply or matching the wearer's transcript to a recent suggestion emits a
 used-reply event. The app embeds and stores that reply with source `PICKED_REPLY`. Confirmation
@@ -105,10 +108,10 @@ records user intent; it is not proof that the user spoke the reply.
 
 Each suggestion set (personalized and phrasebook lines) can be used once. Matching or confirming a
 reply consumes the set, and so do **Clear** and a newly accepted line. The cards may stay on the HUD,
-but a consumed set never matches again, so the other person's next line always reaches stage B.
-After a confirmation, the very next utterance is checked once against the confirmed reply. The
-wearer usually says that reply next; it is already recorded, so it is absorbed instead of being
-answered as a new line.
+but a consumed set never matches again, so in reply mode the other person's next line always
+reaches stage B. After a confirmation, the very next utterance is checked once against the
+confirmed reply. The wearer usually says that reply next; it is already recorded, so it is absorbed
+instead of being taken as a new line.
 
 Matching uses a normalized edit distance of at most 0.35, or 0.2 for replies shorter than ten
 characters. Mandarin answers repeat the question's frame, so the other person's next line often

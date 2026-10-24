@@ -324,11 +324,11 @@ class TurnProcessor(
             return
         }
 
-        // In REPLY_OPTIONS mode, if I just read aloud one of the suggested Mandarin replies, Stage A's
-        // language rule ("them if Mandarin") will label it THEM. Check ReplyMatcher first so my own
-        // vocalized reply is recorded as ME and we wait for the other person's response instead of
-        // generating replies to my own reply.
-        if (cfg.mode == Mode.REPLY_OPTIONS && matchSpokenReply(a, turn.endMs, trace)) {
+        // In both modes, if I just read aloud one of the cards on offer (a suggested Mandarin reply, or a SAY_IT_MY_WAY
+        // variant), Stage A's language rule ("them if Mandarin") will label it THEM. Check ReplyMatcher first so my own
+        // reading is recorded as ME and counted learned, and we wait for the other person's response instead of
+        // generating replies to my own reply or recording it as their line.
+        if (matchSpokenReply(a, turn.endMs, trace)) {
             return
         }
 
@@ -459,7 +459,7 @@ class TurnProcessor(
             _hud.update { it.copy(phase = restingPhase(it)) }
             return
         }
-        if (cfg.mode == Mode.REPLY_OPTIONS && matchSpokenReply(a, turn.endMs, trace)) {
+        if (matchSpokenReply(a, turn.endMs, trace)) {
             return
         }
         if (a.speaker == Speaker.ME) {
