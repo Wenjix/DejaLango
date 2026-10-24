@@ -15,8 +15,6 @@ Use an explicitly selected emulator and the preview APK from the README's "Build
 
 ## Real-model rehearsal after device validation is authorized
 
-Known issue, October 24: on a Pixel 10 Pro XL this build wrote no replies. The transcription prompt shows the language field as `en|zh`, the model copied it, and the language-pair check rejected every line. Rehearse with real models only after that is fixed.
-
 Use a full JDK 25. A default build includes LiteRT-LM and the Tensor runtime. Select a device explicitly for every install, model push and trace export. Avoid `connectedAndroidTest`, which may uninstall app data and weights.
 
 Choose English (US) ⇄ Spanish (Colombia), start listening and check the actual model/backend in the developer bench. Ask the partner to speak, read a suggested reply after a Talk tap, and optionally press Done. Capture closure should appear immediately; recognition and use counting must wait for actual model results. Test original Spanish, an English aside and a spoken translated variant. Do not use a manual confirmation or mode switch.
