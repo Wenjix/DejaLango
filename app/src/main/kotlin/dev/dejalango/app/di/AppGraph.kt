@@ -89,11 +89,10 @@ class AppGraph(private val context: Context) {
     }
 
     fun createEmbedder(useFake: Boolean): TextEmbedder {
-        val file = modelFiles.embedder
-        if (!useFake && BuildConfig.WITH_LITERTLM && file != null && file.exists()) {
+        if (!useFake && BuildConfig.WITH_LITERTLM && modelFiles.status().embedderPresent) {
             try {
                 val cls = Class.forName("dev.dejalango.app.platform.llm.litertlm.LiteRtLmEmbedder")
-                return cls.getConstructor(Context::class.java, File::class.java).newInstance(context, file) as TextEmbedder
+                return cls.getConstructor(Context::class.java, ModelFiles::class.java).newInstance(context, modelFiles) as TextEmbedder
             } catch (t: Throwable) {
                 Log.e(TAG, "LiteRT-LM embedder failed to load; falling back to hashing embedder", t)
             }

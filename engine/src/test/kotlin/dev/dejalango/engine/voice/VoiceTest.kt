@@ -33,6 +33,24 @@ class VoiceTest {
     }
 
     @Test
+    fun `retriever embeds what was said as a query, not as a stored sentence`() = runBlocking {
+        // EmbeddingGemma gives a search query and a stored sentence different task prompts.
+        val hashing = HashingEmbedder()
+        val roles = ArrayList<EmbedRole>()
+        val recording = object : TextEmbedder {
+            override val dims = hashing.dims
+            override suspend fun embed(texts: List<String>, role: EmbedRole): List<FloatArray> {
+                roles += role
+                return hashing.embed(texts, role)
+            }
+        }
+        val store = InMemoryExemplarStore()
+        store.add("So are you from around here originally?", "en", Source.TRANSCRIPT, hashing.embed("So are you from around here originally?"))
+        Retriever(store, recording).forQuery("where are you from", "en", k = 1)
+        assertEquals(listOf(EmbedRole.QUERY), roles)
+    }
+
+    @Test
     fun `cosine and normalize`() {
         val a = floatArrayOf(1f, 0f, 0f)
         val b = floatArrayOf(0f, 1f, 0f)

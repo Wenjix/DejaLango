@@ -95,24 +95,27 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
     var isListening: Boolean = false
         private set
 
-    /** What the bench shows under the model line: SoC, which bundles are on the device, the push command. */
+    /** What the bench shows under the model line: SoC, which Gemma bundles are on the device, what the embedder runs on. */
     val modelStatusLine: String
         get() = graph.modelFiles.status().let { s ->
-            "soc=${s.socModel.ifEmpty { "?" }} · generic=${s.gemmaGeneric ?: "missing"} · soc bundle=${s.gemmaSoc ?: "missing"} · embedder=${s.embedder ?: "missing"}"
+            "soc=${s.socModel.ifEmpty { "?" }} · generic=${s.gemmaGeneric ?: "missing"} · soc bundle=${s.gemmaSoc ?: "missing"} · embedder=${embedder.description}"
         }
 
     suspend fun start() {
         // 1. Warm the model with the persisted voice card (quick cards are never persisted).
         val card = runCatching { graph.exemplarStore.loadVoiceCard() }.getOrNull()
         withContext(llmDispatcher) { processor.warm(card) }
+        withContext(llmDispatcher) { embedder.warm() } // its accelerator build, or what it fell back to: the bench says which
+        refreshExemplarCounts()
 
         // 2. Side channels: traces → CSV; used replies → exemplar store (L2, PICKED_REPLY) + optional TTS; config → policy.
         jobs += serviceScope.launch { processor.traces.collect { t -> runCatching { graph.traceWriter.append(t) }; Log.i(TAG, t.summary()) } }
         jobs += serviceScope.launch {
             processor.usedReplies.collect { text ->
                 val cfg = config.value
-                runCatching { graph.exemplarStore.add(text, cfg.l2.code, Source.PICKED_REPLY, embedder.embed(text)) }
-                if (cfg.speakReplies) voiceOutput.say(text, cfg.l2.code)
+                if (cfg.speakReplies) voiceOutput.say(text, cfg.l2.code) // first: the earpiece prompt can't wait on the llm thread
+                runCatching { graph.exemplarStore.add(text, cfg.l2.code, Source.PICKED_REPLY, withContext(llmDispatcher) { embedder.embed(text) }) }
+                refreshExemplarCounts()
             }
         }
         jobs += serviceScope.launch {
@@ -267,8 +270,13 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
         hudServer?.stop()
         hudServer = null
         _hudUrl.value = null
-        processor.cancel()
-        runCatching { model.close() }
+        processor.shutdown()
+        // On the model's thread, after whatever native call it is in (a generation or a spare conversation being
+        // created): closing the engine underneath one would crash. close() below still runs queued tasks.
+        llmDispatcher.executor.execute {
+            runCatching { model.close() }
+            runCatching { embedder.close() }
+        }
         voiceOutput.close()
         llmDispatcher.close()
         audioDispatcher.close()

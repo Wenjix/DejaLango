@@ -39,7 +39,7 @@ class Retriever(private val store: ExemplarStore, private val embedder: TextEmbe
         if (k <= 0 || query.isBlank()) return emptyList()
         val pool = store.all(lang)
         if (pool.isEmpty()) return emptyList()
-        val q = embedder.embed(query)
+        val q = embedder.embed(query, EmbedRole.QUERY)
         return mmr(q, pool, k, lambda)
     }
 
