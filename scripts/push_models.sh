@@ -20,7 +20,7 @@ for f in "${files[@]}"; do
   adb exec-in run-as "$APP_ID" sh -c "cat > files/models/$name" < "$f"
   # exec-in returns once the file is sent; the phone may still be writing it. Wait for the full size, and fail if
   # it stops growing short of it (a full disk, a dropped cable).
-  want=$(stat -f %z "$f" 2>/dev/null || stat -c %s "$f")
+  want=$(wc -c < "$f" | tr -d '[:space:]')
   last=-1 stalls=0
   while :; do
     got=$(adb shell run-as "$APP_ID" stat -c %s "files/models/$name" | tr -d '\r')
