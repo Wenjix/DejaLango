@@ -5,7 +5,8 @@ language, phrased in the wearer's voice. A pure Kotlin engine produces `HudState
 supplies audio, inference, storage and displays.
 
 The current runtime is the mode-free Companion path (section 0). Earlier Pixel measurements remain
-in FINDINGS.md. As of October 24, the Companion build has not run on a phone.
+in FINDINGS.md. On October 24 the Companion build replayed the demo fixture on a Pixel 10 Pro XL, and 4
+of 5 turns got replies.
 
 ## 0. Current Companion path
 
@@ -354,7 +355,7 @@ behavior needs measurement; automatic thermal adaptation is not implemented.
 
 ## 8. Verification of the earlier bench pipeline
 
-For the Companion build, 127 engine and 31 app JVM tests pass, and the app has 14 instrumentation
+For the Companion build, 131 engine and 31 app JVM tests pass, and the app has 14 instrumentation
 tests in 8 classes. The rest of this section records the earlier installed build and must not be
 read as measurements of the Companion build.
 

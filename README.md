@@ -21,10 +21,9 @@ labelled static concept, not a learning engine.
 
 | Check | Result |
 |---|---|
-| JVM tests | **127 engine and 31 app tests pass.** |
-| On-device tests | 14 tests in 8 classes: Companion UI, startup, HUD server, voice ownership, prompt rendering, EmbeddingGemma, Gemma on the TPU and an opt-in fixture replay. The last device runs on record are from October 23, before the Companion app ([findings](docs/FINDINGS.md)). |
-| Inference | A default build compiles the LiteRT-LM adapter against **LiteRT-LM 0.18.1** and bundles the Google Tensor NPU runtime. On October 23, on a Pixel 11 Pro XL, Gemma 4 E2B and EmbeddingGemma 2 ran on the TPU, and the earlier pipeline gave replies a median 7.1 s after a turn (10.1 s on the GPU, one replay each). These figures don't cover the Companion app. |
-| Companion on a phone | Known issue: on October 24, this build replayed the demo fixture on a Pixel 10 Pro XL and wrote no replies. The transcription prompt shows the language field as `en\|zh`, the model copied that value, and the language-pair check rejected every line. |
+| JVM tests | **131 engine and 31 app tests pass.** |
+| On-device tests | 14 tests in 8 classes: Companion UI, startup, HUD server, voice ownership, prompt rendering, EmbeddingGemma, Gemma on the TPU and an opt-in fixture replay. On October 24, the fixture replay ran the Companion build on a Pixel 10 Pro XL (Tensor G5), and 4 of 5 turns got replies. The earlier device runs are from October 23 ([findings](docs/FINDINGS.md)). |
+| Inference | A default build compiles the LiteRT-LM adapter against **LiteRT-LM 0.18.1** and bundles the Google Tensor NPU runtime. On October 23, on a Pixel 11 Pro XL, Gemma 4 E2B and EmbeddingGemma 2 ran on the TPU, and the earlier pipeline gave replies a median 7.1 s after a turn (10.1 s on the GPU, one replay each). On October 24, the Companion build on a Pixel 10 Pro XL (Tensor G5) gave replies a median 8.4 s after a turn (one replay). |
 | Phone-to-browser HUD | On October 24, a laptop browser opened `/sim` from the phone through `scripts/hud_forward.sh`, on the build before the Companion app. The Companion build's tokenized `/sim` hasn't been checked from a phone. |
 
 Missing weights produce an error that asks for model setup. Canned inference needs an explicit
