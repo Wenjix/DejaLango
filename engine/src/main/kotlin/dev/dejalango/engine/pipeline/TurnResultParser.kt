@@ -13,7 +13,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 data class StageAResult(val speaker: Speaker, val lang: String, val heard: String, val heardL1: String, val repaired: Boolean = false, val roman: String? = null)
 
-/** A JSON object pulled out of model text. [repaired] means truncated output was closed up to parse. */
+/** A JSON object pulled out of model text. [repaired] means the text was patched to parse, such as truncated output closed up. */
 data class Extracted(val obj: JsonObject, val repaired: Boolean)
 
 data class WordHint(val word: String, val alternatives: List<String>, val confidence: Float, val roman: String? = null, val meaning: String? = null, val lang: String = "")
@@ -37,6 +37,8 @@ class TurnResultParser {
         return extractFrom(stripped)
             // A 2B model sometimes opens a key it never writes (`"back":"…","},{…`); drop the dangling `,"` and retry.
             ?: DANGLING_KEY.replace(stripped, "$1").takeIf { it != stripped }?.let { extractFrom(it)?.copy(repaired = true) }
+            // A copied legacy skeleton keeps its speaker alternatives; it is still subject to placeholder rejection.
+            ?: SPEAKER_CHOICE.replace(stripped, "\"them\"").takeIf { it != stripped }?.let { extractFrom(it)?.copy(repaired = true) }
     }
 
     private fun extractFrom(stripped: String): Extracted? {
@@ -65,7 +67,8 @@ class TurnResultParser {
 
     fun parseStageA(e: Extracted): StageAResult? {
         val o = e.obj
-        val heard = o.str("heard") ?: return null
+        fun field(key: String): String? = o.str(key)?.trim()?.takeUnless { PLACEHOLDER_ECHO.matches(it) }
+        val heard = if (o.str("heard") == null) return null else field("heard").orEmpty()
         val speaker = when (o.str("speaker")?.lowercase()?.trim()) {
             "me", "wearer", "user" -> Speaker.ME
             "them", "other" -> Speaker.THEM
@@ -73,9 +76,9 @@ class TurnResultParser {
         }
         return StageAResult(
             speaker = speaker,
-            lang = o.str("lang")?.trim().orEmpty(),
-            heard = heard.trim().takeUnless { PLACEHOLDER_ECHO.matches(it) }.orEmpty(),
-            heardL1 = (o.str("heard_l1") ?: o.str("heardL1") ?: o.str("translation") ?: heard).trim(),
+            lang = field("lang").orEmpty(),
+            heard = heard,
+            heardL1 = field("heard_l1") ?: field("heardL1") ?: field("translation") ?: heard,
             repaired = e.repaired,
             roman = o.str("roman")?.takeIf { it.isNotBlank() && it != "null" },
         )
@@ -137,6 +140,7 @@ class TurnResultParser {
         private val FENCE = Regex("```[a-zA-Z]*")
         private val TRUNCATION_REPAIRS = listOf("}", "\"}", "\"}]}", "}]}", "]}", "\"]}")
         private val DANGLING_KEY = Regex(",\\s*\"?\\s*([}\\]])")
+        private val SPEAKER_CHOICE = Regex("\"me\"\\s*\\|\\s*\"them\"")
         private val PLACEHOLDER_ECHO = Regex("<[^<>]*>|\\.{3}|…")
 
         fun stripFences(text: String): String = text.replace(FENCE, "").trim()

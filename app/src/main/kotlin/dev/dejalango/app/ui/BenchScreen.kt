@@ -58,6 +58,7 @@ import dev.dejalango.engine.hud.HudAction
 import dev.dejalango.engine.hud.HudState
 import dev.dejalango.engine.hud.Phase
 import dev.dejalango.engine.voice.VoiceCard
+import java.net.URI
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -78,7 +79,6 @@ fun BenchScreen(
     val hudFlow = remember(runtime) { runtime?.hud ?: MutableStateFlow(HudState(phase = Phase.IDLE, statusLine = "not listening")) }
     val hud by hudFlow.collectAsStateWithLifecycle()
     val config by graph.configStore.config.collectAsStateWithLifecycle()
-    val settings by graph.configStore.settings.collectAsStateWithLifecycle()
     val hudUrl by (runtime?.hudUrl ?: MutableStateFlow<String?>(null)).collectAsStateWithLifecycle()
     val exemplarCountsFlow = remember(runtime) { runtime?.exemplarCounts ?: MutableStateFlow(PipelineRuntime.ExemplarCounts()) }
     val exemplarCounts by exemplarCountsFlow.collectAsStateWithLifecycle()
@@ -160,9 +160,12 @@ fun BenchScreen(
                     colors = CardDefaults.cardColors(containerColor = if (selected) Color(0xFF14261A) else Color(0xFF101418), contentColor = Color.White),
                 ) {
                     Column(Modifier.padding(12.dp)) {
-                        Text(if (hud.showPlain) r.plain else r.yours, fontSize = 24.sp, color = if (selected) Color.White else Color(0xFFD0D5DA))
-                        r.roman?.let { Text(it, color = Color(0xFFA9B0B8), fontSize = 15.sp) }
-                        r.back?.let { Text("= $it", color = Color(0xFF8A9199), fontSize = 13.sp) }
+                        val shown = if (hud.showPlain) r.plain else r.yours
+                        Text(shown, fontSize = 24.sp, color = if (selected) Color.White else Color(0xFFD0D5DA))
+                        if (shown == r.yours) {
+                            r.roman?.let { Text(it, color = Color(0xFFA9B0B8), fontSize = 15.sp) }
+                            r.back?.let { Text("= $it", color = Color(0xFF8A9199), fontSize = 13.sp) }
+                        }
                         if (!hud.showPlain && r.plain != r.yours) Text("phrasebook: ${r.plain}", color = Color(0xFF6E7680), fontSize = 12.sp)
                     }
                 }
@@ -194,7 +197,8 @@ fun BenchScreen(
                 hudUrl?.let { url ->
                     Text("HUD: $url", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFF5CFF8A))
                     TextButton(onClick = { scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Current HUD link", url))) } }) { Text("Copy current HUD link") }
-                    Text("laptop: adb forward tcp:${settings.hudPort} tcp:${settings.hudPort}  then load the URL in hud.xyz", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Gray)
+                    val phonePort = URI(url).port
+                    Text("laptop: ANDROID_SERIAL=<serial> scripts/hud_forward.sh \"\" $phonePort; keep the token and use the printed laptop port", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Gray)
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { showKnobs = !showKnobs }) { Text(if (showKnobs) "hide knobs" else "knobs") }

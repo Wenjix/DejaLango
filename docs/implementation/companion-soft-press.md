@@ -2,7 +2,7 @@
 
 The native consumer app implements the selected study-07 Soft press direction: Today, Live and Your voice share a fixed adjacent Talk/Done controller. The existing developer bench is behind Settings → Developer tools. The engine routes by the captured role and selected regional language pair, with no consumer modes or Use step.
 
-Work is isolated on `Wenjix/companion-soft-press`, based on `3e00556` from the existing project-1 followups. The working directory is `/Users/wenjiefu/orca/workspaces/DejaLango/companion-soft-press`. The original checkout, installed demo build and physical phone are unchanged. The implementation is packaged on the feature branch for PR review; merging and device installation remain separate steps.
+Work is isolated on `Wenjix/companion-soft-press`, based on `3e00556` from the existing project-1 followups. The working directory is `/Users/wenjiefu/orca/workspaces/DejaLango/companion-soft-press`. The original checkout, installed demo build and physical phone are unchanged. The implementation is packaged in [PR #2](https://github.com/Wenjix/DejaLango/pull/2). During review preparation, the feature branch was synchronized with `main` at `316397c`, retaining its HUD guard, request-body refusal, query actions, stable forwarding ports and parser/pipeline followups. Merging the PR into main and device installation remain separate steps.
 
 The review build is labelled **October 24, 2026 at 1:06 PM Pacific**: version `0.1.0-companion.20261024.1306-PDT`, with `BuildConfig.BUILD_TIMESTAMP` set to `2026-10-24T13:06:00-07:00`. This is the owner-requested build label. California observes PDT on this date.
 
@@ -27,7 +27,7 @@ The starting timing policy is `CompanionTiming`: 4 s arm, 1.2 s wearer silence, 
 
 `ConfigStore` loads persisted settings before the service starts inference, then serializes committed transforms. Failed writes do not publish an optimistic pair that was not saved. Room schema remains version 1; trace CSV columns/order and pinned toolchain are preserved.
 
-The HUD bridge gives each runtime a new capability. `/state`, `/action` and WebSocket upgrades require it; actions also require the current session ID. Tokens are absent from HUD JSON, logs and CSV. Loopback remains the default and wildcard CORS is removed. The optical layer is green and transparent with no opaque backing, glow or text shadow. The simulator uses a local synthetic café or an explicitly requested camera preview.
+The HUD bridge gives each runtime a new capability. `/state`, `/action` and WebSocket upgrades require it; actions also require the current session ID. Tokens are absent from HUD JSON, logs and CSV. Loopback remains the default and wildcard CORS is removed. Main's Host/Origin/Fetch Metadata guard runs before request handling; HTTP actions use `POST /action?token=…&a=…` with session-bound, URL-encoded JSON and no request body. The optical layer is green and transparent with no opaque backing, glow or text shadow. The simulator uses a local synthetic café or an explicitly requested camera preview.
 
 ## Review on an isolated emulator
 

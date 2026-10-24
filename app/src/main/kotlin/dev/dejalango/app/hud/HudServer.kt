@@ -20,17 +20,10 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Serves the web HUD (assets/hud/hud.html) and streams [HudState] over a WebSocket.
- *
- * Why a web HUD: the Meta Ray-Ban Display simulator at hud.xyz is a browser page that loads a URL into a
- * 600×600 additive viewport with D-pad input, and the Android XR glasses emulator pairs with a phone AVD
- * rather than a real phone — both want a thin client. `adb forward tcp:PORT tcp:PORT` makes this server
- * reachable as http://localhost:PORT/hud on the laptop (localhost is a secure context, so https pages may
- * embed it and getUserMedia works). The server binds to 127.0.0.1 unless hudOnLan is set in settings.
- *
- * Routes: /hud (the raw 600×600 HUD page, what hud.xyz would load), /sim (our own simulator: the HUD
- * screen-blended over the laptop camera inside a glasses bezel — the fallback when hud.xyz is down),
- * /state (JSON snapshot), /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
+ * Serves the local glasses simulator and its transparent 600 × 600 HUD. The request guard checks
+ * Host, Origin, method and Fetch Metadata before HTTP or WebSocket handling. State, actions and
+ * upgrades also require the current runtime's capability; actions bind to its session ID.
+ * POST /action takes a JSON action in query parameter `a`, with no request body.
  */
 class HudServer(
     private val assets: AssetManager,
@@ -51,6 +44,11 @@ class HudServer(
     }
 
     override fun serve(session: IHTTPSession): Response {
+        bodyRefusal(session.headers)?.let { return it }
+        HudRequestGuard.refusal(session.method.name, session.uri, session.headers)?.let { refusal ->
+            Log.w(TAG, "HUD request refused: $refusal")
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "forbidden")
+        }
         val protected = session.uri in setOf("/state", "/action", "/ws") || isWebsocketRequested(session)
         if (protected && (!access.accepts(session.parameters["token"]?.firstOrNull()) ||
                 !access.acceptsOrigin(session.headers["origin"], session.headers["host"]))) {
@@ -71,16 +69,7 @@ class HudServer(
             "/hud.js" -> asset("hud/hud.js", "text/javascript; charset=utf-8")
             "/cafe.webp" -> asset("hud/cafe.webp", "image/webp")
             "/state" -> NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json; charset=utf-8", HudJson.encode(hud.value))
-            "/action" -> {
-                if (session.method != Method.POST) NanoHTTPD.newFixedLengthResponse(Response.Status.METHOD_NOT_ALLOWED, "text/plain", "POST required")
-                else {
-                    val body = HashMap<String, String>()
-                    session.parseBody(body)
-                    val action = body["postData"]?.let { HudJson.decodeAction(it, hud.value.sessionId) }
-                    if (action == null) NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "invalid or stale action")
-                    else { onAction(action); NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/plain", "ok") }
-                }
-            }
+            "/action" -> serveAction(session.parameters, hud.value.sessionId, onAction)
             else -> NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found")
         }
         r.addHeader("Cache-Control", "no-store")
@@ -142,8 +131,22 @@ class HudServer(
         super.stop()
     }
 
-    private companion object {
-        const val TAG = "HudServer"
-        const val PING_MS = 3_000L
+    companion object {
+        private const val TAG = "HudServer"
+        private const val PING_MS = 3_000L
+
+        internal fun bodyRefusal(headers: Map<String, String>): Response? {
+            val body = "transfer-encoding" in headers || (headers["content-length"] ?: "0").toLongOrNull() != 0L
+            if (!body) return null
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "no body expected")
+                .apply { closeConnection(true) }
+        }
+
+        internal fun serveAction(parameters: Map<String, List<String>>, currentSession: String, onAction: (HudAction) -> Unit): Response {
+            val action = parameters["a"]?.firstOrNull()?.let { HudJson.decodeAction(it, currentSession) }
+                ?: return NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "invalid or stale action")
+            onAction(action)
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/plain", "ok")
+        }
     }
 }

@@ -19,7 +19,7 @@ Use a full JDK 25 and build the mobile APK with `-PwithLiteRtLm=true -PwithTenso
 
 Choose English (US) ⇄ Spanish (Colombia), start listening and check the actual model/backend in the developer bench. Ask the partner to speak, read a suggested reply after a Talk tap, and optionally press Done. Capture closure should appear immediately; recognition and use counting must wait for actual model results. Test original Spanish, an English aside and a spoken translated variant. Do not use a manual confirmation or mode switch.
 
-For the local lens, run `scripts/hud_forward.sh DEVICE_SERIAL`, then open the current tokenized HUD link shown in the bench. Replace `/hud` with `/sim` while retaining the token to use the bundled synthetic café. Camera preview requires an explicit click. T/ArrowUp is Talk, C is Done, left/right browses, S corrects the latest line, U undoes, and P pauses the display. A restarted runtime rotates the token.
+For the local lens, run `ANDROID_SERIAL=DEVICE_SERIAL scripts/hud_forward.sh`, then open the current tokenized HUD link shown in the bench. Replace `/hud` with `/sim` while retaining the token to use the bundled synthetic café. Camera preview requires an explicit click. T/ArrowUp is Talk, C is Done, left/right browses, S corrects the latest line, U undoes, and P pauses the display. A restarted runtime rotates the token.
 
 Measure repeatable restaurant fixtures, quick answers at 0/0.2/0.5/1 s gaps, early/late/forgotten Done, afterthoughts, stray taps and hint holds before choosing final timings. Report merges, clipping, wrong scripts, missing frames and model-stage times together with latency. The draft's 1.2 s silence and 600 ms Done slack are starting hypotheses.
 

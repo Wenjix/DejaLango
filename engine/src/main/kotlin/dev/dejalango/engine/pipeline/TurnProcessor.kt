@@ -115,6 +115,13 @@ class TurnProcessor(
     private var lastLevelMs = 0L
 
     /**
+     * A card of the set on screen was used: read aloud or confirmed. [HudState.selectedReply] can't tell, since a tap or
+     * the D-pad selects a card too. New cards reset it; a new line and Clear remove the cards it is about.
+     */
+    @Volatile
+    private var replyUsed = false
+
+    /**
      * Load the model and set the base prompt (system instruction) from [card]. Call again with a new card to change it;
      * a re-warm waits for the turn in flight, so it never resets that turn's HUD.
      */
@@ -167,9 +174,12 @@ class TurnProcessor(
                 // The echo to expect is the card as offered, so a plain in my language can't absorb my next line.
                 val offered = conversation.lastSuggested.getOrNull(idx) ?: return
                 if (conversation.confirm(offered).isEmpty()) return
+                replyUsed = true
                 cancel()
                 val spoken = if (s.showPlain) r.plain else r.yours
-                conversation.add(Speaker.ME, config.value.l2.code, spoken, r.back ?: spoken, clock.nowMs())
+                // back translates yours, so a phrasebook line that differs is recorded without a translation.
+                val spokenL1 = if (spoken == r.yours) r.back ?: spoken else null
+                conversation.add(Speaker.ME, config.value.l2.code, spoken, spokenL1, clock.nowMs())
                 conversation.markReplyUsed()
                 _usedReplies.tryEmit(r.yours)
                 _hud.update {
@@ -184,10 +194,10 @@ class TurnProcessor(
             HudAction.Clear -> {
                 cancel()
                 conversation.dismissSuggestions()
-                _hud.update { it.copy(phase = Phase.IDLE, heard = null, replies = emptyList(), selectedReply = null, wordHint = null, wordAlternatives = emptyList(), exemplarsUsed = emptyList(), error = null) }
+                _hud.update { it.copy(phase = Phase.IDLE, heard = null, replies = emptyList(), selectedReply = null, wordHint = null, wordAlternatives = emptyList(), exemplarsUsed = emptyList(), statusLine = null, error = null) }
             }
+            HudAction.Talk, HudAction.Done, is HudAction.Repair, is HudAction.Undo, HudAction.ToggleDisplay -> Unit
             is HudAction.SetMode, HudAction.CutNow -> Unit // app-level: config and segmenter are owned there
-            HudAction.Talk, HudAction.Done, HudAction.ToggleDisplay, is HudAction.Repair, is HudAction.Undo -> Unit
         }
     }
 
@@ -260,9 +270,10 @@ class TurnProcessor(
         } finally {
             stage = Stage.NONE
             trace.tRendered = clock.nowMs()
-            // Some paths set no status (an empty transcript, word finding, a timeout, a cancel) and would leave the
-            // turn looking busy. Turns run one at a time under modelLock, so TRANSCRIBING here is still this turn's.
-            _hud.update { it.copy(statusLine = if (it.statusLine == TRANSCRIBING) null else it.statusLine, trace = trace.copy()) }
+            // Some paths set no status after TRANSCRIBING or GENERATING (an empty transcript, word finding, a timeout, a
+            // cancel, a failure) and would leave the turn looking busy. Turns run one at a time under modelLock, so
+            // either one here is still this turn's.
+            _hud.update { it.copy(statusLine = if (it.statusLine == TRANSCRIBING || it.statusLine == GENERATING) null else it.statusLine, trace = trace.copy()) }
             _traces.tryEmit(trace.copy())
         }
     }
@@ -367,7 +378,7 @@ class TurnProcessor(
                 heard = Line(a.heard, a.lang, a.heardL1),
                 replies = emptyList(),
                 selectedReply = null,
-                statusLine = "generating replies…",
+                statusLine = GENERATING,
                 trace = trace.copy(),
             )
         }
@@ -404,12 +415,13 @@ class TurnProcessor(
     }
 
     private fun showReplies(parsed: List<Reply>, raw: String, cfg: PipelineConfig, retrieved: List<RetrievedExemplar>, trace: TurnTrace) {
-        // A "yours" not written in L2 can't be read to THEM: on device Gemma copied an English signature phrase from the
-        // card verbatim. Fall back to the phrasebook line (its romanization and back-translation were of the discarded
-        // line). Only detectable when L1 and L2 use different scripts.
+        // A phrasebook line in my language cannot be read to THEM, so replace it with the personal line on the card
+        // when that line is in L2. If only the phrasebook line is in L2, use it as "yours" and discard its romanization
+        // and back-translation, which describe the discarded line. Only detectable when L1 and L2 use different scripts.
         var replies = parsed.mapNotNull { r ->
             when {
-                VoiceCardBuilder.inScriptOf(cfg.l2, r.yours) -> r
+                VoiceCardBuilder.inScriptOf(cfg.l2, r.yours) ->
+                    if (VoiceCardBuilder.inScriptOf(cfg.l2, r.plain)) r else r.copy(plain = r.yours)
                 VoiceCardBuilder.inScriptOf(cfg.l2, r.plain) -> r.copy(yours = r.plain, roman = null, back = null)
                 else -> null
             }
@@ -421,21 +433,22 @@ class TurnProcessor(
         }
         val ids = retrieved.map { it.exemplar.id }
         replies = replies.map { it.copy(usedExemplarIds = ids) }
-        // Offer only phrasings in L2 for matching and Confirm: one in my language would match me saying that line
-        // again and count it as a reply. A raw fallback that echoes my line stays on screen but is not offered. Every
-        // other card passed the check above, so the offer is all the cards or none, and a matched index is still the
-        // card's. A plain in my language (a 2B model copies my line there) stays on its card, which is offered with
-        // yours in its place.
-        val offer = replies.filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }.map { r ->
-            SuggestedReply(yours = r.yours, plain = if (VoiceCardBuilder.inScriptOf(cfg.l2, r.plain)) r.plain else r.yours)
-        }
+        // Offer only L2 phrasings for matching and Confirm. A phrasebook line in my language is replaced by the
+        // personal line on the card; a raw fallback that echoes my line stays on screen but is not offered. Every card
+        // kept above has yours in L2 and a fallback card is alone, so the offer is all the cards or none, and an offer
+        // index is the card's: Confirm and matchSpokenReply rely on that.
+        val offer = replies
+            .filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }
+            .map { SuggestedReply(yours = it.yours, plain = it.plain) }
+        replyUsed = false
         conversation.suggest(offer)
         _hud.update {
             it.copy(
                 phase = Phase.SHOWING,
                 replies = replies,
                 selectedReply = null,
-                statusLine = YOUR_TURN,
+                // Reading aloud and Confirm only take cards on offer, so with none the prompt would lead nowhere.
+                statusLine = if (offer.isNotEmpty()) YOUR_TURN else null,
                 exemplarsUsed = retrieved.map { r -> ExemplarView(r.exemplar.id, r.exemplar.text, r.score) },
                 trace = trace.copy(),
             )
@@ -487,7 +500,8 @@ class TurnProcessor(
     /**
      * Records a line of mine that gets no replies. The cards on screen answer their line, so that line stays above
      * them; with no cards, mine shows, so I see it was heard. The turn began on "transcribing speech…", so the status
-     * becomes my turn while the cards are on offer, or waiting for their response once one was used.
+     * becomes my turn while the cards are on offer, waiting for their response once one was used, and blank for cards
+     * that never went on offer.
      */
     private fun recordAside(a: StageAResult, tMs: Long, trace: TurnTrace) {
         conversation.add(Speaker.ME, a.lang, a.heard, a.heardL1, tMs)
@@ -498,7 +512,8 @@ class TurnProcessor(
                 statusLine = when {
                     !cards -> null
                     conversation.lastSuggested.isNotEmpty() -> YOUR_TURN
-                    else -> THEIR_TURN
+                    replyUsed -> THEIR_TURN
+                    else -> null
                 },
                 trace = trace.copy(),
             ).let { s -> s.copy(phase = restingPhase(s)) }
@@ -541,6 +556,7 @@ class TurnProcessor(
         // One pass over both phrasings, so the closest wins; a tie goes to the earlier reply, then to yours.
         val idx = ReplyMatcher.match(a.heard, offered.flatMap { listOf(it.yours, it.plain) })?.let { it / 2 } ?: return false
         if (conversation.takeSuggestions().isEmpty()) return false // confirmed or cleared on the HUD meanwhile
+        replyUsed = true
         conversation.add(Speaker.ME, a.lang, a.heard, a.heardL1, tMs)
         conversation.markReplyUsed()
         _usedReplies.tryEmit(offered[idx].yours)
@@ -604,6 +620,7 @@ class TurnProcessor(
 
     companion object {
         private const val TRANSCRIBING = "transcribing speech…"
+        private const val GENERATING = "generating replies…"
         private const val YOUR_TURN = "your turn: read a reply aloud (or tap it + 'I said this one')"
         private const val THEIR_TURN = "listening for their response…"
         const val LEVEL_THROTTLE_MS = 100L

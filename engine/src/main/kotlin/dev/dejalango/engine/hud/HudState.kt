@@ -49,6 +49,7 @@ data class CorrectionReceipt(
 
 /**
  * One suggested thing for ME to say. [plain] is the phrasebook version, [yours] the personalized one.
+ * [roman] and [back] describe [yours]: its romanization and literal L1 translation, never a [plain] that differs.
  * Glasses show [yours] (+ [roman] for non-Latin scripts); the bench shows both and the back-translation.
  */
 data class Reply(

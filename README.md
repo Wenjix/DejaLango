@@ -54,7 +54,7 @@ a selected emulator for UI validation.
 While a real or explicitly synthetic runtime is listening, use:
 
 ```sh
-scripts/hud_forward.sh DEVICE_SERIAL
+ANDROID_SERIAL=DEVICE_SERIAL scripts/hud_forward.sh
 ```
 
 Copy the current tokenized HUD link from Developer tools → Bench. Keep its token when replacing

@@ -294,16 +294,17 @@ The Meta VR application ID is `dev.dejalango.metavr` and needs its own model pus
 | `/hud` | Green transparent 600 × 600 optical layer |
 | `/sim` | Lens over a bundled synthetic café or explicitly requested local camera preview |
 | `/state?token=…` | Capability-protected current state |
-| `POST /action?token=…` | JSON action with current session ID |
+| `POST /action?token=…&a=…` | URL-encoded JSON action with current session ID; no request body |
 | `/ws?token=…` | Authenticated state subscription and session-bound actions |
 
-Run `scripts/hud_forward.sh DEVICE_SERIAL`, then copy the current tokenized HUD link from the
+Run `ANDROID_SERIAL=DEVICE_SERIAL scripts/hud_forward.sh`, then copy the current tokenized HUD link from the
 bench. Retain the token when replacing `/hud` with `/sim`. T/ArrowUp is Talk, C Done, left/right
 browses, S corrects the latest line, U undoes, and P pauses display. The wire `cut` alias invokes
 Done; operator Cut is a separate bench action. `confirm`, `mode` and `togglePlain` are rejected.
 
 A fresh runtime rotates the capability. Unauthorized sockets are rejected before upgrade/state,
-cross-origin access is limited, and wildcard CORS is absent. Tokens are not logged or serialized
+the shared Host/Origin/Fetch Metadata guard rejects cross-site requests, and wildcard CORS is absent.
+All request bodies are refused before HTTP or WebSocket handling; POST actions use the query string. Tokens are not logged or serialized
 into state. Display pause blanks the lens; it does not stop the microphone. The simulator keeps
 its tokenized iframe on the same origin, and camera video stays in that browser.
 

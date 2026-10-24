@@ -6,10 +6,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!--
-      INTERNET is required by Android for ANY socket, including the local HUD server that the
-      hud.xyz simulator and the Android XR thin client connect to over `adb forward`. The server binds
-      to 127.0.0.1 unless the bench's "LAN HUD" toggle is on. There is no other network code in the app;
-      the demo runs in airplane mode.
+      INTERNET is required by Android for ANY socket, including the local HUD server that the laptop's
+      glasses simulator (/sim) connects to over `adb forward`. The server binds to 127.0.0.1 unless the
+      bench's "LAN HUD" toggle is on. There is no other network code in the app; the demo runs in
+      airplane mode.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
 
