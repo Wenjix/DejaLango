@@ -66,6 +66,8 @@ class FixtureRunAndroidTest {
                     calm = if (runtime.hud.value.phase == Phase.THINKING) 0 else calm + 1
                 }
             }
+            // Who said what, as the app recorded it: a turn filed as mine gets no replies, which the timings alone don't show.
+            for (t in runtime.conversation.snapshot()) Log.i(TAG, "${t.speaker} [${t.lang}] ${t.text} | ${t.textL1}")
         } finally {
             runtime.stop()
             scope.cancel()
