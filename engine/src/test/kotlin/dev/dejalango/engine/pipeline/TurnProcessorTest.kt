@@ -157,6 +157,50 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `reply options records unmatched ME lines without replacing the cards`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitPhase(Phase.SHOWING)
+            rig.awaitTraces(1)
+            val replies = rig.processor.hud.value.replies
+
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "I need a minute.", "I need a minute."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+
+            assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(replies, rig.processor.hud.value.replies)
+            assertEquals("I need a minute.", rig.processor.hud.value.heard?.text)
+            assertEquals(listOf("THEM", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `say it my way only generates replies for ME lines`() = runBlocking {
+        val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals(0, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertTrue(rig.processor.hud.value.replies.isEmpty())
+
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "I need a minute.", "I need a minute."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitPhase(Phase.SHOWING)
+            rig.awaitTraces(2)
+            assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertTrue(rig.processor.hud.value.replies.isNotEmpty())
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `a consumed suggestion set never matches again, so their next line gets replies`() = runBlocking {
         val rig = Rig()
         try {
@@ -257,6 +301,7 @@ class TurnProcessorTest {
             val shown = rig.processor.hud.value.replies
             assertEquals(listOf("好啊，听起来不错。", "去哪儿呀？"), shown.map { it.yours })
             assertNull("the romanization was of the English line", shown[0].roman)
+            assertNull("the back-translation was of the discarded English line", shown[0].back)
             assertEquals("Qù nǎr ya?", shown[1].roman)
         } finally {
             rig.close()
@@ -549,6 +594,23 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `single shape records ME without showing an empty replies card`() = runBlocking {
+        val rig = Rig(PipelineConfig(shape = PipelineShape.SINGLE))
+        try {
+            rig.processor.warm(null)
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "I need a minute.", "I need a minute."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+
+            assertTrue(rig.processor.hud.value.replies.isEmpty())
+            assertEquals("I need a minute.", rig.processor.hud.value.heard?.text)
+            assertFalse(rig.traces[0].parseFailed)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `word finding shows a hint above the confidence gate`() = runBlocking {
         val rig = Rig(PipelineConfig(mode = Mode.WORD_FINDING))
         try {
@@ -629,6 +691,7 @@ class TurnProcessorTest {
             assertNotEquals(firstReply, secondReply)
 
             rig.cfg.value = PipelineConfig(mode = Mode.SAY_IT_MY_WAY)
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time."))
             rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.MANUAL))
             rig.awaitTraces(3)
             assertTrue("say it my way should produce replies in fake mode", rig.processor.hud.value.replies.isNotEmpty())

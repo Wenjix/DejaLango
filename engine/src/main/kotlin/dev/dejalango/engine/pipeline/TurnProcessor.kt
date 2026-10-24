@@ -332,6 +332,31 @@ class TurnProcessor(
             return
         }
 
+        // Matching runs first because Stage A labels my Mandarin as THEM; this language-based label still decides who gets Stage B.
+        if (cfg.mode == Mode.REPLY_OPTIONS && a.speaker == Speaker.ME) {
+            conversation.add(a.speaker, a.lang, a.heard, a.heardL1, turn.endMs)
+            _hud.update {
+                it.copy(heard = Line(a.heard, a.lang, a.heardL1), trace = trace.copy())
+                    .let { s -> s.copy(phase = restingPhase(s)) }
+            }
+            return
+        }
+        if (cfg.mode == Mode.SAY_IT_MY_WAY && a.speaker == Speaker.THEM) {
+            conversation.dismissSuggestions()
+            conversation.add(a.speaker, a.lang, a.heard, a.heardL1, turn.endMs)
+            _hud.update {
+                it.copy(
+                    heard = Line(a.heard, a.lang, a.heardL1),
+                    replies = emptyList(),
+                    selectedReply = null,
+                    statusLine = null,
+                    phase = Phase.SHOWING,
+                    trace = trace.copy(),
+                )
+            }
+            return
+        }
+
         // A new line supersedes the cards on offer (cleared below), so they can't match what I say next.
         conversation.dismissSuggestions()
         val earlier = conversation.window(cfg.contextTurns) // stage B states this line on its own; don't repeat it as context
@@ -379,12 +404,12 @@ class TurnProcessor(
 
     private fun showReplies(parsed: List<Reply>, raw: String, cfg: PipelineConfig, retrieved: List<RetrievedExemplar>, trace: TurnTrace) {
         // A "yours" not written in L2 can't be read to THEM: on device Gemma copied an English signature phrase from the
-        // card verbatim. Fall back to the phrasebook line (its romanization was of the wrong text). Only detectable when
-        // L1 and L2 use different scripts.
+        // card verbatim. Fall back to the phrasebook line (its romanization and back-translation were of the discarded
+        // line). Only detectable when L1 and L2 use different scripts.
         var replies = parsed.mapNotNull { r ->
             when {
                 VoiceCardBuilder.inScriptOf(cfg.l2, r.yours) -> r
-                VoiceCardBuilder.inScriptOf(cfg.l2, r.plain) -> r.copy(yours = r.plain, roman = null)
+                VoiceCardBuilder.inScriptOf(cfg.l2, r.plain) -> r.copy(yours = r.plain, roman = null, back = null)
                 else -> null
             }
         }.take(cfg.replies)
@@ -439,6 +464,14 @@ class TurnProcessor(
             return
         }
         if (cfg.mode == Mode.REPLY_OPTIONS && matchSpokenReply(a, turn.endMs, trace)) {
+            return
+        }
+        if (a.speaker == Speaker.ME) {
+            conversation.add(a.speaker, a.lang, a.heard, a.heardL1, turn.endMs)
+            _hud.update {
+                it.copy(heard = Line(a.heard, a.lang, a.heardL1), trace = trace.copy())
+                    .let { s -> s.copy(phase = restingPhase(s)) }
+            }
             return
         }
         conversation.add(a.speaker, a.lang, a.heard, a.heardL1, turn.endMs)
