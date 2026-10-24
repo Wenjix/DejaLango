@@ -79,6 +79,20 @@ class CompanionProcessorTest {
         assertTrue(processor.hud.value.replies.isNotEmpty())
     }
 
+    @Test fun `with one script for both languages, an untapped line with no language code asks again instead of guessing`() = runTest {
+        // English and Spanish share a script, so a copied "en|es" can't tell a forgotten tap from their line.
+        val model = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0)
+        model.enqueue(FakeSpeechModel.ScriptedTurn("them", "en|es", "Do you have oat milk?", "Do you have oat milk?"))
+        val processor = CompanionProcessor(model, MutableStateFlow(PipelineConfig(l2 = Language.ES)), this)
+        processor.warm()
+        processor.onInput(CaptureEvent.Ended(1, Speaker.THEM, audio(), "SILENCE", emptyList()))
+        advanceUntilIdle()
+        assertEquals("Couldn't tell whose line that was. Tap Talk before you speak, then try again.", processor.hud.value.error)
+        assertEquals(null, processor.hud.value.heard)
+        assertEquals(0, model.requests.count { it.tag == RequestTag.STAGE_B })
+        assertTrue(processor.hud.value.replies.isEmpty())
+    }
+
     @Test fun `reading a target language suggestion counts once with no writing request`() = runTest {
         val model = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0)
         val processor = CompanionProcessor(model, MutableStateFlow(PipelineConfig(l2 = Language.ES)), this)
