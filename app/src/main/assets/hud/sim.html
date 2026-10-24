@@ -32,7 +32,7 @@
 <div id="stage">
   <div id="glasses">
     <video id="bg" autoplay playsinline muted></video>
-    <iframe id="hud" src="/hud" title="HUD"></iframe>
+    <iframe id="hud" src="/hud" title="HUD" tabindex="-1"></iframe>
     <div id="vignette"></div>
     <div id="camwarn">camera unavailable — showing black background (allow camera, or use ?bg=photo)</div>
   </div>
@@ -78,8 +78,11 @@
   function act(a, extra) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(Object.assign({ action: a }, extra || {}))); }
   connect();
 
+  // The HUD iframe takes neither focus nor clicks (tabindex -1, pointer-events: none), and nothing else here is
+  // focusable, so Tab could only move focus out of the page, taking the keys with it: it does nothing instead.
   document.addEventListener('keydown', function (e) {
     switch (e.key) {
+      case 'Tab': e.preventDefault(); break;
       case 'ArrowRight': case 'ArrowDown': act('next'); e.preventDefault(); break;
       case 'ArrowLeft': case 'ArrowUp': act('prev'); e.preventDefault(); break;
       case 'Enter': case ' ': act('confirm'); e.preventDefault(); break;
