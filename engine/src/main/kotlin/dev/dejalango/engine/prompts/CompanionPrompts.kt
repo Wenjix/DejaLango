@@ -9,11 +9,14 @@ import dev.dejalango.engine.voice.VoiceCard
 class CompanionPrompts(private val legacy: PromptBuilder = PromptBuilder()) {
     fun system(cfg: PipelineConfig, card: VoiceCard?): String {
         val voice = card?.takeIf { it.l1 == cfg.l1.code }?.promptText()?.take(400).orEmpty()
+        // PromptSet.SYSTEM's wording, which wrote full cards on the phone. "Write short", a second "Invent no facts"
+        // (Stage B already says it) and an example without "format only" made a 2B model's cards terse and evasive.
         return buildString {
-            append("Write short spoken ${cfg.l2.promptName} replies, at most ${cfg.maxUnitsText} each. ")
-            append("Rewrite plain as yours in my register and rhythm. Invent no facts. ")
+            append("You write replies I (ME) say aloud to THEM: spoken ${cfg.l2.promptName}, not written style, max ${cfg.maxUnitsText} each.\n")
+            append("\"yours\" rewords \"plain\" in my voice (register, directness, warmth; max one signature move; my ${cfg.l1.promptName} fillers and phrases as natural ${cfg.l2.promptName}, never literal).\n")
             if (voice.isNotBlank()) append("My voice: $voice\n")
             append("Roman is ${cfg.l2.romanization ?: "null for Latin script"}; back is the literal ${cfg.l1.promptName} meaning.\n")
+            append("Example (format only):\n")
             append(PromptSet.example(cfg.l1, cfg.l2))
         }.take(1200)
     }
