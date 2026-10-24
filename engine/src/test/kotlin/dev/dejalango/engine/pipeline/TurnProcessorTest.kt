@@ -241,6 +241,9 @@ class TurnProcessorTest {
             val shown = rig.processor.hud.value.replies
             assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
             assertTrue(shown.isNotEmpty())
+            val used: MutableList<String> = java.util.Collections.synchronizedList(ArrayList())
+            rig.scope.launch { rig.processor.usedReplies.collect { used += it } }
+            delay(20)
 
             // Stage A labels my Mandarin "them": reading variant #1 aloud is still my line, not theirs.
             rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", shown[0].yours, "Yeah, first time, still wandering around"))
@@ -252,6 +255,8 @@ class TurnProcessorTest {
             assertEquals(1, s.learnedToday)
             assertEquals(0, s.selectedReply)
             assertEquals("the variants stay up after a match", shown, s.replies)
+            withTimeout(2_000) { while (used.isEmpty()) delay(10) }
+            assertEquals("the app embeds the variant I read, once", listOf(shown[0].yours), used.toList())
         } finally {
             rig.close()
         }
@@ -728,6 +733,30 @@ class TurnProcessorTest {
             assertEquals("I need a minute.", rig.processor.hud.value.heard?.text)
             assertNull(rig.processor.hud.value.statusLine)
             assertFalse(rig.traces[0].parseFailed)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `single shape counts a card read aloud as mine and as learned`() = runBlocking {
+        val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY, shape = PipelineShape.SINGLE))
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE)) // 你是第一次来北京吗？
+            rig.awaitTraces(1)
+            val shown = rig.processor.hud.value.replies
+            assertTrue(shown.isNotEmpty())
+
+            // The single call labels my Mandarin "them" as well: reading card #1 aloud is still my line.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", shown[0].yours, "Yeah, first time, still wandering around"))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            val s = rig.processor.hud.value
+            assertEquals(listOf("THEM", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+            assertEquals(1, s.learnedToday)
+            assertEquals(0, s.selectedReply)
+            assertEquals(shown, s.replies)
         } finally {
             rig.close()
         }
