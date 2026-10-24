@@ -240,7 +240,7 @@ class TurnProcessor(
             turnId = id, tTurnEnd = tEnd, audioMs = turn.durationMs, reason = reason.name,
             backend = model.info.backend, shape = if (cfg.mode == Mode.WORD_FINDING) "WORD" else cfg.shape.name,
         )
-        _hud.update { it.copy(phase = Phase.THINKING, statusLine = "transcribing speech…", trace = trace.copy(), error = null) }
+        _hud.update { it.copy(phase = Phase.THINKING, statusLine = TRANSCRIBING, trace = trace.copy(), error = null) }
         try {
             when {
                 cfg.mode == Mode.WORD_FINDING -> processWord(turn, cfg, trace)
@@ -257,7 +257,9 @@ class TurnProcessor(
         } finally {
             stage = Stage.NONE
             trace.tRendered = clock.nowMs()
-            _hud.update { it.copy(trace = trace.copy()) }
+            // Some paths set no status (an empty transcript, word finding, a timeout, a cancel) and would leave the
+            // turn looking busy. Turns run one at a time under modelLock, so TRANSCRIBING here is still this turn's.
+            _hud.update { it.copy(statusLine = if (it.statusLine == TRANSCRIBING) null else it.statusLine, trace = trace.copy()) }
             _traces.tryEmit(trace.copy())
         }
     }
@@ -485,7 +487,7 @@ class TurnProcessor(
                 statusLine = when {
                     !cards -> null
                     conversation.lastSuggested.isNotEmpty() -> YOUR_TURN
-                    else -> "listening for their response…"
+                    else -> THEIR_TURN
                 },
                 trace = trace.copy(),
             ).let { s -> s.copy(phase = restingPhase(s)) }
@@ -550,7 +552,7 @@ class TurnProcessor(
     private fun absorbConfirmedEcho(a: StageAResult, trace: TurnTrace): Boolean {
         val echo = conversation.takeEcho() ?: return false
         ReplyMatcher.match(a.heard, listOf(echo.yours, echo.plain)) ?: return false
-        _hud.update { it.copy(phase = restingPhase(it), trace = trace.copy()) }
+        _hud.update { it.copy(phase = restingPhase(it), statusLine = THEIR_TURN, trace = trace.copy()) }
         return true
     }
 
@@ -590,7 +592,9 @@ class TurnProcessor(
     }
 
     companion object {
+        private const val TRANSCRIBING = "transcribing speech…"
         private const val YOUR_TURN = "your turn: read a reply aloud (or tap it + 'I said this one')"
+        private const val THEIR_TURN = "listening for their response…"
         const val LEVEL_THROTTLE_MS = 100L
     }
 }

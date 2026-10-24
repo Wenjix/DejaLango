@@ -258,6 +258,33 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `in say it my way, reading a confirmed variant aloud is absorbed`() = runBlocking {
+        val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
+        try {
+            rig.processor.warm(null)
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            val shown = rig.processor.hud.value.replies
+            rig.processor.onAction(HudAction.Select(0))
+            rig.processor.onAction(HudAction.Confirm)
+
+            // Reading the confirmed variant aloud (labeled "them") is the line Confirm already recorded and counted.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", shown[0].yours, "Yeah, first time, still wandering around"))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            val s = rig.processor.hud.value
+            assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(listOf("ME", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+            assertEquals(1, s.learnedToday)
+            assertEquals(shown, s.replies)
+            assertEquals("listening for their response…", s.statusLine)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `a consumed suggestion set never matches again, so their next line gets replies`() = runBlocking {
         val rig = Rig()
         try {
@@ -307,6 +334,7 @@ class TurnProcessorTest {
             assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
             assertEquals("你是第一次来北京吗？", rig.processor.hud.value.heard?.text)
             assertEquals(listOf("THEM", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+            assertEquals("listening for their response…", rig.processor.hud.value.statusLine)
 
             // Their next line gets replies, and the echo was one-shot: saying that reply again now is a new line.
             rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE)) // 你觉得这里的菜怎么样？
@@ -582,6 +610,21 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `an empty transcript does not leave the transcribing status up`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "", ""))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals(0, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertNotEquals("transcribing speech…", rig.processor.hud.value.statusLine)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `a hung model times out and the hud recovers`() = runBlocking<Unit> {
         val rig = Rig(PipelineConfig(generationTimeoutMs = 200))
         try {
@@ -677,6 +720,20 @@ class TurnProcessorTest {
             val s = rig.awaitPhase(Phase.SHOWING)
             assertEquals("multimeter", s.wordHint)
             assertEquals(listOf("voltmeter", "the meter thing"), s.wordAlternatives)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `a word finding turn does not leave the transcribing status up`() = runBlocking {
+        val rig = Rig(PipelineConfig(mode = Mode.WORD_FINDING))
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.PAUSE))
+            rig.awaitTraces(1)
+            assertEquals("multimeter", rig.processor.hud.value.wordHint)
+            assertNotEquals("transcribing speech…", rig.processor.hud.value.statusLine)
         } finally {
             rig.close()
         }
