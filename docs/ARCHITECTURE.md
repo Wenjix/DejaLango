@@ -4,7 +4,7 @@ DejaLango turns short audio turns into a transcript and suggested replies in the
 language, phrased in the wearer's voice. A pure Kotlin engine produces `HudState`; the Android app
 supplies audio, inference, storage and displays.
 
-The engine has **86 passing JVM tests** and the app has **20 passing JVM tests**. Mobile and
+The engine has **90 passing JVM tests** and the app has **24 passing JVM tests**. Mobile and
 Meta VR fake-model APKs build successfully, as does the optional mobile build against LiteRT-LM
 0.18.1. Real-device inference, vendor runtime initialization and performance need verification.
 Examples below describe the current design; source types are the authority for exact signatures.
@@ -361,7 +361,7 @@ behavior needs measurement; automatic thermal adaptation is not implemented.
 
 The existing engine suite covers turn-policy transitions and timing, ring-buffer behavior, prompt
 building, malformed/truncated JSON, retrieval and pipeline behavior. Run `./gradlew :engine:test`
-or the offline compiler helper. The verified suite has 86 engine tests, 20 Android JVM tests and 4 Android instrumentation
+or the offline compiler helper. The verified suite has 90 engine tests, 24 Android JVM tests and 4 Android instrumentation
 tests. One instrumentation test covers prompt rendering and unresolved-variable rejection using
 Android's regex engine. One loads EmbeddingGemma through `AppGraph` and checks that this phone's
 accelerator build wins and that its vectors match meaning across English and Mandarin. Two load Gemma
