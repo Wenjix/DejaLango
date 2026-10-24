@@ -9,9 +9,9 @@
 # compileSdk to 37.1 — see docs/ARCHITECTURE.md §9.
 
 [versions]
-agp = "9.3.2"
+agp = "9.4.1"
 kotlin = "2.3.0"
-ksp = "2.3.4"
+ksp = "2.3.6"
 coroutines = "1.10.1"
 serializationJson = "1.8.0"
 
