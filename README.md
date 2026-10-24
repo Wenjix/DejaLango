@@ -86,7 +86,7 @@ used to go. Authenticate with `hf auth login` and accept the model terms before 
 
 ```bash
 scripts/fetch_models.sh tensor_g6
-# Other supported variants: tensor_g5, sm8750. Omit the argument for generic weights.
+# Other supported variants: tensor_g5, sm8750; name several for several phones. Omit the argument for generic weights.
 ./gradlew :app:installMobileDebug
 scripts/push_models.sh dev.dejalango
 
@@ -94,6 +94,11 @@ scripts/push_models.sh dev.dejalango
 # ./gradlew :app:installMobileDebug -PwithQualcommNpu
 # ./gradlew :app:installMobileDebug -PwithTensorNpu=false
 ```
+
+Without `ANDROID_SERIAL`, `push_models.sh` pushes to every connected phone. Each phone gets the
+generic weights and the bundles compiled for its own SoC; another chip's bundles stay on the
+computer. A bundle already on the phone at full size is not sent again. Every connected phone must
+allow USB debugging from the computer.
 
 For the Meta VR flavor, install it with `./gradlew :app:installMetavrDebug`, then run
 `scripts/push_models.sh dev.dejalango.metavr`. Models must be pushed into the directory for the
