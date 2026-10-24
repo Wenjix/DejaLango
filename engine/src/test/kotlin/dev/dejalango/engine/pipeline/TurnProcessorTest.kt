@@ -1,10 +1,12 @@
 package dev.dejalango.engine.pipeline
 
 import dev.dejalango.engine.audio.AudioTurn
+import dev.dejalango.engine.config.Language
 import dev.dejalango.engine.config.Mode
 import dev.dejalango.engine.config.PipelineConfig
 import dev.dejalango.engine.config.PipelineShape
 import dev.dejalango.engine.conversation.ConversationState
+import dev.dejalango.engine.conversation.Speaker
 import dev.dejalango.engine.hud.HudAction
 import dev.dejalango.engine.hud.HudState
 import dev.dejalango.engine.hud.Phase
@@ -178,6 +180,55 @@ class TurnProcessorTest {
         } finally {
             rig.close()
         }
+    }
+
+    @Test
+    fun `their Mandarin gets replies even when stage A tags it as mine`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            // What Gemma answers on the phone for the other person's line: the right language, the wrong speaker.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "zh", "你是第一次来北京吗？", "Is this your first time in Beijing?"))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+
+            assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(2, rig.processor.hud.value.replies.size)
+            assertEquals(listOf("THEM"), rig.conversation.snapshot().map { it.speaker.name })
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `my English stays an aside even when stage A tags it as theirs`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE)) // 你是第一次来北京吗？
+            rig.awaitTraces(1)
+
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "en-US", "I need a minute.", "I need a minute."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+
+            assertEquals("no replies to my own words", 1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(listOf("THEM", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `who spoke follows stage A's language in any common spelling`() {
+        val cfg = PipelineConfig() // I speak English, they speak Mandarin
+        for (lang in listOf("en", "EN", "en-US", "en_GB", "eng", "English", " english ")) assertEquals(lang, Speaker.ME, TurnProcessor.speakerOf(lang, cfg))
+        // Their language, another one, or none: the prompt's "if unclear, them".
+        for (lang in listOf("zh", "zh-Hans", "zh_TW", "zho", "cmn", "Chinese", "es", "")) assertEquals(lang, Speaker.THEM, TurnProcessor.speakerOf(lang, cfg))
+
+        val mandarinWearer = PipelineConfig(l1 = Language.ZH, l2 = Language.EN)
+        for (lang in listOf("zh", "zh-Hans", "zh_TW", "zho", "Mandarin", "Chinese")) assertEquals(lang, Speaker.ME, TurnProcessor.speakerOf(lang, mandarinWearer))
+        assertEquals(Speaker.THEM, TurnProcessor.speakerOf("en", mandarinWearer))
     }
 
     @Test

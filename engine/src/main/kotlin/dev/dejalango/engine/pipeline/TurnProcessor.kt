@@ -2,6 +2,7 @@ package dev.dejalango.engine.pipeline
 
 import dev.dejalango.engine.audio.AudioTurn
 import dev.dejalango.engine.audio.Clock
+import dev.dejalango.engine.config.Language
 import dev.dejalango.engine.config.Mode
 import dev.dejalango.engine.config.PipelineConfig
 import dev.dejalango.engine.config.PipelineShape
@@ -49,6 +50,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -328,11 +330,14 @@ class TurnProcessor(
         trace.tAFirstToken = gen.firstTokenMs; trace.tAEnd = gen.doneMs
         trace.tokensA = gen.stats?.outputTokens ?: 0; trace.decodeTpsA = gen.stats?.decodeTokensPerSec
 
-        val a = parser.parseStageA(gen.text) ?: run {
+        val parsed = parser.parseStageA(gen.text) ?: run {
             trace.parseFailed = true
             val raw = parser.rawFallback(gen.text)
             StageAResult(Speaker.THEM, "", raw, raw)
         }
+        // Who spoke follows the language Stage A heard, not its "speaker" tag: on the phone, Gemma tags their Mandarin
+        // "me" while naming it zh, and the gate below would then drop every reply.
+        val a = parsed.copy(speaker = speakerOf(parsed.lang, cfg))
         if (a.repaired) trace.repaired = true
         if (a.heard.isEmpty()) {
             _hud.update { it.copy(phase = restingPhase(it)) }
@@ -347,7 +352,7 @@ class TurnProcessor(
             return
         }
 
-        // Matching runs first because Stage A labels my Mandarin as THEM; this language-based label still decides who gets Stage B.
+        // Matching runs first because my Mandarin is labeled THEM by its language; that label still decides who gets Stage B.
         if (cfg.mode == Mode.REPLY_OPTIONS && a.speaker == Speaker.ME) {
             recordAside(a, turn.endMs, trace)
             return
@@ -623,5 +628,23 @@ class TurnProcessor(
         private const val YOUR_TURN = "your turn: read a reply aloud (or tap it + 'I said this one')"
         private const val THEIR_TURN = "listening for their response…"
         const val LEVEL_THROTTLE_MS = 100L
+
+        /**
+         * Who spoke, by the rule the Stage A prompt states: me if the turn is mostly my language, them otherwise, unclear
+         * included. Stage A's own "speaker" tag is not used. A signal from outside the model, such as an "I'm talking"
+         * button, would come before this, as the reply match already does.
+         */
+        internal fun speakerOf(lang: String, cfg: PipelineConfig): Speaker = if (isNamed(cfg.l1, lang)) Speaker.ME else Speaker.THEM
+
+        /** Stage A's lang is free text: a code in any case or region ("EN", "en-US", "en_GB"), an ISO 639-2 code ("eng") or a name ("English"). */
+        private fun isNamed(language: Language, lang: String): Boolean {
+            val tag = lang.trim()
+            if (tag.isEmpty()) return false
+            if (tag.equals(language.name, ignoreCase = true) || language.name.split(' ').any { it.equals(tag, ignoreCase = true) }) return true
+            val primary = tag.split('-', '_').first().lowercase()
+            return primary == language.code || iso3(language.code)?.let { it == iso3(primary) } == true
+        }
+
+        private fun iso3(code: String): String? = runCatching { Locale.forLanguageTag(code).isO3Language }.getOrNull()?.ifEmpty { null }
     }
 }
