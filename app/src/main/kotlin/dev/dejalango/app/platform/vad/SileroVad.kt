@@ -82,7 +82,7 @@ class SileroVad(modelBytes: ByteArray, private val sampleRate: Int = 16_000) : V
         lastProbability = 0f
     }
 
-    fun close() {
+    override fun close() {
         srTensor.close()
         session.close()
     }

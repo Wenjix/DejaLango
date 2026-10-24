@@ -72,7 +72,7 @@ class VoiceCardBuilder(
         /** Is [sentence] in [lang]'s script family? Two Latin-script languages can't be told apart this way, so both pass. */
         fun inScriptOf(lang: Language, sentence: String): Boolean {
             val cjk = sentence.any { Character.UnicodeScript.of(it.code) in CJK_SCRIPTS }
-            return cjk == (lang.code in CJK_LANGS)
+            return cjk == (lang.base in CJK_LANGS)
         }
     }
 }

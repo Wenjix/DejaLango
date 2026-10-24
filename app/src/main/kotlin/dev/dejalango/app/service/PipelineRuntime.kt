@@ -13,12 +13,13 @@ import dev.dejalango.engine.hud.HudAction
 import dev.dejalango.engine.hud.HudState
 import dev.dejalango.engine.llm.FakeSpeechModel
 import dev.dejalango.engine.llm.SpeechLanguageModel
-import dev.dejalango.engine.pipeline.TurnProcessor
+import dev.dejalango.engine.pipeline.CompanionProcessor
 import dev.dejalango.engine.prompts.PromptBuilder
 import dev.dejalango.engine.turn.EndReason
 import dev.dejalango.engine.turn.TurnEvent
 import dev.dejalango.engine.turn.TurnPolicy
 import dev.dejalango.engine.turn.TurnSegmenter
+import dev.dejalango.engine.turn.CompanionInput
 import dev.dejalango.engine.turn.VoiceActivityDetector
 import dev.dejalango.engine.turn.segmentTurns
 import dev.dejalango.engine.voice.Confidence
@@ -27,19 +28,24 @@ import dev.dejalango.engine.voice.Source
 import dev.dejalango.engine.voice.TextEmbedder
 import dev.dejalango.engine.voice.VoiceCard
 import dev.dejalango.engine.voice.VoiceCardBuilder
+import dev.dejalango.engine.voice.HashingEmbedder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Wires the engine to the device: audio source → ring/VAD/segmenter → TurnProcessor → HudState,
@@ -58,23 +64,29 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
     val conversation = ConversationState()
 
     // A minute, so the quick card really gets 60 s; turns stay under Gemma's 30 s audio cap via TurnPolicy.maxTurnMs.
-    private val ring = RingBuffer(seconds = 60)
-    private val vad: VoiceActivityDetector = graph.createVad()
-    private val segmenter = TurnSegmenter(TurnPolicy.forMode(config.value.mode), ring)
-    private val voiceOutput = graph.createVoiceOutput()
+    private val input = CompanionInput()
+    private val ring get() = input.ring
+    private val vadDelegate = lazy { graph.createVad() }
+    private val vad: VoiceActivityDetector by vadDelegate
 
     // Switching fake ↔ real (settings) restarts the service; these are fixed for the runtime's life.
     private val model: SpeechLanguageModel = graph.createSpeechModel(config.value, graph.configStore.settings.value.useFakeModel)
     private val embedder: TextEmbedder = graph.createEmbedder(graph.configStore.settings.value.useFakeModel)
-    private val retriever = Retriever(graph.exemplarStore, embedder)
+    private val voiceOutput = graph.createVoiceOutput()
+    private val retriever = if (embedder is HashingEmbedder) null else Retriever(graph.exemplarStore, embedder)
 
     /**
      * Whether voice cards and exemplars built here are saved. Not with the fake model (also AppGraph's silent fallback):
      * its canned card and transcripts would reach the store that real-model sessions load.
      */
-    val savesVoice: Boolean = model !is FakeSpeechModel
+    val savesVoice: Boolean = model !is FakeSpeechModel && embedder !is HashingEmbedder
 
-    val processor = TurnProcessor(model, retriever, conversation, PromptBuilder(graph.promptSet), config, llmScope)
+    val processor: CompanionProcessor = CompanionProcessor(
+        model, config, llmScope, retriever, PromptBuilder(graph.promptSet),
+        hintOutcome = { turn, pause, ready -> serviceScope.launch(audioDispatcher) { input.hintResult(turn, pause, ready).forEach(processorInput) } },
+        audioSlice = { from, to -> withContext(audioDispatcher) { input.slice(from, to) } },
+    )
+    private val processorInput: (dev.dejalango.engine.turn.CaptureEvent) -> Unit get() = processor::onInput
     val hud: StateFlow<HudState> get() = processor.hud
 
     private var hudServer: HudServer? = null
@@ -90,6 +102,8 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
     private var audioJob: Job? = null
     private var source: AudioSource? = null
     private val jobs = ArrayList<Job>()
+    private val closing = AtomicBoolean(false)
+    private val closed = CompletableDeferred<Unit>()
 
     @Volatile
     var isListening: Boolean = false
@@ -101,27 +115,31 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
             "soc=${s.socModel.ifEmpty { "?" }} · generic=${s.gemmaGeneric ?: "missing"} · soc bundle=${s.gemmaSoc ?: "missing"} · embedder=${embedder.description}"
         }
 
-    suspend fun start() {
+    suspend fun start() = processor.ownerOperation {
         // 1. Warm the model with the persisted voice card (quick cards are never persisted).
-        val card = runCatching { graph.exemplarStore.loadVoiceCard() }.getOrNull()
+        val card = runCatching { graph.exemplarStore.loadVoiceCard(config.value.l1.code) }.getOrNull()
         withContext(llmDispatcher) { processor.warm(card) }
+        if (!hud.value.modelReady) return@ownerOperation
         withContext(llmDispatcher) { embedder.warm() } // its accelerator build, or what it fell back to: the bench says which
         refreshExemplarCounts()
 
         // 2. Side channels: traces → CSV; used replies → exemplar store (L2, PICKED_REPLY) + optional TTS; config → policy.
         jobs += serviceScope.launch { processor.traces.collect { t -> runCatching { graph.traceWriter.append(t) }; Log.i(TAG, t.summary()) } }
         jobs += serviceScope.launch {
-            processor.usedReplies.collect { text ->
+            processor.usedReplies.collect { used ->
                 val cfg = config.value
-                if (cfg.speakReplies) voiceOutput.say(text, cfg.l2.code) // first: the earpiece prompt can't wait on the llm thread
-                runCatching { graph.exemplarStore.add(text, cfg.l2.code, Source.PICKED_REPLY, withContext(llmDispatcher) { embedder.embed(text) }) }
-                refreshExemplarCounts()
+                if (cfg.speakReplies) voiceOutput.say(used.text, used.language)
             }
         }
         jobs += serviceScope.launch {
-            config.drop(1).collect { cfg ->
-                segmenter.policy = TurnPolicy.forMode(cfg.mode)
-                processor.onConfigChanged(cfg)
+            config.collect { cfg ->
+                withContext(audioDispatcher) { processor.onConfigChanged(cfg) }
+            }
+        }
+        jobs += serviceScope.launch {
+            hud.map { it.pair }.distinctUntilChanged().collect { pair ->
+                val stored = withContext(Dispatchers.IO) { graph.exemplarStore.loadVoiceCard(pair.me.code) }
+                processor.useVoiceCard(pair, stored)
             }
         }
 
@@ -146,21 +164,33 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
     }
 
     fun startAudio() {
-        stopAudio()
+        if (isListening || audioJob?.isActive == true || !hud.value.modelReady) return
         val src = graph.createAudioSource(graph.configStore.settings.value.replayFixture)
         source = src
-        vad.reset()
-        segmenter.reset()
         audioJob = serviceScope.launch(audioDispatcher) {
             try {
+                vad.reset()
+                input.reset().forEach(processorInput)
                 src.start()
                 isListening = true
-                processor.run(segmentTurns(src.frames, vad, ring, segmenter))
+                processor.listening(true)
+                var dropped = 0L
+                src.frames.collect { frame ->
+                    input.frame(frame, vad.probability(frame.pcm)).forEach(processorInput)
+                    if (ring.droppedSamples != dropped) {
+                        dropped = ring.droppedSamples
+                        Log.w(TAG, "Audio gaps: missingSamples=$dropped")
+                    }
+                }
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) throw t
                 Log.e(TAG, "audio pipeline stopped: ${t.message}", t)
+                processor.inputError("Microphone stopped. Check microphone access, then try listening again.")
             } finally {
+                src.stop()
+                if (source === src) source = null
                 isListening = false
+                processor.listening(false)
             }
         }
     }
@@ -171,25 +201,19 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
         source?.stop()
         source = null
         isListening = false
+        processor.listening(false)
     }
 
     fun onAction(a: HudAction) {
-        when (a) {
-            is HudAction.SetMode -> graph.configStore.update { it.copy(mode = a.mode) }
-            HudAction.CutNow -> serviceScope.launch(audioDispatcher) {
-                val endMs = ring.endMs ?: 0L
-                val events = segmenter.cutNow(endMs)
-                if (events.isNotEmpty()) {
-                    events.forEach(processor::onEvent)
-                } else {
-                    // If VAD was not currently latched in Speech when the user tapped Cut, slice the recent
-                    // audio window from the ring buffer so Cut still forces a manual turn immediately.
-                    val fromMs = maxOf(ring.startMs ?: 0L, endMs - 3_000L)
-                    val turn = if (endMs > fromMs) ring.turn(fromMs, endMs) else AudioTurn(FloatArray(16_000), 0L, 1_000L, 16_000)
-                    processor.onEvent(TurnEvent.TurnEnded(turn, EndReason.MANUAL))
-                }
+        serviceScope.launch(audioDispatcher) {
+            when (a) {
+                HudAction.Talk -> if (isListening) input.talk().forEach(processorInput)
+                HudAction.Done -> if (isListening) input.done().forEach(processorInput)
+                HudAction.CutNow -> if (isListening) input.operatorCut().forEach(processorInput)
+                HudAction.Clear -> { input.reset().forEach(processorInput); processor.clear() }
+                is HudAction.SetMode -> Unit
+                else -> processor.onAction(a)
             }
-            else -> processor.onAction(a)
         }
     }
 
@@ -197,40 +221,48 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
      * Judge flow: the last [seconds] of audio in the ring buffer → QUICK card (in memory, not persisted) plus the L1
      * sentences heard, indexed as exemplars, so both shape the very next replies.
      */
-    suspend fun buildQuickCardFromRecentAudio(seconds: Int = 60): VoiceCard {
+    suspend fun buildQuickCardFromRecentAudio(seconds: Int = 60): VoiceCard = processor.ownerOperation { ownerModel ->
         val cfg = config.value
-        val end = ring.endMs ?: return VoiceCard.none(cfg.l1.code, cfg.l2.code)
-        val start = maxOf(ring.startMs ?: end, end - seconds * 1000L)
-        val chunks = ArrayList<AudioTurn>()
-        var to = end
-        while (to - start >= MIN_CHUNK_MS) { // a sliver is too short to transcribe
-            val from = maxOf(start, to - MAX_CHUNK_MS)
-            chunks += ring.turn(from, to)
-            to = from
+        val chunks = withContext(audioDispatcher) {
+            val end = ring.endMs ?: return@withContext emptyList<AudioTurn>()
+            val start = maxOf(ring.startMs ?: end, end - seconds * 1000L)
+            val result = ArrayList<AudioTurn>()
+            var to = end
+            while (to - start >= MIN_CHUNK_MS) {
+                val from = maxOf(start, to - MAX_CHUNK_MS)
+                result += ring.turn(from, to)
+                to = from
+            }
+            result.reversed()
         }
-        val r = withContext(llmDispatcher) { VoiceCardBuilder(processor.ownerModel, PromptBuilder(graph.promptSet)).quickFromAudio(cfg, chunks.reversed()) }
+        val r = withContext(llmDispatcher) { VoiceCardBuilder(ownerModel, PromptBuilder(graph.promptSet)).quickFromAudio(cfg, chunks) }
         if (savesVoice) index(r.sentences, cfg.l1.code)
         // Nothing heard in my language: keep the card I have rather than fall back to none.
-        if (r.card.confidence != Confidence.NONE) withContext(llmDispatcher) { processor.warm(r.card) } else processor.prepareNext()
-        return r.card
+        if (r.card.confidence != Confidence.NONE) processor.useVoiceCard(cfg.pair, r.card)
+        processor.prepareNext()
+        r.card
     }
 
     /** Owner flow: an hour of transcript sentences → FULL card (persisted) + every sentence embedded into the store. */
-    suspend fun buildFullCard(sentences: List<String>): VoiceCard {
+    suspend fun buildFullCard(sentences: List<String>): VoiceCard = processor.ownerOperation { ownerModel ->
         val cfg = config.value
-        val r = withContext(llmDispatcher) { VoiceCardBuilder(processor.ownerModel, PromptBuilder(graph.promptSet)).fromSentences(cfg, sentences, Confidence.FULL) }
+        val r = withContext(llmDispatcher) { VoiceCardBuilder(ownerModel, PromptBuilder(graph.promptSet)).fromSentences(cfg, sentences, Confidence.FULL) }
         if (savesVoice) {
             graph.exemplarStore.saveVoiceCard(r.card)
             index(r.sentences, cfg.l1.code)
         }
         // An unparseable card comes back NONE (and is not saved): keep the card I have.
-        if (r.card.confidence != Confidence.NONE) withContext(llmDispatcher) { processor.warm(r.card) } else processor.prepareNext()
-        return r.card
+        if (r.card.confidence != Confidence.NONE) processor.useVoiceCard(cfg.pair, r.card)
+        processor.prepareNext()
+        r.card
     }
 
     /** Bench flow: the bundled persona corpus `assets/voice_seed_<l1>.txt` through [buildFullCard], as if it were my transcript. */
     suspend fun seedDefaultVoiceCard(): VoiceCard {
-        val asset = "voice_seed_${config.value.l1.code}.txt"
+        val language = config.value.l1
+        val files = context.assets.list("").orEmpty().toSet()
+        val asset = listOf("voice_seed_${language.tag}.txt", "voice_seed_${language.code}.txt").firstOrNull { it in files }
+            ?: error("No bundled sample for ${language.label}. Add your own words in Your voice instead.")
         val sentences = withContext(Dispatchers.IO) {
             context.assets.open(asset).bufferedReader(Charsets.UTF_8).useLines { lines ->
                 lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toList()
@@ -239,9 +271,10 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
         return buildFullCard(sentences)
     }
 
-    suspend fun wipe() {
+    suspend fun wipe() = processor.ownerOperation {
         graph.exemplarStore.wipe()
         conversation.clear()
+        processor.clear()
         withContext(llmDispatcher) { processor.warm(null) }
         refreshExemplarCounts()
     }
@@ -264,6 +297,8 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
     }
 
     fun stop() {
+        if (!closing.compareAndSet(false, true)) return
+        val capture = audioJob
         stopAudio()
         jobs.forEach { it.cancel() }
         jobs.clear()
@@ -271,16 +306,25 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
         hudServer = null
         _hudUrl.value = null
         processor.shutdown()
-        // On the model's thread, after whatever native call it is in (a generation or a spare conversation being
-        // created): closing the engine underneath one would crash. close() below still runs queued tasks.
-        llmDispatcher.executor.execute {
-            runCatching { model.close() }
-            runCatching { embedder.close() }
+        // This scope outlives the service's canceled scope. An idle executor can still own a suspended SDK
+        // flow; wait for full owner operations and the model lock before closing either engine/dispatcher.
+        CoroutineScope(llmDispatcher).launch {
+            try {
+                capture?.join()
+                processor.awaitIdle()
+                withContext(audioDispatcher) { if (vadDelegate.isInitialized()) runCatching { vad.close() } }
+                runCatching { model.close() }
+                runCatching { embedder.close() }
+                runCatching { voiceOutput.close() }
+            } finally {
+                llmDispatcher.close()
+                audioDispatcher.close()
+                closed.complete(Unit)
+            }
         }
-        voiceOutput.close()
-        llmDispatcher.close()
-        audioDispatcher.close()
     }
+
+    suspend fun awaitClosed() { closed.await() }
 
     private companion object {
         const val TAG = "PipelineRuntime"

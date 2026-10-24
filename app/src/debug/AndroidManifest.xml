@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity android:name="dev.dejalango.app.ui.CompanionWalkthroughActivity" android:exported="true" android:label="Companion · synthetic walkthrough" />
+    </application>
+</manifest>

@@ -38,6 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.ClipEntry
+import android.content.ClipData
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -50,7 +53,6 @@ import dev.dejalango.app.service.ListenService
 import dev.dejalango.app.service.PipelineRuntime
 import dev.dejalango.engine.config.AudioBackend
 import dev.dejalango.engine.config.Backend
-import dev.dejalango.engine.config.Mode
 import dev.dejalango.engine.config.PipelineShape
 import dev.dejalango.engine.hud.HudAction
 import dev.dejalango.engine.hud.HudState
@@ -81,11 +83,12 @@ fun BenchScreen(
     val exemplarCountsFlow = remember(runtime) { runtime?.exemplarCounts ?: MutableStateFlow(PipelineRuntime.ExemplarCounts()) }
     val exemplarCounts by exemplarCountsFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val clipboard = LocalClipboard.current
     var showKnobs by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf<String?>(null) }
     var note by remember { mutableStateOf<String?>(null) } // outcome of the last card/index action
     val act: (HudAction) -> Unit = { a -> runtime?.onAction(a) }
-    val isListening = runtime != null
+    val isListening = hud.listening
 
     CompositionLocalProvider(LocalContentColor provides Color.White) {
     Column(
@@ -116,42 +119,12 @@ fun BenchScreen(
             }
         }
 
-        // Mode selector
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("mode:", color = Color.Gray, fontSize = 12.sp)
-                Mode.values().forEach { m ->
-                    FilterChip(selected = config.mode == m, onClick = { graph.configStore.update { it.copy(mode = m) } }, label = { Text(modeLabel(m)) })
-                }
-            }
-            Text(modeDescription(config.mode), color = Color(0xFF8A9199), fontSize = 11.sp)
-        }
-
         // Listening & turn controls
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (!isListening) Button(onClick = onStartListening) { Text("Start listening") }
+            if (!isListening) Button(onClick = { if (hud.modelReady) runtime?.startAudio() else onStartListening() }) { Text("Start listening") }
             else OutlinedButton(onClick = onStopListening) { Text("Stop") }
-            OutlinedButton(onClick = { act(HudAction.CutNow) }, enabled = isListening) { Text("Cut turn") }
+            OutlinedButton(onClick = { act(HudAction.CutNow) }, enabled = isListening) { Text("Operator Cut") }
             OutlinedButton(onClick = { act(HudAction.Clear) }, enabled = isListening) { Text("Clear") }
-        }
-
-        // Phrasing toggle (You vs Phrasebook)
-        if (config.mode != Mode.WORD_FINDING) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("phrasing:", color = Color.Gray, fontSize = 12.sp)
-                FilterChip(
-                    selected = !hud.showPlain,
-                    onClick = { if (hud.showPlain) act(HudAction.TogglePlain) },
-                    enabled = isListening,
-                    label = { Text("you (personalized)") },
-                )
-                FilterChip(
-                    selected = hud.showPlain,
-                    onClick = { if (!hud.showPlain) act(HudAction.TogglePlain) },
-                    enabled = isListening,
-                    label = { Text("phrasebook (plain)") },
-                )
-            }
         }
 
         // Heard
@@ -172,15 +145,14 @@ fun BenchScreen(
             }
         }
 
-        // Replies or word hint
-        if (config.mode == Mode.WORD_FINDING) {
-            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF101418), contentColor = Color.White)) {
-                Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(hud.wordHint ?: if (hud.phase == Phase.THINKING) "…" else "—", fontSize = 40.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                    if (hud.wordAlternatives.isNotEmpty()) Text(hud.wordAlternatives.joinToString("  ·  "), color = Color.Gray)
-                }
-            }
-        } else {
+        if (hud.hint.phase != dev.dejalango.engine.hud.HintPhase.NONE) {
+            Text(if (hud.hint.phase == dev.dejalango.engine.hud.HintPhase.PENDING) "…" else hud.hint.word, fontSize = 28.sp)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { act(HudAction.Talk) }, enabled = isListening && hud.capture.ready) { Text("I'm talking") }
+            Button(onClick = { act(HudAction.Done) }, enabled = isListening && hud.capture.myTurn) { Text("Done") }
+        }
+        run {
             hud.replies.forEachIndexed { i, r ->
                 val selected = hud.selectedReply == i
                 Card(
@@ -196,7 +168,6 @@ fun BenchScreen(
                 }
             }
             if (hud.replies.isEmpty() && hud.phase == Phase.THINKING) Text("…", fontSize = 24.sp, color = Color.Gray)
-            if (hud.selectedReply != null) Button(onClick = { act(HudAction.Confirm) }) { Text("I said this one") }
         }
 
         hud.error?.let { Text(it, color = Color(0xFFFF6B6B)) }
@@ -222,6 +193,7 @@ fun BenchScreen(
                 hud.voiceCard?.let { c -> Text("voice card: " + c.describe().replace("\n", " · "), fontSize = 12.sp, color = Color(0xFFA9B0B8)) }
                 hudUrl?.let { url ->
                     Text("HUD: $url", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFF5CFF8A))
+                    TextButton(onClick = { scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Current HUD link", url))) } }) { Text("Copy current HUD link") }
                     Text("laptop: adb forward tcp:${settings.hudPort} tcp:${settings.hudPort}  then load the URL in hud.xyz", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Gray)
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -372,16 +344,4 @@ private fun phaseLabel(phase: Phase, isListening: Boolean): String = when {
     phase == Phase.IDLE -> "listening"
     phase == Phase.LISTENING -> "speech detected"
     else -> phase.name.lowercase()
-}
-
-private fun modeLabel(m: Mode): String = when (m) {
-    Mode.REPLY_OPTIONS -> "replies"
-    Mode.SAY_IT_MY_WAY -> "say it my way"
-    Mode.WORD_FINDING -> "word"
-}
-
-private fun modeDescription(m: Mode): String = when (m) {
-    Mode.REPLY_OPTIONS -> "They speak → suggests replies in their language, phrased in your voice"
-    Mode.SAY_IT_MY_WAY -> "You speak → translates into their language in your voice"
-    Mode.WORD_FINDING -> "You pause mid-sentence → suggests the word you're reaching for"
 }

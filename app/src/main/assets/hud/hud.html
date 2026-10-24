@@ -1,133 +1,22 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=600, initial-scale=1">
-<title>DejaLango HUD</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=600, initial-scale=1"><meta name="referrer" content="no-referrer"><title>DejaLango lens</title>
 <style>
-  /* Designed for a 600×600 additive display: black is transparent, dark grays are faint. Keep text bright. */
-  :root { --fg: #ffffff; --dim: #a9b0b8; --accent: #5cff8a; --warn: #ffd166; --bad: #ff6b6b; }
-  /* Embedded in /sim: the outer page shows the key hint. */
-  html.embedded .foot { display: none; }
-  html, body { margin: 0; padding: 0; background: #000; color: var(--fg); width: 600px; height: 600px; overflow: hidden; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif; }
-  #root { box-sizing: border-box; width: 600px; height: 600px; padding: 22px 26px; display: flex; flex-direction: column; gap: 10px; }
-  .bar { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--dim); letter-spacing: .04em; text-transform: uppercase; }
-  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--dim); }
-  .dot.listening { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-  .dot.thinking { background: var(--warn); animation: pulse 1s infinite; }
-  .dot.showing { background: var(--fg); }
-  .dot.error { background: var(--bad); }
-  @keyframes pulse { 0%,100% { opacity: .4 } 50% { opacity: 1 } }
-  .spacer { flex: 1; }
-  .meter { width: 70px; height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
-  .meter i { display: block; height: 100%; background: var(--accent); width: 0; }
-  #heard { font-size: 26px; line-height: 1.25; min-height: 34px; }
-  #heardTr { font-size: 19px; color: var(--dim); line-height: 1.3; }
-  #replies { display: flex; flex-direction: column; gap: 10px; flex: 1; justify-content: center; }
-  .reply { border-left: 4px solid #333; padding: 6px 14px; color: var(--dim); cursor: pointer; }
-  .reply .main { font-size: 28px; line-height: 1.25; }
-  .reply .roman { font-size: 18px; margin-top: 3px; }
-  .reply .back { font-size: 15px; margin-top: 3px; color: #8a9199; display: none; }
-  .reply.sel { border-left-color: var(--accent); color: var(--fg); }
-  .reply.sel .back { display: block; }
-  #word { display: none; flex: 1; flex-direction: column; justify-content: center; align-items: center; gap: 12px; }
-  #word .w { font-size: 54px; font-weight: 600; }
-  #word .alts { font-size: 20px; color: var(--dim); }
-  .foot { display: flex; gap: 14px; font-size: 13px; color: #7d858d; }
-  #err { color: var(--bad); font-size: 15px; min-height: 18px; }
-  #conn { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--dim); background: #000; }
-  .hidden { display: none !important; }
-</style>
-</head>
-<body>
-<div id="root">
-  <div class="bar">
-    <span class="dot" id="dot"></span><span id="phase">warming</span>
-    <span id="mode"></span>
-    <span class="spacer"></span>
-    <span class="meter"><i id="level"></i></span>
-    <span id="learned"></span>
-  </div>
-  <div id="heard"></div>
-  <div id="heardTr"></div>
-  <div id="replies"></div>
-  <div id="word"><div class="w" id="wordText"></div><div class="alts" id="wordAlts"></div></div>
-  <div id="err"></div>
-  <div class="foot"><span>◀ ▶ select</span><span>⏎ confirm</span><span>P phrasebook ⇄ you</span><span>⎋ clear</span></div>
-</div>
-<div id="conn">connecting to phone…</div>
-<script>
-(function () {
-  var ws = null, state = null, retry = null;
-  var $ = function (id) { return document.getElementById(id); };
-  if (window.self !== window.top || new URLSearchParams(location.search).get('embedded') === '1') document.documentElement.classList.add('embedded');
-
-  function connect() {
-    try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); }
-    catch (e) { schedule(); return; }
-    ws.onopen = function () { $('conn').classList.add('hidden'); };
-    ws.onmessage = function (ev) { try { state = JSON.parse(ev.data); render(state); } catch (e) {} };
-    ws.onclose = function () { $('conn').classList.remove('hidden'); schedule(); };
-    ws.onerror = function () { try { ws.close(); } catch (e) {} };
-  }
-  function schedule() { clearTimeout(retry); retry = setTimeout(connect, 1000); }
-  function act(a, extra) {
-    var msg = Object.assign({ action: a }, extra || {});
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
-  }
-
-  function render(s) {
-    var dot = $('dot'); dot.className = 'dot ' + s.phase.toLowerCase();
-    $('phase').textContent = s.phase.toLowerCase();
-    $('mode').textContent = s.mode === 'REPLY_OPTIONS' ? 'replies' : s.mode === 'SAY_IT_MY_WAY' ? 'say it my way' : 'word';
-    $('level').style.width = Math.round((s.level || 0) * 100) + '%';
-    $('learned').textContent = s.learnedToday ? ('✓ ' + s.learnedToday) : '';
-    $('err').textContent = s.error || s.status || '';
-
-    var isWord = s.mode === 'WORD_FINDING';
-    $('word').style.display = isWord ? 'flex' : 'none';
-    $('replies').style.display = isWord ? 'none' : 'flex';
-    $('heard').style.display = isWord ? 'none' : 'block';
-    $('heardTr').style.display = isWord ? 'none' : 'block';
-
-    if (isWord) {
-      $('wordText').textContent = s.wordHint || (s.phase === 'THINKING' ? '…' : '');
-      $('wordAlts').textContent = (s.wordAlternatives || []).join('  ·  ');
-      return;
-    }
-
-    $('heard').textContent = s.heard ? s.heard.text : (s.phase === 'LISTENING' ? '…' : '');
-    $('heardTr').textContent = s.heard && s.heard.translation && s.heard.translation !== s.heard.text ? s.heard.translation : '';
-
-    var box = $('replies'); box.innerHTML = '';
-    (s.replies || []).forEach(function (r, i) {
-      var d = document.createElement('div');
-      d.className = 'reply' + (s.selected === i ? ' sel' : '');
-      var main = document.createElement('div'); main.className = 'main'; main.textContent = s.showPlain ? r.plain : r.yours; d.appendChild(main);
-      if (r.roman) { var ro = document.createElement('div'); ro.className = 'roman'; ro.textContent = r.roman; d.appendChild(ro); }
-      if (r.back) { var b = document.createElement('div'); b.className = 'back'; b.textContent = '= ' + r.back; d.appendChild(b); }
-      d.onclick = function () { act('select', { index: i }); };
-      box.appendChild(d);
-    });
-    if (!s.replies || !s.replies.length) {
-      if (s.phase === 'THINKING') { var t = document.createElement('div'); t.className = 'reply'; t.innerHTML = '<div class="main">…</div>'; box.appendChild(t); }
-    }
-  }
-
-  // D-pad / keyboard. The hud.xyz simulator maps its D-pad to arrow keys and Enter.
-  document.addEventListener('keydown', function (e) {
-    switch (e.key) {
-      case 'ArrowRight': case 'ArrowDown': act('next'); e.preventDefault(); break;
-      case 'ArrowLeft': case 'ArrowUp': act('prev'); e.preventDefault(); break;
-      case 'Enter': case ' ': act('confirm'); e.preventDefault(); break;
-      case 'p': case 'P': act('togglePlain'); break;
-      case 'Escape': act('clear'); break;
-      case 'c': case 'C': act('cut'); break;
-    }
-  });
-  connect();
-})();
-</script>
-</body>
-</html>
+:root { color-scheme: dark; --green:#8cff9d; --dim:rgba(140,255,157,.72); }
+* { box-sizing:border-box } html,body { margin:0; width:600px; height:600px; overflow:hidden; background:transparent; color:var(--green); font-family:Roboto,system-ui,sans-serif }
+#lens { width:600px; height:600px; padding:24px 30px; display:flex; flex-direction:column; gap:14px }
+#status { font-size:20px; line-height:1.3; min-height:26px } #receipt { font-size:18px; line-height:1.4 } #receiptRoman { font-size:18px; line-height:1.4 }
+#heard { font-size:25px; line-height:1.35; max-height:72px; overflow:hidden } #meaning,#heardRoman { font-size:18px; line-height:1.35; color:var(--dim) }
+#word { font-size:32px; line-height:1.35; min-height:44px } #wordRoman,#wordMeaning { font-size:20px }
+#reply { flex:1; display:flex; flex-direction:column; justify-content:center; gap:8px; min-height:0 }
+#replyText { font-size:32px; line-height:1.3; max-height:170px; overflow:hidden } #roman { font-size:22px; line-height:1.4; max-height:64px; overflow:hidden } #back { font-size:18px; line-height:1.4; color:var(--dim); max-height:50px; overflow:hidden }
+#position,#error { font-size:17px; line-height:1.35 } #keys { font-size:14px; color:var(--dim) } #connection { position:absolute; inset:0; display:grid; place-items:center; color:var(--green); font-size:22px; padding:40px; text-align:center; background:transparent }
+.hidden,[hidden] { display:none!important } html.embedded #keys { display:none }
+</style></head><body>
+<main id="lens" aria-label="Glasses display">
+<div id="status" role="status"></div><div><div id="receipt"></div><div id="receiptRoman"></div></div>
+<div><div id="heard"></div><div id="heardRoman"></div><div id="meaning"></div></div>
+<div><div id="word"></div><div id="wordRoman"></div><div id="wordMeaning"></div></div>
+<div id="reply"><div id="position"></div><div id="replyText"></div><div id="roman"></div><div id="back"></div></div>
+<div id="error"></div><div id="keys">T Talk · C Done · ← → browse · P pause display · S flip · U Undo</div>
+</main><div id="connection" role="status">Open the current HUD link from the phone.</div>
+<script src="/hud.js"></script></body></html>

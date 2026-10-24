@@ -8,6 +8,7 @@ interface VoiceActivityDetector {
     /** Probability in [0, 1] that [pcm] (one 512-sample frame at 16 kHz) contains speech. */
     fun probability(pcm: FloatArray): Float
     fun reset()
+    fun close() {}
 }
 
 /** Energy-only detector for tests, fixtures, and as a last-resort fallback if the ONNX model is missing. */

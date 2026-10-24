@@ -187,6 +187,7 @@ class TurnProcessor(
                 _hud.update { it.copy(phase = Phase.IDLE, heard = null, replies = emptyList(), selectedReply = null, wordHint = null, wordAlternatives = emptyList(), exemplarsUsed = emptyList(), error = null) }
             }
             is HudAction.SetMode, HudAction.CutNow -> Unit // app-level: config and segmenter are owned there
+            HudAction.Talk, HudAction.Done, HudAction.ToggleDisplay, is HudAction.Repair, is HudAction.Undo -> Unit
         }
     }
 

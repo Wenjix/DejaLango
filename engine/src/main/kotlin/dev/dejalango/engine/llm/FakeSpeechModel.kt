@@ -3,6 +3,8 @@ package dev.dejalango.engine.llm
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * Runs the whole pipeline without a GPU. Keys canned answers on [GenerateRequest.tag], streams them
@@ -26,6 +28,7 @@ class FakeSpeechModel(
         val heard: String,
         val heardL1: String,
         val repliesJson: String? = null,
+        val roman: String? = null,
     )
 
     private val script = ArrayDeque<ScriptedTurn>()
@@ -102,9 +105,9 @@ class FakeSpeechModel(
         (script.removeFirstOrNull() ?: defaultTurns[fallbackIndex++ % defaultTurns.size]).also { lastTurn = it }
 
     private fun answer(req: GenerateRequest): Pair<String, Long> = when (req.tag) {
-        RequestTag.STAGE_A -> {
+        RequestTag.STAGE_A, RequestTag.THEIRS, RequestTag.YOURS -> {
             val t = nextTurn()
-            """{"speaker":"${t.speaker}","lang":"${t.lang}","heard":"${t.heard}","heard_l1":"${t.heardL1}"}""" to stageADelayMs
+            buildJsonObject { put("speaker", t.speaker); put("lang", t.lang); put("heard", t.heard); put("heard_l1", t.heardL1); put("roman", t.roman.orEmpty()) }.toString() to stageADelayMs
         }
         RequestTag.SINGLE -> {
             val t = nextTurn()
@@ -112,8 +115,9 @@ class FakeSpeechModel(
             val replies = if (t.speaker == "them") repliesBody else "\"replies\":[]"
             """{"speaker":"${t.speaker}","lang":"${t.lang}","heard":"${t.heard}","heard_l1":"${t.heardL1}",$replies}""" to (stageADelayMs + stageBDelayMs)
         }
-        RequestTag.STAGE_B -> (lastTurn?.repliesJson ?: cannedReplies) to stageBDelayMs
+        RequestTag.STAGE_B, RequestTag.SAY_IT -> (lastTurn?.repliesJson ?: cannedReplies) to stageBDelayMs
         RequestTag.WORD -> """{"word":"multimeter","alternatives":["voltmeter","the meter thing"],"confidence":0.8}""" to stageADelayMs
+        RequestTag.HINT -> """{"lang":"es","word":"avena","roman":null,"meaning":"oats","confidence":0.8}""" to stageADelayMs
         RequestTag.TRANSCRIBE -> """{"lang":"en","text":"So basically I think, honestly, we should just ship it and see. No worries if it breaks."}""" to stageADelayMs
         RequestTag.VOICE_CARD ->
             """{"register":2,"directness":4,"warmth":4,"humor":3,"avgSentenceWords":9,"fillers":["basically","honestly"],"openers":["So basically"],"closers":["no worries"],"signaturePhrases":["just ship it and see","no worries if it breaks"],"avoids":["kindly","per my last email"],"notes":"Fast, casual, decisive; softens blunt calls with warmth."}""" to stageBDelayMs

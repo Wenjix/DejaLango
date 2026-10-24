@@ -1,0 +1,453 @@
+{
+  "varieties": [
+    {
+      "tag": "en-US",
+      "base": "en",
+      "label": "English (US)",
+      "short": "English (US)",
+      "script": "en",
+      "lang": "en-US"
+    },
+    {
+      "tag": "en-GB",
+      "base": "en",
+      "label": "English (UK)",
+      "short": "English (UK)",
+      "script": "en",
+      "lang": "en-GB"
+    },
+    {
+      "tag": "en-AU",
+      "base": "en",
+      "label": "English (Australia)",
+      "short": "English (Australia)",
+      "script": "en",
+      "lang": "en-AU"
+    },
+    {
+      "tag": "es-CO",
+      "base": "es",
+      "label": "Spanish (Colombia)",
+      "short": "Spanish (Colombia)",
+      "script": "es",
+      "lang": "es-CO"
+    },
+    {
+      "tag": "es-MX",
+      "base": "es",
+      "label": "Spanish (Mexico)",
+      "short": "Spanish (Mexico)",
+      "script": "es",
+      "lang": "es-MX"
+    },
+    {
+      "tag": "es-ES",
+      "base": "es",
+      "label": "Spanish (Spain)",
+      "short": "Spanish (Spain)",
+      "script": "es",
+      "lang": "es-ES"
+    },
+    {
+      "tag": "zh-CN",
+      "base": "zh",
+      "label": "Mandarin (Mainland, Simplified)",
+      "short": "Mandarin (Mainland)",
+      "script": "hans",
+      "scriptLabel": "Simplified",
+      "lang": "zh-Hans"
+    },
+    {
+      "tag": "zh-TW",
+      "base": "zh",
+      "label": "Mandarin (Taiwan, Traditional)",
+      "short": "Mandarin (Taiwan)",
+      "script": "hant",
+      "scriptLabel": "Traditional",
+      "lang": "zh-Hant"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "colombia",
+      "label": "Colombia restaurant",
+      "me": "en-US",
+      "them": "es-CO"
+    },
+    {
+      "id": "mainland",
+      "label": "Mandarin · Simplified",
+      "me": "en-US",
+      "them": "zh-CN"
+    },
+    {
+      "id": "taiwan",
+      "label": "Mandarin · Traditional",
+      "me": "en-US",
+      "them": "zh-TW"
+    },
+    {
+      "id": "british",
+      "label": "English (UK) → Spanish",
+      "me": "en-GB",
+      "them": "es-CO",
+      "originalKey": "takeaway"
+    }
+  ],
+  "beats": [
+    [
+      "listen",
+      "Listening for them"
+    ],
+    [
+      "their",
+      "Their line arrives"
+    ],
+    [
+      "replies",
+      "Replies ready"
+    ],
+    [
+      "armed",
+      "Armed · proposed 4 s"
+    ],
+    [
+      "speaking",
+      "You’re speaking"
+    ],
+    [
+      "hint-pending",
+      "Word hint pending"
+    ],
+    [
+      "hint",
+      "Word hint ready"
+    ],
+    [
+      "closing",
+      "Closing · proposed 1.2 s"
+    ],
+    [
+      "finishing",
+      "Done · finish last word"
+    ],
+    [
+      "sent",
+      "Sent · turn closed"
+    ],
+    [
+      "matched",
+      "Suggestion matched"
+    ],
+    [
+      "original",
+      "Your original words"
+    ],
+    [
+      "say",
+      "Your language → variants"
+    ],
+    [
+      "merged",
+      "A quick answer merged"
+    ],
+    [
+      "split",
+      "Last part moved to them"
+    ],
+    [
+      "undone",
+      "Correction undone"
+    ],
+    [
+      "timeout",
+      "Stray tap timed out"
+    ],
+    [
+      "caught",
+      "Forgotten tap · caught"
+    ],
+    [
+      "missed",
+      "Forgotten tap · missed"
+    ],
+    [
+      "pair-pending",
+      "Pair queued for next turn"
+    ]
+  ],
+  "lines": {
+    "question": {
+      "en": {
+        "text": "What would you like to drink?"
+      },
+      "es": {
+        "text": "¿Qué te gustaría tomar?"
+      },
+      "hans": {
+        "text": "请问想喝什么？",
+        "roman": "Qǐngwèn xiǎng hē shénme?"
+      },
+      "hant": {
+        "text": "請問想喝什麼？",
+        "roman": "Qǐngwèn xiǎng hē shénme?"
+      }
+    },
+    "reply0": {
+      "en": {
+        "text": "A coffee with milk, please. Thanks."
+      },
+      "es": {
+        "text": "Un café con leche, por favor. Gracias."
+      },
+      "hans": {
+        "text": "一杯加牛奶的咖啡，谢谢。",
+        "roman": "Yì bēi jiā niúnǎi de kāfēi, xièxie."
+      },
+      "hant": {
+        "text": "一杯加牛奶的咖啡，謝謝。",
+        "roman": "Yì bēi jiā niúnǎi de kāfēi, xièxie."
+      }
+    },
+    "reply1": {
+      "en": {
+        "text": "What do you recommend? I like trying new things."
+      },
+      "es": {
+        "text": "¿Qué me recomiendas? Me gusta probar cosas nuevas."
+      },
+      "hans": {
+        "text": "你推荐什么？我想试试新口味。",
+        "roman": "Nǐ tuījiàn shénme? Wǒ xiǎng shìshi xīn kǒuwèi."
+      },
+      "hant": {
+        "text": "你推薦什麼？我想試試新口味。",
+        "roman": "Nǐ tuījiàn shénme? Wǒ xiǎng shìshi xīn kǒuwèi."
+      }
+    },
+    "reply2": {
+      "en": {
+        "text": "Just water for me, thanks."
+      },
+      "es": {
+        "text": "Para mí, solo agua. Gracias."
+      },
+      "hans": {
+        "text": "我喝水就好，谢谢。",
+        "roman": "Wǒ hē shuǐ jiù hǎo, xièxie."
+      },
+      "hant": {
+        "text": "我喝水就好，謝謝。",
+        "roman": "Wǒ hē shuǐ jiù hǎo, xièxie."
+      }
+    },
+    "partial": {
+      "en": {
+        "text": "A coffee with… that milk made from…"
+      },
+      "es": {
+        "text": "Un café con leche de…"
+      },
+      "hans": {
+        "text": "一杯咖啡，加那个……奶。",
+        "roman": "Yì bēi kāfēi, jiā nàge… nǎi."
+      },
+      "hant": {
+        "text": "一杯咖啡，加那個……奶。",
+        "roman": "Yì bēi kāfēi, jiā nàge… nǎi."
+      }
+    },
+    "hint": {
+      "en": {
+        "text": "oats"
+      },
+      "es": {
+        "text": "avena"
+      },
+      "hans": {
+        "text": "燕麦",
+        "roman": "Yànmài"
+      },
+      "hant": {
+        "text": "燕麥",
+        "roman": "Yànmài"
+      }
+    },
+    "original": {
+      "en": {
+        "text": "A coffee with oat milk, please."
+      },
+      "es": {
+        "text": "Un café con leche de avena, por favor."
+      },
+      "hans": {
+        "text": "一杯燕麦奶咖啡，谢谢。",
+        "roman": "Yì bēi yànmài nǎi kāfēi, xièxie."
+      },
+      "hant": {
+        "text": "一杯燕麥奶咖啡，謝謝。",
+        "roman": "Yì bēi yànmài nǎi kāfēi, xièxie."
+      }
+    },
+    "takeaway": {
+      "en": {
+        "text": "Could I have a coffee with oat milk to take away, please?"
+      },
+      "es": {
+        "text": "Un café con leche de avena para llevar, por favor."
+      },
+      "hans": {
+        "text": "一杯燕麦奶咖啡，外带，谢谢。",
+        "roman": "Yì bēi yànmài nǎi kāfēi, wàidài, xièxie."
+      },
+      "hant": {
+        "text": "一杯燕麥奶咖啡，外帶，謝謝。",
+        "roman": "Yì bēi yànmài nǎi kāfēi, wàidài, xièxie."
+      }
+    },
+    "help": {
+      "en": {
+        "text": "Do you have oat milk?"
+      },
+      "es": {
+        "text": "¿Tienen leche de avena?"
+      },
+      "hans": {
+        "text": "你们有燕麦奶吗？",
+        "roman": "Nǐmen yǒu yànmài nǎi ma?"
+      },
+      "hant": {
+        "text": "你們有燕麥奶嗎？",
+        "roman": "Nǐmen yǒu yànmài nǎi ma?"
+      }
+    },
+    "variant1": {
+      "en": {
+        "text": "Could you make it with oat milk?"
+      },
+      "es": {
+        "text": "¿Me lo puedes preparar con leche de avena?"
+      },
+      "hans": {
+        "text": "可以用燕麦奶做吗？",
+        "roman": "Kěyǐ yòng yànmài nǎi zuò ma?"
+      },
+      "hant": {
+        "text": "可以用燕麥奶做嗎？",
+        "roman": "Kěyǐ yòng yànmài nǎi zuò ma?"
+      }
+    },
+    "tail": {
+      "en": {
+        "text": "With sugar?"
+      },
+      "es": {
+        "text": "¿Con azúcar?"
+      },
+      "hans": {
+        "text": "要加糖吗？",
+        "roman": "Yào jiā táng ma?"
+      },
+      "hant": {
+        "text": "要加糖嗎？",
+        "roman": "Yào jiā táng ma?"
+      }
+    },
+    "repairedReply": {
+      "en": {
+        "text": "No sugar, thank you."
+      },
+      "es": {
+        "text": "Sin azúcar, gracias."
+      },
+      "hans": {
+        "text": "不加糖，谢谢。",
+        "roman": "Bù jiā táng, xièxie."
+      },
+      "hant": {
+        "text": "不加糖，謝謝。",
+        "roman": "Bù jiā táng, xièxie."
+      }
+    },
+    "badReply": {
+      "en": {
+        "text": "Yes, we have oat milk."
+      },
+      "es": {
+        "text": "Sí, tenemos leche de avena."
+      },
+      "hans": {
+        "text": "有的，我们有燕麦奶。",
+        "roman": "Yǒu de, wǒmen yǒu yànmài nǎi."
+      },
+      "hant": {
+        "text": "有的，我們有燕麥奶。",
+        "roman": "Yǒu de, wǒmen yǒu yànmài nǎi."
+      }
+    },
+    "acknowledge": {
+      "en": {
+        "text": "Got it, thank you."
+      },
+      "es": {
+        "text": "Entendido, gracias."
+      },
+      "hans": {
+        "text": "好的，谢谢。",
+        "roman": "Hǎo de, xièxie."
+      },
+      "hant": {
+        "text": "好的，謝謝。",
+        "roman": "Hǎo de, xièxie."
+      }
+    },
+    "partnerWait": {
+      "en": {
+        "text": "One moment, please."
+      },
+      "es": {
+        "text": "Un momento, por favor."
+      },
+      "hans": {
+        "text": "请稍等一下。",
+        "roman": "Qǐng shāo děng yíxià."
+      },
+      "hant": {
+        "text": "請稍等一下。",
+        "roman": "Qǐng shāo děng yíxià."
+      }
+    },
+    "partnerGo": {
+      "en": {
+        "text": "Your turn."
+      },
+      "es": {
+        "text": "Tu turno."
+      },
+      "hans": {
+        "text": "请说吧。",
+        "roman": "Qǐng shuō ba."
+      },
+      "hant": {
+        "text": "請說吧。",
+        "roman": "Qǐng shuō ba."
+      }
+    },
+    "kept": {
+      "en": {
+        "text": "Coffee first. Then the adventure."
+      },
+      "es": {
+        "text": "Primero el café. Luego, la aventura."
+      },
+      "hans": {
+        "text": "先喝咖啡，再去冒险。",
+        "roman": "Xiān hē kāfēi, zài qù màoxiǎn."
+      },
+      "hant": {
+        "text": "先喝咖啡，再去冒險。",
+        "roman": "Xiān hē kāfēi, zài qù màoxiǎn."
+      }
+    }
+  }
+}

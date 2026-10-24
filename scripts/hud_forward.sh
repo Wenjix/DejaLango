@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
-# Exposes the phone's HUD server on the laptop as http://localhost:LOCAL_PORT/hud, for the hud.xyz
-# Ray-Ban Display simulator or any browser tab. Usage: scripts/hud_forward.sh [local_port] [phone_port]
+# Forward only the explicitly selected device. The capability comes from the app's current HUD link.
 set -euo pipefail
-PORT="${1:-8765}"
-REMOTE_PORT="${2:-8765}"
-adb forward "tcp:$PORT" "tcp:$REMOTE_PORT"
+if [[ $# -lt 1 ]]; then
+  echo "Usage: scripts/hud_forward.sh <adb-serial> [local-port] [phone-port]" >&2
+  exit 2
+fi
+hud_device_serial="$1"
+hud_local_port="${2:-8765}"
+hud_phone_port="${3:-8765}"
+if [[ ! "$hud_local_port" =~ ^[0-9]+$ || ! "$hud_phone_port" =~ ^[0-9]+$ ]]; then
+  echo "Ports must be integers." >&2
+  exit 2
+fi
+adb -s "$hud_device_serial" forward "tcp:$hud_local_port" "tcp:$hud_phone_port"
 cat <<EOF
-forwarded: http://localhost:$PORT/hud
+Forwarded the selected device on localhost:$hud_local_port.
 
-OUR simulator (works offline; the HUD over the laptop camera, glasses bezel, additive blend):
-  open http://localhost:$PORT/sim            (allow the camera; F = fullscreen)
-  open http://localhost:$PORT/sim?bg=photo   (no camera)   ?bg=black (plain)
-  arrow keys select a reply, Enter confirms, P flips phrasebook ⇄ you, C cuts, Esc clears
+Open the current HUD link from Developer tools → Bench. Its session token is required.
+For the simulator, replace /hud with /sim in that same link, retaining ?token=… .
+If you chose a different local port, replace its port with $hud_local_port.
+The simulator starts with a bundled synthetic café. Camera preview is an explicit button.
 
-hud.xyz (Meta Ray-Ban Display simulator, 600×600, D-pad) — when it is up:
-  1. open https://hud.xyz  (redirects to the simulator)
-  2. enter http://localhost:$PORT/hud as the app URL
-
-raw HUD page in a tab:     open http://localhost:$PORT/hud
-current state as JSON:     curl -s http://localhost:$PORT/state
-send an action without WS: curl -s "http://localhost:$PORT/action?a=%7B%22action%22%3A%22next%22%7D"
+T / ArrowUp = Talk, C = Done, left/right = browse, S = latest-line correction,
+U = Undo, P = pause display. There is no Use or operational mode key.
+Tokens rotate when the listening runtime restarts; an older link cannot read or control it.
 EOF

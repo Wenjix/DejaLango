@@ -58,10 +58,10 @@ class JvmAdaptersTest {
         assertTrue(j.contains("\"phase\":\"SHOWING\""))
         assertTrue(j.contains("对啊。"))
         assertTrue(j.contains("\"selected\":0"))
-        assertEquals(HudAction.Next, HudJson.decodeAction("""{"action":"next"}"""))
-        assertEquals(HudAction.Select(1), HudJson.decodeAction("""{"action":"select","index":1}"""))
-        assertEquals(HudAction.Confirm, HudJson.decodeAction("""{"action":"confirm"}"""))
-        assertEquals(null, HudJson.decodeAction("""{"action":"dance"}"""))
-        assertEquals(null, HudJson.decodeAction("not json"))
+        assertEquals(HudAction.Next, HudJson.decodeAction("""{"action":"next","session":"test"}""", "test"))
+        assertEquals(HudAction.Select(1), HudJson.decodeAction("""{"action":"select","index":1,"session":"test"}""", "test"))
+        assertEquals(null, HudJson.decodeAction("""{"action":"confirm","session":"test"}""", "test"))
+        assertEquals(null, HudJson.decodeAction("""{"action":"dance","session":"test"}""", "test"))
+        assertEquals(null, HudJson.decodeAction("not json", "test"))
     }
 }

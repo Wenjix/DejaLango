@@ -4,23 +4,27 @@ DejaLango turns short audio turns into a transcript and suggested replies in the
 language, phrased in the wearer's voice. A pure Kotlin engine produces `HudState`; the Android app
 supplies audio, inference, storage and displays.
 
-The engine has **67 passing JVM tests** and the app has **9 passing JVM tests**. Mobile and
-Meta VR fake-model APKs build successfully, as does the optional mobile build against LiteRT-LM
-0.18.1. Real-device inference, vendor runtime initialization and performance need verification.
-Examples below describe the current design; source types are the authority for exact signatures.
-Section 11 records the main decisions and open checks.
+The current runtime is the mode-free Companion path. [The implementation record](implementation/companion-soft-press.md)
+describes its input state machine, model scheduling, correction transaction, native UI and secured HUD.
+[Verification](implementation/verification.md) records the current test/build evidence. Earlier Pixel
+measurements remain in FINDINGS.md; this candidate has not been installed on the demo phone.
 
-## 0. Product modes
+## 0. Current Companion path
 
-| Mode | Trigger and audio window | HUD output |
-|---|---|---|
-| Reply options | End of the other person's turn; up to 28 seconds | Transcript, translation and replies in L2 |
-| Say it my way | End of the wearer's L1 turn | The same meaning in L2, using the wearer's style |
-| Word-finding | Mid-sentence pause; trailing 8 seconds | A word suggestion and alternatives when confidence is sufficient |
+`ListenService` → `PipelineRuntime` → serialized audio/VAD/`CompanionInput` → `CompanionProcessor` →
+shared immutable `HudState` → native Companion and authenticated browser lens. Talk fixes wearer
+ownership; untapped audio belongs to the partner. Recognition decides L1 variants versus L2
+match/original behavior. Word hints run separately. The service owns the session across navigation.
 
-L1 is the wearer's language and L2 is the other person's language. Defaults are English and
-Mandarin Chinese. Replies carry phrasebook and personalized versions, romanization and a
-back-translation. The bench can show the voice card and retrieved sentences behind the prompt.
+The selected pair includes regional tags and a script-specific exemplar/card key. Settings are loaded
+before inference and saved through a serialized actor. Capture closure, processing and recognition
+are separate observable states. Corrections can be undone without changing the live input or display
+pause state. Reply use does not automatically create personal style samples.
+
+The older `TurnProcessor`, `Mode`, segmentation and prompt contracts below remain for compatibility
+and regression tests. Their mode-based examples describe the earlier bench path, not consumer
+controls or the processor constructed by the current `PipelineRuntime`. Room schema version 1 and
+trace CSV ordering are retained.
 
 ## 1. Principles
 
@@ -287,21 +291,21 @@ The Meta VR application ID is `dev.dejalango.metavr` and needs its own model pus
 
 | Route | Purpose |
 |---|---|
-| `/hud` | Raw HUD page, also available at `/`, `/hud.html` and `/index.html` |
-| `/sim` | Built-in glasses simulator, also at `/sim.html`; camera, generated-photo or black background |
-| `/state` | Current state as JSON |
-| `/action?a=<json>` | One action sent through an HTTP request |
-| `/ws` | State updates out and action messages in over WebSocket |
+| `/hud` | Green transparent 600 × 600 optical layer |
+| `/sim` | Lens over a bundled synthetic café or explicitly requested local camera preview |
+| `/state?token=…` | Capability-protected current state |
+| `POST /action?token=…` | JSON action with current session ID |
+| `/ws?token=…` | Authenticated state subscription and session-bound actions |
 
-Run `scripts/hud_forward.sh`, then open `http://localhost:8765/sim`. The simulator uses a local
-camera background by default; `?bg=photo` and `?bg=black` work without a camera. Keys are arrows
-for selection, Enter for confirmation, P for phrasebook text, C for cut, Escape for clear and F
-for simulator fullscreen. hud.xyz can load the raw `/hud` URL as an alternative renderer.
+Run `scripts/hud_forward.sh DEVICE_SERIAL`, then copy the current tokenized HUD link from the
+bench. Retain the token when replacing `/hud` with `/sim`. T/ArrowUp is Talk, C Done, left/right
+browses, S corrects the latest line, U undoes, and P pauses display. The wire `cut` alias invokes
+Done; operator Cut is a separate bench action. `confirm`, `mode` and `togglePlain` are rejected.
 
-`HudJson` sends a JSON object on each state update. Incoming actions include `next`, `prev`,
-`confirm`, `select`, `togglePlain`, `clear`, `cut` and `mode`, for example
-`{"action":"select","index":0}`. The built-in simulator renders the raw HUD in an iframe with
-an additive blend over its background. Its camera stream stays in the browser.
+A fresh runtime rotates the capability. Unauthorized sockets are rejected before upgrade/state,
+cross-origin access is limited, and wildcard CORS is absent. Tokens are not logged or serialized
+into state. Display pause blanks the lens; it does not stop the microphone. The simulator keeps
+its tokenized iframe on the same origin, and camera video stays in that browser.
 
 ### 5.5 Flavors, permissions and storage
 
@@ -348,9 +352,12 @@ behavior needs measurement; automatic thermal adaptation is not implemented.
 | Replay fixture missing | Log the failure and use the microphone |
 | HUD server cannot start | Log the failure; the runtime exposes no HUD URL |
 
-## 8. Verification
+## 8. Verification of the earlier bench pipeline
 
-The existing engine suite covers turn-policy transitions and timing, ring-buffer behavior, prompt
+Current Companion checks are in [verification](implementation/verification.md). The following records
+the earlier installed build and must not be read as new candidate measurements.
+
+The earlier engine suite covers turn-policy transitions and timing, ring-buffer behavior, prompt
 building, malformed/truncated JSON, retrieval and pipeline behavior. Run `./gradlew :engine:test`
 or the offline compiler helper. The verified suite has 67 engine tests, 9 Android JVM tests and 4 Android instrumentation
 tests. One instrumentation test covers prompt rendering and unresolved-variable rejection using
@@ -379,10 +386,10 @@ Listening and live HUD checks could not run while the device was locked. Remaini
 
 ## 9. Toolchain and dependencies
 
-The repository declares AGP 9.3.2 with built-in Kotlin, Kotlin 2.3.0, KSP 2.3.4, Gradle 9.7.1,
+The repository declares AGP 9.4.1 with built-in Kotlin, Kotlin 2.3.0, KSP 2.3.6, Gradle 9.7.1,
 Compose BOM 2025.09.01, Room 2.8.3, coroutines 1.10.1, compile/target SDK 36, minimum SDK 31 and
 JVM target 17. Gradle configuration, the default flavor builds and the optional LiteRT-LM mobile
-build have passed using JDK 22.
+build use the wrapper’s full JDK 25 daemon criteria; Java/Kotlin bytecode remains 17.
 
 LiteRT-LM is pinned to `0.18.1`, which resolves and compiles with the app's optional adapters.
 Vendor NPU runtimes are pinned to `2.3.0`; separate Tensor and Qualcomm APKs build successfully.

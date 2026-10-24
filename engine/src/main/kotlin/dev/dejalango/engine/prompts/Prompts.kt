@@ -162,11 +162,13 @@ SENTENCES:
          * One-reply format examples per L2. Content is illustrative only; the prompts say so. Each shows plain ≠ yours,
          * roman and back following yours, and asking instead of inventing.
          */
-        internal fun example(l1: Language, l2: Language): String = when (l2.code) {
-            "zh" -> """THEM: 帮个忙？
+        internal fun example(l1: Language, l2: Language): String = when {
+            l2.traditional -> """THEM: 可以幫忙嗎？
+{"replies":[{"plain":"可以，有什麼事？","yours":"好啊，什麼事？","roman":"Hǎo a, shénme shì?","back":"Sure, what is it?"}]}"""
+            l2.base == "zh" -> """THEM: 帮个忙？
 {"replies":[{"plain":"可以，有什么事？","yours":"行啊，啥事？","roman":"Xíng a, shá shì?","back":"OK, what thing?"}]}"""
 
-            "es" -> """THEM: ¿Me ayudas?
+            l2.base == "es" -> """THEM: ¿Me ayudas?
 {"replies":[{"plain":"Sí, ¿qué necesitas?","yours":"¡Claro! ¿Qué pasa?","roman":null,"back":"Of course! What happens?"}]}"""
 
             else -> """THEM: <${l2.name} line>

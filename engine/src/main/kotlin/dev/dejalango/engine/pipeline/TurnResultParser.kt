@@ -11,12 +11,12 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-data class StageAResult(val speaker: Speaker, val lang: String, val heard: String, val heardL1: String, val repaired: Boolean = false)
+data class StageAResult(val speaker: Speaker, val lang: String, val heard: String, val heardL1: String, val repaired: Boolean = false, val roman: String? = null)
 
 /** A JSON object pulled out of model text. [repaired] means truncated output was closed up to parse. */
 data class Extracted(val obj: JsonObject, val repaired: Boolean)
 
-data class WordHint(val word: String, val alternatives: List<String>, val confidence: Float)
+data class WordHint(val word: String, val alternatives: List<String>, val confidence: Float, val roman: String? = null, val meaning: String? = null, val lang: String = "")
 
 data class TranscriptResult(val lang: String, val text: String)
 
@@ -74,9 +74,10 @@ class TurnResultParser {
         return StageAResult(
             speaker = speaker,
             lang = o.str("lang")?.trim().orEmpty(),
-            heard = heard.trim(),
+            heard = heard.trim().takeUnless { PLACEHOLDER_ECHO.matches(it) }.orEmpty(),
             heardL1 = (o.str("heard_l1") ?: o.str("heardL1") ?: o.str("translation") ?: heard).trim(),
             repaired = e.repaired,
+            roman = o.str("roman")?.takeIf { it.isNotBlank() && it != "null" },
         )
     }
 
@@ -113,7 +114,7 @@ class TurnResultParser {
         val word = o.str("word")?.trim() ?: return null
         val alts = (o["alternatives"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content?.trim()?.takeIf { s -> s.isNotEmpty() } } ?: emptyList()
         val conf = (o["confidence"] as? JsonPrimitive)?.content?.toFloatOrNull()?.coerceIn(0f, 1f) ?: if (word.isEmpty()) 0f else 0.5f
-        return WordHint(word, alts, conf)
+        return WordHint(word, alts, conf, o.str("roman")?.takeIf { it.isNotBlank() && it != "null" }, o.str("meaning"), o.str("lang").orEmpty())
     }
 
     fun parseTranscript(text: String): TranscriptResult? {

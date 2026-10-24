@@ -101,6 +101,9 @@ class ConversationState(private val maxTurns: Int = 40) {
  * so it works for Chinese (no word boundaries) and English alike.
  */
 object ReplyMatcher {
+    fun foldPinyin(text: String): String = java.text.Normalizer.normalize(text.lowercase(), java.text.Normalizer.Form.NFD)
+        .filter { Character.getType(it) != Character.NON_SPACING_MARK.toInt() }
+
     fun normalize(s: String): String {
         val sb = StringBuilder(s.length)
         for (ch in s.lowercase()) {

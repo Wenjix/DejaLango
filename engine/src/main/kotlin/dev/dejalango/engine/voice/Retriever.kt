@@ -37,7 +37,7 @@ class Retriever(private val store: ExemplarStore, private val embedder: TextEmbe
 
     suspend fun forQuery(query: String, lang: String, k: Int = 6, lambda: Float = 0.7f): List<RetrievedExemplar> {
         if (k <= 0 || query.isBlank()) return emptyList()
-        val pool = store.all(lang)
+        val pool = store.all(lang).filter { it.source != Source.PICKED_REPLY }
         if (pool.isEmpty()) return emptyList()
         val q = embedder.embed(query, EmbedRole.QUERY)
         return mmr(q, pool, k, lambda)
