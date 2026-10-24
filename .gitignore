@@ -26,3 +26,13 @@ traces/
 
 # Offline compile scratch (see scripts/engine_offline_test.sh)
 .offline-build/
+
+# Language-server and editor output (copies of the sources)
+**/bin/
+
+# Design-tool state and review records (impeccable)
+.impeccable/
+
+# macOS text-to-speech fixture: Apple's licence limits system-voice output to personal,
+# non-commercial use, so it stays local. ElevenLabs fixtures can be committed here.
+app/src/debug/assets/fixtures/demo_zh.wav
