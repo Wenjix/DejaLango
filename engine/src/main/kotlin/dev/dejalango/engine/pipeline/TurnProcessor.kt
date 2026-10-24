@@ -418,7 +418,10 @@ class TurnProcessor(
         }
         val ids = retrieved.map { it.exemplar.id }
         replies = replies.map { it.copy(usedExemplarIds = ids) }
-        conversation.suggest(replies.map { SuggestedReply(yours = it.yours, plain = it.plain) })
+        // Offer only lines in L2 for matching and Confirm: a raw fallback in my language (Stage B echoing my line)
+        // would match me saying that line again and count it as a reply. It stays on screen. Every other card passed
+        // the check above, so the offer is all the cards or none, and a matched index is still the card's.
+        conversation.suggest(replies.filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }.map { SuggestedReply(yours = it.yours, plain = it.plain) })
         _hud.update {
             it.copy(
                 phase = Phase.SHOWING,

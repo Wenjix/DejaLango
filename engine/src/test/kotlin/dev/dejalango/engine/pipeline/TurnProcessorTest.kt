@@ -393,6 +393,28 @@ class TurnProcessorTest {
         }
     }
 
+    @Test
+    fun `in say it my way, a raw variant in my own language is shown but not matched`() = runBlocking {
+        val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
+        try {
+            rig.processor.warm(null)
+            // Stage B answers in plain text that echoes my line, so the raw fallback card is English.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time.", "Yeah, first time."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals(listOf("Yeah, first time."), rig.processor.hud.value.replies.map { it.yours })
+
+            // Saying my line again asks for variants again: it is not a reply read aloud.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            assertEquals(2, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(0, rig.processor.hud.value.learnedToday)
+        } finally {
+            rig.close()
+        }
+    }
+
     /** LiteRT-LM's native prefill runs to completion even when its caller is cancelled; this model does the same. */
     private class UninterruptibleModel(private val prefillMs: Long) : SpeechLanguageModel {
         val inFlight = AtomicInteger()
