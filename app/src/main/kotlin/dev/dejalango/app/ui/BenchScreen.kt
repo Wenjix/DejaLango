@@ -76,7 +76,6 @@ fun BenchScreen(
     val hudFlow = remember(runtime) { runtime?.hud ?: MutableStateFlow(HudState(phase = Phase.IDLE, statusLine = "not listening")) }
     val hud by hudFlow.collectAsStateWithLifecycle()
     val config by graph.configStore.config.collectAsStateWithLifecycle()
-    val settings by graph.configStore.settings.collectAsStateWithLifecycle()
     val hudUrl by (runtime?.hudUrl ?: MutableStateFlow<String?>(null)).collectAsStateWithLifecycle()
     val exemplarCountsFlow = remember(runtime) { runtime?.exemplarCounts ?: MutableStateFlow(PipelineRuntime.ExemplarCounts()) }
     val exemplarCounts by exemplarCountsFlow.collectAsStateWithLifecycle()
@@ -222,7 +221,7 @@ fun BenchScreen(
                 hud.voiceCard?.let { c -> Text("voice card: " + c.describe().replace("\n", " · "), fontSize = 12.sp, color = Color(0xFFA9B0B8)) }
                 hudUrl?.let { url ->
                     Text("HUD: $url", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color(0xFF5CFF8A))
-                    Text("laptop: adb forward tcp:${settings.hudPort} tcp:${settings.hudPort}  then load the URL in hud.xyz", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Gray)
+                    Text("laptop: scripts/hud_forward.sh, then open the /sim URL it prints", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = Color.Gray)
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { showKnobs = !showKnobs }) { Text(if (showKnobs) "hide knobs" else "knobs") }

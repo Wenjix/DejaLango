@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exposes the phone's HUD server on the laptop for the /sim simulator, hud.xyz, or any browser tab.
+# Exposes the phone's HUD server on the laptop for the /sim simulator or any browser tab.
 #
 #   scripts/hud_forward.sh                  laptop :8765 → phone :8765 (picks another laptop port if 8765 is busy)
 #   scripts/hud_forward.sh 9876             laptop :9876 → phone :8765
@@ -34,14 +34,10 @@ adb forward "tcp:$LAPTOP_PORT" "tcp:$PHONE_PORT"
 echo "forward: laptop :$LAPTOP_PORT → phone :$PHONE_PORT   (adb forward --list to see all)"
 cat <<EOF
 
-OUR simulator (works offline; the HUD over the laptop camera, glasses bezel, additive blend):
+glasses simulator (works offline; the HUD over the laptop camera, glasses bezel, additive blend):
   open http://localhost:$LAPTOP_PORT/sim            (allow the camera; F = fullscreen)
   open http://localhost:$LAPTOP_PORT/sim?bg=photo   (no camera)   ?bg=black (plain)
   arrow keys select a reply, Enter confirms, P flips phrasebook ⇄ you, C cuts, Esc clears
-
-hud.xyz (Meta Ray-Ban Display simulator, 600×600, D-pad) — when it is up:
-  1. open https://hud.xyz  (redirects to the simulator)
-  2. enter http://localhost:$LAPTOP_PORT/hud as the app URL
 
 raw HUD page in a tab:     open http://localhost:$LAPTOP_PORT/hud
 current state as JSON:     curl -s http://localhost:$LAPTOP_PORT/state

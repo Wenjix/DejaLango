@@ -21,19 +21,19 @@ import java.io.IOException
 /**
  * Serves the web HUD (assets/hud/hud.html) and streams [HudState] over a WebSocket.
  *
- * Why a web HUD: the Meta Ray-Ban Display simulator at hud.xyz is a browser page that loads a URL into a
- * 600×600 additive viewport with D-pad input, and the Android XR glasses emulator pairs with a phone AVD
- * rather than a real phone — both want a thin client. `adb forward tcp:PORT tcp:PORT` makes this server
- * reachable as http://localhost:PORT/hud on the laptop (localhost is a secure context, so https pages may
- * embed it and getUserMedia works). The server binds to 127.0.0.1 unless hudOnLan is set in settings.
+ * Why a web HUD: the glasses simulator (/sim) is a laptop browser page that shows a 600×600 additive viewport
+ * over the camera, and the Android XR glasses emulator pairs with a phone AVD rather than a real phone — both
+ * want a thin client. `adb forward tcp:PORT tcp:PORT` makes this server reachable as http://localhost:PORT/sim
+ * on the laptop (localhost is a secure context, so getUserMedia works). The server binds to 127.0.0.1 unless
+ * hudOnLan is set in settings.
  *
  * It answers only its own pages and local clients: every request, WebSocket handshakes included, must pass
  * [HudRequestGuard], and no response carries a CORS header, so other websites can neither read the
  * conversation nor, in current browsers, send actions.
  *
- * Routes: /hud (the raw 600×600 HUD page, what hud.xyz would load), /sim (our own simulator: the HUD
- * screen-blended over the laptop camera inside a glasses bezel — the fallback when hud.xyz is down),
- * /state (JSON snapshot), POST /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
+ * Routes: /sim (the glasses simulator: the HUD screen-blended over the laptop camera inside a glasses bezel),
+ * /hud (the raw 600×600 HUD page, which /sim shows in an iframe), /state (JSON snapshot),
+ * POST /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
  */
 class HudServer(
     private val assets: AssetManager,

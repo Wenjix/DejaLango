@@ -36,11 +36,11 @@ class HudRequestGuardTest {
     }
 
     @Test
-    fun `our pages pass, in a tab and inside another site's iframe`() {
+    fun `our pages pass, in a tab and when opened from another site`() {
         // hud.html and sim.html open ws://<location.host>/ws.
         val ownPage = arrayOf("host" to "localhost:8765", "origin" to "http://localhost:8765", "sec-fetch-site" to "same-origin")
         assertNull(refusal(*upgrade, *ownPage, path = "/ws"))
-        // hud.xyz loads /hud into an iframe: a cross-site navigation, without an Origin, and not an upgrade.
+        // A link on another site opens /hud: a cross-site navigation, without an Origin, and not an upgrade.
         assertNull(refusal("host" to "localhost:8765", "sec-fetch-site" to "cross-site", "upgrade-insecure-requests" to "1", path = "/hud"))
         // Same-origin POSTs and POSTs without Fetch Metadata remain allowed.
         assertNull(refusal("host" to "localhost:8765", "sec-fetch-site" to "same-origin", path = "/action", method = "POST"))

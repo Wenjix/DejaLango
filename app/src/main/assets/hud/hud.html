@@ -115,7 +115,7 @@
     }
   }
 
-  // D-pad / keyboard. The hud.xyz simulator maps its D-pad to arrow keys and Enter.
+  // Keyboard, for a tab opened on /hud. In /sim, sim.html takes the keys unless Tab moves focus into this iframe.
   document.addEventListener('keydown', function (e) {
     switch (e.key) {
       case 'ArrowRight': case 'ArrowDown': act('next'); e.preventDefault(); break;

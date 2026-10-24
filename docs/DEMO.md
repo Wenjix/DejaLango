@@ -9,8 +9,9 @@ The timings below are targets to measure, not verified performance.
 - Install and launch the app, push weights with `scripts/push_models.sh dev.dejalango`, disable the
   fake model, and restart listening. Check the model name and backend in the glass box: on a Pixel 11
   the model line says `NPU` and the status line ends `embedder=… · NPU`.
-- Run `scripts/hud_forward.sh` and open `http://localhost:8765/sim` on the laptop. Grant camera
-  permission and press F for fullscreen. Use `/sim?bg=photo` if no camera is available.
+- Run `scripts/hud_forward.sh` on the laptop and open the `/sim` URL it prints (normally
+  `http://localhost:8765/sim`). Grant camera permission and press F for fullscreen. Use
+  `/sim?bg=photo` if no camera is available.
 - Start with English as L1 and Mandarin as L2, personalized text selected, and a fresh conversation.
   Prepare an owner voice card and exemplar corpus if demonstrating personalization.
 - Turn airplane mode on. Keep USB debugging connected for the local HUD and trace export.

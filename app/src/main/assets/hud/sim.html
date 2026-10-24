@@ -6,11 +6,11 @@
 <title>DejaLango — glasses simulator</title>
 <style>
   /*
-    A self-hosted stand-in for the Ray-Ban Display simulator at hud.xyz (600×600, D-pad, additive display).
+    The laptop's glasses simulator, modeled on the Meta Ray-Ban Display (600×600, D-pad keys, additive display).
     The HUD page (/hud) renders bright text on black; here it is composited over the laptop camera with
     mix-blend-mode: screen, so black becomes transparent and the text floats over the room — which is what
-    an additive see-through display does. Served by the phone itself; reachable at http://localhost:8765/sim
-    after `scripts/hud_forward.sh`. Query: ?bg=cam (default) | ?bg=photo | ?bg=black   ?hint=0 hides the key hint.
+    an additive see-through display does. Served by the phone itself; reachable at the /sim URL that
+    `scripts/hud_forward.sh` prints. Query: ?bg=cam (default) | ?bg=photo | ?bg=black   ?hint=0 hides the key hint.
   */
   :root { --bezel: #0d0f12; }
   html, body { margin: 0; height: 100%; background: #000; color: #cfd4da; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }

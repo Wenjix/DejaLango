@@ -60,10 +60,13 @@ scripts/hud_forward.sh
 # Raw HUD:           http://localhost:8765/hud
 ```
 
+The script prints the URLs to open and picks another laptop port when 8765 is busy, or takes one as
+an argument: `scripts/hud_forward.sh 9876`.
+
 Allow the browser to use the laptop camera, or choose `?bg=photo` or `?bg=black`. Arrow keys select
 a reply, Enter confirms it, P switches phrasebook/personalized text, C cuts a turn, Escape clears
-the HUD, and F toggles fullscreen in the simulator. The raw HUD can also be loaded into hud.xyz.
-If multiple devices are connected, set `ANDROID_SERIAL` before running the helper scripts.
+the HUD, and F toggles fullscreen in the simulator. If multiple devices are connected, set
+`ANDROID_SERIAL` before running the helper scripts.
 
 Inference stays on the Android device. The HUD server sends conversation state to the connected
 browser over USB forwarding. It binds to localhost by default; the optional LAN setting exposes it
