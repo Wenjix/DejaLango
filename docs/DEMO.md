@@ -49,7 +49,7 @@ The timings below are targets to measure, not verified performance.
 | Replies take too long | Select one reply, reduce exemplar count, or compare the `SINGLE` pipeline. Record the result. |
 | JSON parsing fails | Inspect the visible fallback text and `parseFailed` trace flag. Try the constrained-JSON setting after verifying runtime support. |
 | Accelerator fails | Inspect the fallback backend and logcat's `LiteRtLmModel` output. Restart with GPU or CPU and generic weights. |
-| HUD does not connect | Rerun `scripts/hud_forward.sh`; forwarding resets after reconnecting. Set `ANDROID_SERIAL` when several devices are attached. |
+| HUD does not connect | Rerun `scripts/hud_forward.sh` and open the `/sim` URL it prints, normally the same one; forwarding resets after reconnecting. Set `ANDROID_SERIAL` when several devices are attached. |
 | Simulator camera is black | Allow localhost camera access, or open `/sim?bg=photo` or `/sim?bg=black`. |
 | Quick card has too little audio | Capture another short sample and rebuild it. The rolling buffer retains up to 60 seconds. |
 | No “because you say” lines | Check the exemplar count in the glass box; tap **seed voice** or build a quick card, and keep exemplars k above 0. |

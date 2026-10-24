@@ -61,7 +61,8 @@ scripts/hud_forward.sh
 ```
 
 The script prints the URLs to open and picks another laptop port when 8765 is busy, or takes one as
-an argument: `scripts/hud_forward.sh 9876`.
+an argument: `scripts/hud_forward.sh 9876`. Without an argument, it reuses an existing forward to
+the phone, so a rerun prints the same URLs.
 
 Allow the browser to use the laptop camera, or choose `?bg=photo` or `?bg=black`. Arrow keys select
 a reply, Enter confirms it, P switches phrasebook/personalized text, C cuts a turn, Escape clears

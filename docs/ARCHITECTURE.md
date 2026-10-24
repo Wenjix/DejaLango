@@ -296,9 +296,10 @@ The Meta VR application ID is `dev.dejalango.metavr` and needs its own model pus
 | `/ws` | State updates out and action messages in over WebSocket |
 
 Run `scripts/hud_forward.sh`, then open the `/sim` URL it prints (`http://localhost:8765/sim`
-unless that laptop port is busy). The simulator uses a local camera background by default;
-`?bg=photo` and `?bg=black` work without a camera. Keys are arrows for selection, Enter for
-confirmation, P for phrasebook text, C for cut, Escape for clear and F for simulator fullscreen.
+unless that laptop port is busy; a rerun reuses an existing forward and prints the same URL). The
+simulator uses a local camera background by default; `?bg=photo` and `?bg=black` work without a
+camera. Keys are arrows for selection, Enter for confirmation, P for phrasebook text, C for cut,
+Escape for clear and F for simulator fullscreen.
 
 `HudJson` sends a JSON object on each state update. Incoming actions include `next`, `prev`,
 `confirm`, `select`, `togglePlain`, `clear`, `cut` and `mode`, for example
