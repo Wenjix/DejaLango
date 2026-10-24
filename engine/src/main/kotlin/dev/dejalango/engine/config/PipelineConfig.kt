@@ -66,7 +66,7 @@ data class PipelineConfig(
     val maxReplyChars: Int = 20,       // CJK cap
     val exemplarsK: Int = 6,
     val contextTurns: Int = 6,
-    val generationTimeoutMs: Long = 8_000,
+    val generationTimeoutMs: Long = 20_000,
     val thinking: Boolean = false,
     val speakReplies: Boolean = false, // TTS the chosen reply into an earbud
     val structuredOutput: Boolean = false, // constrained JSON decoding where the runtime supports it

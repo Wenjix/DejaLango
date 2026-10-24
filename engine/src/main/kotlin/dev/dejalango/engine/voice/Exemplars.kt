@@ -20,11 +20,24 @@ interface ExemplarStore {
     suspend fun wipe()
 }
 
+/** Which side of a search a text is on. EmbeddingGemma embeds each with its own task prompt. */
+enum class EmbedRole { QUERY, DOCUMENT }
+
 /** Sentence → vector. EmbeddingGemma 2 on-device in the app; a hashing fake in tests. */
 interface TextEmbedder {
     val dims: Int
-    suspend fun embed(texts: List<String>): List<FloatArray>
-    suspend fun embed(text: String): FloatArray = embed(listOf(text)).first()
+
+    /** What makes the vectors, for the bench: the bundle and backend, or that it fell back. */
+    val description: String get() = javaClass.simpleName
+
+    /** Loads the model before the first [embed], off a turn's critical path. */
+    suspend fun warm() {}
+
+    /** [role] defaults to [EmbedRole.DOCUMENT], the sentences the store keeps; a search embeds its query as [EmbedRole.QUERY]. */
+    suspend fun embed(texts: List<String>, role: EmbedRole = EmbedRole.DOCUMENT): List<FloatArray>
+    suspend fun embed(text: String, role: EmbedRole = EmbedRole.DOCUMENT): FloatArray = embed(listOf(text), role).first()
+
+    fun close() {}
 }
 
 /** In-memory store: tests, the judge's ephemeral quick corpus, and a fallback when Room is unavailable. */
@@ -53,7 +66,9 @@ class InMemoryExemplarStore : ExemplarStore {
  * near each other, which is all tests and the fake pipeline need.
  */
 class HashingEmbedder(override val dims: Int = Vectors.DIMS) : TextEmbedder {
-    override suspend fun embed(texts: List<String>): List<FloatArray> = texts.map { embedOne(it) }
+    override val description: String get() = "hashing (not semantic)"
+
+    override suspend fun embed(texts: List<String>, role: EmbedRole): List<FloatArray> = texts.map { embedOne(it) }
 
     private fun embedOne(text: String): FloatArray {
         val v = FloatArray(dims)

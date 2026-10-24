@@ -10,14 +10,9 @@ plugins {
 // The LiteRT-LM adapter is compiled only when -PwithLiteRtLm is passed. Until the Day-2 spike has
 // verified the adapter against the current litertlm-android API, the default build uses the fake
 // model and still exercises every other layer. See docs/ARCHITECTURE.md §5.3.
-val withLiteRtLm = project.hasProperty("withLiteRtLm")
-
-// Bundles Google's Tensor TPU runtime (and optionally Qualcomm's) into the APK so a sideloaded debug build can
-// use Backend.GOOGLE_TENSOR / Backend.NPU. Google's own sample delivers these as Play dynamic-feature modules
-// gated by device group (see docs/ARCHITECTURE.md §5.3); for a hackathon APK, plain dependencies are enough.
-// The version must match the LiteRT version LiteRT-LM embeds — marked VERIFY in the catalog.
-val withTensorNpu = project.hasProperty("withTensorNpu")
-val withQualcommNpu = project.hasProperty("withQualcommNpu")
+val withLiteRtLm = project.findProperty("withLiteRtLm")?.toString()?.let { it.isEmpty() || it.toBoolean() } ?: true
+val withTensorNpu = project.findProperty("withTensorNpu")?.toString()?.let { it.isEmpty() || it.toBoolean() } ?: false
+val withQualcommNpu = project.findProperty("withQualcommNpu")?.toString()?.let { it.isEmpty() || it.toBoolean() } ?: false
 
 android {
     namespace = "dev.dejalango.app"
@@ -76,6 +71,10 @@ android {
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
         // Keep the Silero VAD and prompt assets uncompressed for fast mmap/reads.
+        jniLibs {
+            // LiteRT-LM's NPU executor dlopens libLiteRtDispatch_*.so from applicationInfo.nativeLibraryDir on disk.
+            useLegacyPackaging = true
+        }
     }
 
     androidResources {

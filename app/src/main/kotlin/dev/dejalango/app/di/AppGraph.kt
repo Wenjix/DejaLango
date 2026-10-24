@@ -77,8 +77,8 @@ class AppGraph(private val context: Context) {
         if (!useFake && BuildConfig.WITH_LITERTLM && status.gemmaPresent) {
             try {
                 val cls = Class.forName("dev.dejalango.app.platform.llm.litertlm.LiteRtLmModel")
-                return cls.getConstructor(Context::class.java, ModelFiles::class.java, Backend::class.java, AudioBackend::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType)
-                    .newInstance(context, modelFiles, cfg.backend, cfg.audioBackend, 2048, 2) as SpeechLanguageModel
+                return cls.getConstructor(Context::class.java, ModelFiles::class.java, Backend::class.java, AudioBackend::class.java, Int::class.javaPrimitiveType, Boolean::class.javaPrimitiveType)
+                    .newInstance(context, modelFiles, cfg.backend, cfg.audioBackend, 2048, true) as SpeechLanguageModel
             } catch (t: Throwable) {
                 Log.e(TAG, "LiteRT-LM adapter failed to load; falling back to the fake model", t)
             }
@@ -89,11 +89,10 @@ class AppGraph(private val context: Context) {
     }
 
     fun createEmbedder(useFake: Boolean): TextEmbedder {
-        val file = modelFiles.embedder
-        if (!useFake && BuildConfig.WITH_LITERTLM && file != null && file.exists()) {
+        if (!useFake && BuildConfig.WITH_LITERTLM && modelFiles.status().embedderPresent) {
             try {
                 val cls = Class.forName("dev.dejalango.app.platform.llm.litertlm.LiteRtLmEmbedder")
-                return cls.getConstructor(Context::class.java, File::class.java).newInstance(context, file) as TextEmbedder
+                return cls.getConstructor(Context::class.java, ModelFiles::class.java).newInstance(context, modelFiles) as TextEmbedder
             } catch (t: Throwable) {
                 Log.e(TAG, "LiteRT-LM embedder failed to load; falling back to hashing embedder", t)
             }

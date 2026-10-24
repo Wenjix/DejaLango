@@ -13,7 +13,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 data class StageAResult(val speaker: Speaker, val lang: String, val heard: String, val heardL1: String, val repaired: Boolean = false)
 
-/** A JSON object pulled out of model text. [repaired] means truncated output was closed up to parse. */
+/** A JSON object pulled out of model text. [repaired] means the text was patched to parse, such as truncated output closed up. */
 data class Extracted(val obj: JsonObject, val repaired: Boolean)
 
 data class WordHint(val word: String, val alternatives: List<String>, val confidence: Float)
@@ -34,6 +34,14 @@ class TurnResultParser {
 
     fun extract(text: String): Extracted? {
         val stripped = stripFences(text)
+        return extractFrom(stripped)
+            // A 2B model sometimes opens a key it never writes (`"back":"…","},{…`); drop the dangling `,"` and retry.
+            ?: DANGLING_KEY.replace(stripped, "$1").takeIf { it != stripped }?.let { extractFrom(it)?.copy(repaired = true) }
+            // A verbatim copy of the prompt's skeleton keeps its `"me"|"them"`; read it as "them", the prompt's pick when unclear.
+            ?: SPEAKER_CHOICE.replace(stripped, "\"them\"").takeIf { it != stripped }?.let { extractFrom(it)?.copy(repaired = true) }
+    }
+
+    private fun extractFrom(stripped: String): Extracted? {
         val start = stripped.indexOf('{')
         if (start < 0) return null
         val end = matchingBrace(stripped, start)
@@ -59,7 +67,11 @@ class TurnResultParser {
 
     fun parseStageA(e: Extracted): StageAResult? {
         val o = e.obj
-        val heard = o.str("heard") ?: return null
+        // A value copied from the prompt's skeleton ("<verbatim transcript>", "...") is not an answer.
+        fun field(key: String): String? = o.str(key)?.trim()?.takeUnless { PLACEHOLDER_ECHO.matches(it) }
+        // A copied transcript counts as no speech, as in parseTranscript, so the turn ends there. Null would show the
+        // raw text as their line instead and ask Stage B to answer it.
+        val heard = if (o.str("heard") == null) return null else field("heard").orEmpty()
         val speaker = when (o.str("speaker")?.lowercase()?.trim()) {
             "me", "wearer", "user" -> Speaker.ME
             "them", "other" -> Speaker.THEM
@@ -67,9 +79,9 @@ class TurnResultParser {
         }
         return StageAResult(
             speaker = speaker,
-            lang = o.str("lang")?.trim().orEmpty(),
-            heard = heard.trim(),
-            heardL1 = (o.str("heard_l1") ?: o.str("heardL1") ?: o.str("translation") ?: heard).trim(),
+            lang = field("lang").orEmpty(),
+            heard = heard,
+            heardL1 = field("heard_l1") ?: field("heardL1") ?: field("translation") ?: heard,
             repaired = e.repaired,
         )
     }
@@ -88,14 +100,16 @@ class TurnResultParser {
             else -> emptyList()
         }
         return items.mapNotNull { r ->
-            val plain = r.str("plain")?.trim()
-            val yours = r.str("yours")?.trim()
-            val any = yours?.takeIf { it.isNotEmpty() } ?: plain?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            // A value copied from the prompt's skeleton ("<plain in my voice>", "...") is not an answer.
+            fun field(key: String): String? = r.str(key)?.trim()?.takeIf { it.isNotEmpty() && !PLACEHOLDER_ECHO.matches(it) }
+            val plain = field("plain")
+            val yours = field("yours")
+            val any = yours ?: plain ?: return@mapNotNull null
             Reply(
-                plain = plain?.takeIf { it.isNotEmpty() } ?: any,
-                yours = yours?.takeIf { it.isNotEmpty() } ?: any,
-                roman = r.str("roman")?.trim()?.takeIf { it.isNotEmpty() && it != "null" },
-                back = r.str("back")?.trim()?.takeIf { it.isNotEmpty() },
+                plain = plain ?: any,
+                yours = yours ?: any,
+                roman = field("roman")?.takeIf { it != "null" },
+                back = field("back"),
             )
         }
     }
@@ -110,8 +124,9 @@ class TurnResultParser {
 
     fun parseTranscript(text: String): TranscriptResult? {
         val o = extractJsonObject(text) ?: return null
-        val t = o.str("text") ?: o.str("heard") ?: return null
-        return TranscriptResult(o.str("lang")?.trim().orEmpty(), t.trim())
+        val t = (o.str("text") ?: o.str("heard") ?: return null).trim()
+        // "<verbatim transcript>" copied from the prompt is no transcript.
+        return TranscriptResult(o.str("lang")?.trim().orEmpty(), if (PLACEHOLDER_ECHO.matches(t)) "" else t)
     }
 
     fun parseVoiceCard(text: String, l1: String, l2: String, confidence: Confidence): VoiceCard? {
@@ -126,6 +141,9 @@ class TurnResultParser {
     companion object {
         private val FENCE = Regex("```[a-zA-Z]*")
         private val TRUNCATION_REPAIRS = listOf("}", "\"}", "\"}]}", "}]}", "]}", "\"]}")
+        private val DANGLING_KEY = Regex(",\\s*\"?\\s*([}\\]])")
+        private val SPEAKER_CHOICE = Regex("\"me\"\\s*\\|\\s*\"them\"")
+        private val PLACEHOLDER_ECHO = Regex("<[^<>]*>|\\.{3}|…")
 
         fun stripFences(text: String): String = text.replace(FENCE, "").trim()
 

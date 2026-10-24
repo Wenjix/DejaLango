@@ -49,11 +49,11 @@ data class TokenChunk(
 /**
  * The only thing the engine knows about Gemma. One instance = one loaded model.
  *
- * Contract: [warm] loads the model and prepares the base prompt (system instruction) so that requests
- * don't pay for it; it is idempotent and may be called again with a new system prompt (new voice card).
+ * Contract: [warm] loads the model and sets the base prompt (system instruction) that requests run on;
+ * it is idempotent and may be called again with a new system prompt (new voice card).
  * [generate] runs one request on top of that base, streams tokens, and is cancellable. [prepare] is
- * called by the pipeline when idle so the implementation can pre-prefill the next base (LiteRT-LM has
- * no session cloning, so the adapter keeps a small pool of pre-prefilled conversations).
+ * called by the pipeline when idle so the implementation can get the next requests' resources ready
+ * (LiteRT-LM creates a conversation per request, slowly with constrained decoding, so the adapter can make the next one early).
  * Calls are serialized by the caller; implementations need not be reentrant.
  */
 interface SpeechLanguageModel {
@@ -61,8 +61,13 @@ interface SpeechLanguageModel {
     suspend fun warm(systemPrompt: String)
     fun generate(req: GenerateRequest): Flow<TokenChunk>
 
-    /** Idle-time work that makes the next [generate] faster (e.g. pre-prefilling the base prompt). Default: nothing. */
-    suspend fun prepare() {}
+    /**
+     * One unit of idle-time work that makes the next turn's requests faster. [upcoming] lists their [RequestTag]s,
+     * in order, and [structured] says whether they carry a [GenerateRequest.jsonSchema]. Returns true when there is
+     * more to do. The pipeline calls it between turns, one unit at a time, so a turn that ends meanwhile waits for the
+     * unit in progress only. Default: nothing to do.
+     */
+    suspend fun prepare(upcoming: List<String>, structured: Boolean): Boolean = false
     fun close() {}
 }
 

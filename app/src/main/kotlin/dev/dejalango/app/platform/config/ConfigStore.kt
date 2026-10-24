@@ -78,7 +78,7 @@ class ConfigStore(private val context: Context, private val scope: CoroutineScop
             maxReplyChars = this[K.maxReplyChars] ?: d.maxReplyChars,
             exemplarsK = this[K.exemplarsK] ?: d.exemplarsK,
             contextTurns = this[K.contextTurns] ?: d.contextTurns,
-            generationTimeoutMs = this[K.timeoutMs] ?: d.generationTimeoutMs,
+            generationTimeoutMs = (this[K.timeoutMs] ?: d.generationTimeoutMs).coerceAtLeast(d.generationTimeoutMs),
             thinking = this[K.thinking] ?: d.thinking,
             speakReplies = this[K.speakReplies] ?: d.speakReplies,
             structuredOutput = this[K.structuredOutput] ?: d.structuredOutput,

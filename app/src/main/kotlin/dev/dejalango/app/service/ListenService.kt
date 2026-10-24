@@ -20,6 +20,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -35,35 +38,34 @@ class ListenService : Service() {
 
     private val binder = LocalBinder()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    lateinit var runtime: PipelineRuntime
-        private set
 
-    @Volatile
-    var started: Boolean = false
-        private set
+    private val _runtime = MutableStateFlow<PipelineRuntime?>(null)
+    val runtimeFlow: StateFlow<PipelineRuntime?> = _runtime.asStateFlow()
+    val runtime: PipelineRuntime? get() = _runtime.value
+    val started: Boolean get() = _runtime.value != null
 
     override fun onCreate() {
         super.onCreate()
-        runtime = PipelineRuntime(this, appGraph, scope)
         createChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> if (!started) {
-                started = true
+            ACTION_START -> if (_runtime.value == null) {
+                val rt = PipelineRuntime(this, appGraph, scope)
+                _runtime.value = rt
                 startForeground(NOTIFICATION_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
                 scope.launch {
                     try {
-                        runtime.start()
+                        rt.start()
                     } catch (t: Throwable) {
                         Log.e(TAG, "runtime failed to start", t)
                     }
                 }
             }
             ACTION_STOP -> {
-                runtime.stop()
-                started = false
+                _runtime.value?.stop()
+                _runtime.value = null
                 stopForeground(Service.STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
@@ -74,7 +76,8 @@ class ListenService : Service() {
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onDestroy() {
-        if (started) runtime.stop()
+        _runtime.value?.stop()
+        _runtime.value = null
         scope.cancel()
         super.onDestroy()
     }

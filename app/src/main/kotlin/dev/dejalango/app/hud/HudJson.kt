@@ -13,8 +13,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /**
- * Wire format between the pipeline and any web renderer (the hud.xyz simulator page, the Android XR
- * thin client, a laptop tab). One JSON object per state change; actions come back as small objects.
+ * Wire format between the pipeline and any web renderer (/sim and /hud in a laptop browser; later, an
+ * Android XR thin client). One JSON object per state change; actions come back as small objects.
  */
 object HudJson {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }

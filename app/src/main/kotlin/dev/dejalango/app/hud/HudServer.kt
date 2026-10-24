@@ -21,15 +21,19 @@ import java.io.IOException
 /**
  * Serves the web HUD (assets/hud/hud.html) and streams [HudState] over a WebSocket.
  *
- * Why a web HUD: the Meta Ray-Ban Display simulator at hud.xyz is a browser page that loads a URL into a
- * 600×600 additive viewport with D-pad input, and the Android XR glasses emulator pairs with a phone AVD
- * rather than a real phone — both want a thin client. `adb forward tcp:PORT tcp:PORT` makes this server
- * reachable as http://localhost:PORT/hud on the laptop (localhost is a secure context, so https pages may
- * embed it and getUserMedia works). The server binds to 127.0.0.1 unless hudOnLan is set in settings.
+ * Why a web HUD: the glasses simulator (/sim) is a laptop browser page that shows a 600×600 additive viewport
+ * over the camera, and the Android XR glasses emulator pairs with a phone AVD rather than a real phone — both
+ * want a thin client. `adb forward tcp:PORT tcp:PORT` makes this server reachable as http://localhost:PORT/sim
+ * on the laptop (localhost is a secure context, so getUserMedia works). The server binds to 127.0.0.1 unless
+ * hudOnLan is set in settings.
  *
- * Routes: /hud (the raw 600×600 HUD page, what hud.xyz would load), /sim (our own simulator: the HUD
- * screen-blended over the laptop camera inside a glasses bezel — the fallback when hud.xyz is down),
- * /state (JSON snapshot), /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
+ * It answers only its own pages and local clients: every request, WebSocket handshakes included, must pass
+ * [HudRequestGuard], and no response carries a CORS header, so other websites can neither read the
+ * conversation nor, in current browsers, send actions.
+ *
+ * Routes: /sim (the glasses simulator: the HUD screen-blended over the laptop camera inside a glasses bezel),
+ * /hud (the raw 600×600 HUD page, which /sim shows in an iframe), /state (JSON snapshot),
+ * POST /action?a=<json> (one-shot action), /ws (WebSocket: state out, actions in).
  */
 class HudServer(
     private val assets: AssetManager,
@@ -47,18 +51,24 @@ class HudServer(
         Log.i(TAG, "HUD server at $url")
     }
 
+    /** NanoWSD's serve answers WebSocket handshakes and passes the rest to [serveHttp]; the body check and the guard go first. */
+    override fun serve(session: IHTTPSession): Response {
+        bodyRefusal(session.headers)?.let { return it }
+        val refusal = HudRequestGuard.refusal(session.method.name, session.uri, session.headers)
+        if (refusal == null) return super.serve(session)
+        // The decoded path can come from a hostile page: keep the warning to one short printable line.
+        Log.w(TAG, "refused ${session.uri.filter { it in ' '..'~' }.take(80)}: $refusal")
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.FORBIDDEN, "text/plain", "forbidden")
+    }
+
     override fun serveHttp(session: IHTTPSession): Response {
         val r = when (session.uri) {
             "/", "/hud", "/hud.html", "/index.html" -> asset("hud/hud.html", "text/html; charset=utf-8")
             "/sim", "/sim.html" -> asset("hud/sim.html", "text/html; charset=utf-8")
             "/state" -> NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json; charset=utf-8", HudJson.encode(hud.value))
-            "/action" -> {
-                session.parameters["a"]?.firstOrNull()?.let { HudJson.decodeAction(it) }?.let(onAction)
-                NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/plain", "ok")
-            }
+            "/action" -> serveAction(session.parameters, onAction)
             else -> NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found")
         }
-        r.addHeader("Access-Control-Allow-Origin", "*")
         r.addHeader("Cache-Control", "no-store")
         return r
     }
@@ -110,8 +120,29 @@ class HudServer(
         }
     }
 
-    private companion object {
-        const val TAG = "HudServer"
-        const val PING_MS = 3_000L
+    companion object {
+        private const val TAG = "HudServer"
+        private const val PING_MS = 3_000L
+
+        /**
+         * A 400 that closes the connection, for a request that carries a body (any Transfer-Encoding, or a
+         * Content-Length other than 0): no route reads a body, and NanoHTTPD would read an unread one as the
+         * connection's next request. Null for a request without one. Header names are lower case, as NanoHTTPD
+         * stores them.
+         */
+        internal fun bodyRefusal(headers: Map<String, String>): Response? {
+            // A Content-Length that doesn't parse counts as a body: it can't show where the next request starts.
+            val body = "transfer-encoding" in headers || (headers["content-length"] ?: "0").toLongOrNull() != 0L
+            if (!body) return null
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "no body expected").apply { closeConnection(true) }
+        }
+
+        /** POST /action takes its action in the query string, `a=<json>`; a missing or unreadable one gets 400. */
+        internal fun serveAction(parameters: Map<String, List<String>>, onAction: (HudAction) -> Unit): Response {
+            val action = parameters["a"]?.firstOrNull()?.let { HudJson.decodeAction(it) }
+                ?: return NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "bad action")
+            onAction(action)
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/plain", "ok")
+        }
     }
 }
