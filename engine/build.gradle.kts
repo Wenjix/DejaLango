@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
 }
 
-// No JVM toolchain pin: Android Studio's bundled JDK runs Gradle; we only fix the bytecode target.
+// No JVM toolchain pin: Gradle runs on the JDK in gradle/gradle-daemon-jvm.properties; we only fix the bytecode target.
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17

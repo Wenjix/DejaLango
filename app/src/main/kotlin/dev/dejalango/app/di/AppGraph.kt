@@ -71,7 +71,7 @@ class AppGraph(private val context: Context) {
         return MicAudioSource()
     }
 
-    /** The real adapter is loaded by name so the default build (without -PwithLiteRtLm) never references it. */
+    /** The real adapter is loaded by name so a build with -PwithLiteRtLm=false never references it. */
     fun createSpeechModel(cfg: PipelineConfig, useFake: Boolean): SpeechLanguageModel {
         val status = modelFiles.status()
         if (!useFake && BuildConfig.WITH_LITERTLM && status.gemmaPresent) {
