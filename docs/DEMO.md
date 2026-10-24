@@ -23,8 +23,9 @@ The timings below are targets to measure, not verified performance.
 2. **Hear a turn.** Ask a teammate or judge to speak Mandarin. Show the Mandarin transcript and
    English translation, then two Mandarin replies with pinyin. Aim for a transcript around 1.3 seconds
    after the turn and replies around 3 seconds; report the timings actually observed.
-3. **Compare phrasing.** Press P to switch phrasebook/personalized text on the same turn. Show the
-   back-translation and, when retrieval returns examples, the bench's “because you say” list.
+3. **Compare phrasing.** Press P to switch phrasebook/personalized text on the same turn; a
+   phrasebook line that differs shows no pinyin or back-translation. Show the back-translation on
+   personalized text and, when retrieval returns examples, the bench's “because you say” list.
 4. **Use a reply.** Press an arrow key to select it and Enter to confirm. Show the learned count.
    Confirmation records the selected reply; it does not detect whether the wearer spoke it.
 5. **Try a quick voice card.** With permission, capture up to a minute of the judge speaking and

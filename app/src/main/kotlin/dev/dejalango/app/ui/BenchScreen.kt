@@ -187,9 +187,13 @@ fun BenchScreen(
                     colors = CardDefaults.cardColors(containerColor = if (selected) Color(0xFF14261A) else Color(0xFF101418), contentColor = Color.White),
                 ) {
                     Column(Modifier.padding(12.dp)) {
-                        Text(if (hud.showPlain) r.plain else r.yours, fontSize = 24.sp, color = if (selected) Color.White else Color(0xFFD0D5DA))
-                        r.roman?.let { Text(it, color = Color(0xFFA9B0B8), fontSize = 15.sp) }
-                        r.back?.let { Text("= $it", color = Color(0xFF8A9199), fontSize = 13.sp) }
+                        val shown = if (hud.showPlain) r.plain else r.yours
+                        Text(shown, fontSize = 24.sp, color = if (selected) Color.White else Color(0xFFD0D5DA))
+                        // roman and back describe yours, so a phrasebook line that differs shows neither.
+                        if (shown == r.yours) {
+                            r.roman?.let { Text(it, color = Color(0xFFA9B0B8), fontSize = 15.sp) }
+                            r.back?.let { Text("= $it", color = Color(0xFF8A9199), fontSize = 13.sp) }
+                        }
                         if (!hud.showPlain && r.plain != r.yours) Text("phrasebook: ${r.plain}", color = Color(0xFF6E7680), fontSize = 12.sp)
                     }
                 }

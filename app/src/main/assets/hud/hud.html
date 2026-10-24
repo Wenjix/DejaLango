@@ -104,9 +104,12 @@
     (s.replies || []).forEach(function (r, i) {
       var d = document.createElement('div');
       d.className = 'reply' + (s.selected === i ? ' sel' : '');
-      var main = document.createElement('div'); main.className = 'main'; main.textContent = s.showPlain ? r.plain : r.yours; d.appendChild(main);
-      if (r.roman) { var ro = document.createElement('div'); ro.className = 'roman'; ro.textContent = r.roman; d.appendChild(ro); }
-      if (r.back) { var b = document.createElement('div'); b.className = 'back'; b.textContent = '= ' + r.back; d.appendChild(b); }
+      var shown = s.showPlain ? r.plain : r.yours;
+      var main = document.createElement('div'); main.className = 'main'; main.textContent = shown; d.appendChild(main);
+      // roman and back describe yours, so a phrasebook line that differs shows neither.
+      var ofYours = shown === r.yours;
+      if (r.roman && ofYours) { var ro = document.createElement('div'); ro.className = 'roman'; ro.textContent = r.roman; d.appendChild(ro); }
+      if (r.back && ofYours) { var b = document.createElement('div'); b.className = 'back'; b.textContent = '= ' + r.back; d.appendChild(b); }
       d.onclick = function () { act('select', { index: i }); };
       box.appendChild(d);
     });

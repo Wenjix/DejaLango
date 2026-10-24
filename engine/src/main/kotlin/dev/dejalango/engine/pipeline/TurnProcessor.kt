@@ -177,7 +177,9 @@ class TurnProcessor(
                 replyUsed = true
                 cancel()
                 val spoken = if (s.showPlain) r.plain else r.yours
-                conversation.add(Speaker.ME, config.value.l2.code, spoken, r.back ?: spoken, clock.nowMs())
+                // back translates yours, so a phrasebook line that differs is recorded without a translation.
+                val spokenL1 = if (spoken == r.yours) r.back ?: spoken else null
+                conversation.add(Speaker.ME, config.value.l2.code, spoken, spokenL1, clock.nowMs())
                 conversation.markReplyUsed()
                 _usedReplies.tryEmit(r.yours)
                 _hud.update {
@@ -431,7 +433,9 @@ class TurnProcessor(
         val ids = retrieved.map { it.exemplar.id }
         replies = replies.map { it.copy(usedExemplarIds = ids) }
         // Offer only L2 phrasings for matching and Confirm. A phrasebook line in my language is replaced by the
-        // personal line on the card; a raw fallback that echoes my line stays on screen but is not offered.
+        // personal line on the card; a raw fallback that echoes my line stays on screen but is not offered. Every card
+        // kept above has yours in L2 and a fallback card is alone, so the offer is all the cards or none, and an offer
+        // index is the card's: Confirm and matchSpokenReply rely on that.
         val offer = replies
             .filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }
             .map { SuggestedReply(yours = it.yours, plain = it.plain) }

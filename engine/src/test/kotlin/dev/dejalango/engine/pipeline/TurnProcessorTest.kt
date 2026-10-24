@@ -501,6 +501,55 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `confirming a phrasebook line that differs from yours records it with no translation`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            val plain = "我想要一杯水。"
+            val replies = """{"replies":[{"plain":"$plain","yours":"来杯水就行。","roman":"Lái bēi shuǐ jiù xíng.","back":"A glass of water will do."}]}"""
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "你需要点什么吗？", "Do you need anything?", replies))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals(plain, rig.processor.hud.value.replies.single().plain)
+
+            rig.processor.onAction(HudAction.TogglePlain)
+            rig.processor.onAction(HudAction.Select(0))
+            rig.processor.onAction(HudAction.Confirm)
+
+            val mine = rig.conversation.snapshot().last()
+            assertEquals(plain, mine.text)
+            assertNull("the card's back-translation is of yours, another sentence", mine.textL1)
+            assertEquals(1, rig.processor.hud.value.learnedToday)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `confirming a personal line records its back-translation`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            val yours = "来杯水就行。"
+            val back = "A glass of water will do."
+            val replies = """{"replies":[{"plain":"我想要一杯水。","yours":"$yours","roman":"Lái bēi shuǐ jiù xíng.","back":"$back"}]}"""
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "你需要点什么吗？", "Do you need anything?", replies))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+
+            rig.processor.onAction(HudAction.Select(0))
+            rig.processor.onAction(HudAction.Confirm)
+
+            val mine = rig.conversation.snapshot().last()
+            assertEquals(yours, mine.text)
+            assertEquals(back, mine.textL1)
+            assertEquals(1, rig.processor.hud.value.learnedToday)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `in say it my way, a raw variant in my own language is shown but not matched`() = runBlocking {
         val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
         try {
