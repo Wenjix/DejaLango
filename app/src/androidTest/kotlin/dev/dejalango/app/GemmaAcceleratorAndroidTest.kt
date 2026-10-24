@@ -38,6 +38,7 @@ class GemmaAcceleratorAndroidTest {
         val graph = ctx.appGraph
         val soc = graph.modelFiles.gemmaSoc
         assumeTrue("no Gemma accelerator bundle in ${graph.modelFiles.dir}", soc != null)
+        assumeTrue("no fixtures/demo_zh.wav in the app's assets", runCatching { ctx.assets.open("fixtures/demo_zh.wav").close() }.isSuccess)
         val cfg = PipelineConfig()
         val prompts = PromptBuilder(graph.promptSet)
         val model = graph.createSpeechModel(cfg, useFake = false)
