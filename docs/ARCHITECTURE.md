@@ -102,7 +102,7 @@ speaker by language, so the wearer reading an L2 card aloud comes back as `THEM`
 therefore match the transcript against the cards on offer, replies or say-it-my-way variants,
 before they use the label. Only lines in L2's script go on offer. A raw fallback card in the
 wearer's language stays on the HUD but is not offered, and a phrasebook line in the wearer's
-language is replaced by the card's personalized line in the offer.
+language is replaced by the card's personalized line on the card.
 
 Confirming a selected reply or matching the wearer's transcript to a recent suggestion emits a
 used-reply event. The app embeds and stores that reply with source `PICKED_REPLY`. Confirmation

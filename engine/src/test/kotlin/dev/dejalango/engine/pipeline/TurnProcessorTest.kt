@@ -478,6 +478,29 @@ class TurnProcessorTest {
     }
 
     @Test
+    fun `confirming a card with an L1 phrasebook line records its L2 personal line`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            val yours = "我想先想一下。"
+            val replies = """{"replies":[{"plain":"I need a moment to think.","yours":"$yours","roman":"Wǒ xiǎng xiān xiǎng yíxià.","back":"I'd like a moment to think."}]}"""
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "你需要点什么吗？", "Do you need anything?", replies))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(1)
+            assertEquals(yours, rig.processor.hud.value.replies.single().plain)
+
+            rig.processor.onAction(HudAction.TogglePlain)
+            rig.processor.onAction(HudAction.Select(0))
+            rig.processor.onAction(HudAction.Confirm)
+
+            assertEquals(yours, rig.conversation.snapshot().last().text)
+            assertEquals(1, rig.processor.hud.value.learnedToday)
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
     fun `in say it my way, a raw variant in my own language is shown but not matched`() = runBlocking {
         val rig = Rig(PipelineConfig(mode = Mode.SAY_IT_MY_WAY))
         try {
@@ -510,6 +533,7 @@ class TurnProcessorTest {
             rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
             rig.awaitTraces(1)
             assertEquals(listOf("对啊，第一次来。"), rig.processor.hud.value.replies.map { it.yours })
+            assertEquals(listOf("对啊，第一次来。"), rig.processor.hud.value.replies.map { it.plain })
             val used: MutableList<String> = java.util.Collections.synchronizedList(ArrayList())
             rig.scope.launch { rig.processor.usedReplies.collect { used += it } }
             delay(20)
@@ -536,6 +560,7 @@ class TurnProcessorTest {
             rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "Yeah, first time.", "Yeah, first time.", variants))
             rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
             rig.awaitTraces(1)
+            assertEquals("对啊，第一次来。", rig.processor.hud.value.replies.single().plain)
             rig.processor.onAction(HudAction.Select(0))
             rig.processor.onAction(HudAction.Confirm)
             assertEquals(1, rig.processor.hud.value.learnedToday)

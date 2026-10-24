@@ -412,12 +412,13 @@ class TurnProcessor(
     }
 
     private fun showReplies(parsed: List<Reply>, raw: String, cfg: PipelineConfig, retrieved: List<RetrievedExemplar>, trace: TurnTrace) {
-        // A "yours" not written in L2 can't be read to THEM: on device Gemma copied an English signature phrase from the
-        // card verbatim. Fall back to the phrasebook line (its romanization and back-translation were of the discarded
-        // line). Only detectable when L1 and L2 use different scripts.
+        // A phrasebook line in my language cannot be read to THEM, so replace it with the personal line on the card
+        // when that line is in L2. If only the phrasebook line is in L2, use it as "yours" and discard its romanization
+        // and back-translation, which describe the discarded line. Only detectable when L1 and L2 use different scripts.
         var replies = parsed.mapNotNull { r ->
             when {
-                VoiceCardBuilder.inScriptOf(cfg.l2, r.yours) -> r
+                VoiceCardBuilder.inScriptOf(cfg.l2, r.yours) ->
+                    if (VoiceCardBuilder.inScriptOf(cfg.l2, r.plain)) r else r.copy(plain = r.yours)
                 VoiceCardBuilder.inScriptOf(cfg.l2, r.plain) -> r.copy(yours = r.plain, roman = null, back = null)
                 else -> null
             }
@@ -429,14 +430,11 @@ class TurnProcessor(
         }
         val ids = retrieved.map { it.exemplar.id }
         replies = replies.map { it.copy(usedExemplarIds = ids) }
-        // Offer only phrasings in L2 for matching and Confirm: one in my language would match me saying that line
-        // again and count it as a reply. A raw fallback that echoes my line stays on screen but is not offered. Every
-        // other card passed the check above, so the offer is all the cards or none, and a matched index is still the
-        // card's. A plain in my language (a 2B model copies my line there) stays on its card, which is offered with
-        // yours in its place.
-        val offer = replies.filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }.map { r ->
-            SuggestedReply(yours = r.yours, plain = if (VoiceCardBuilder.inScriptOf(cfg.l2, r.plain)) r.plain else r.yours)
-        }
+        // Offer only L2 phrasings for matching and Confirm. A phrasebook line in my language is replaced by the
+        // personal line on the card; a raw fallback that echoes my line stays on screen but is not offered.
+        val offer = replies
+            .filter { VoiceCardBuilder.inScriptOf(cfg.l2, it.yours) }
+            .map { SuggestedReply(yours = it.yours, plain = it.plain) }
         replyUsed = false
         conversation.suggest(offer)
         _hud.update {
