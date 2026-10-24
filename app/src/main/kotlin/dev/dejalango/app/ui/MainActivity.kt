@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +19,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
@@ -25,11 +28,12 @@ import dev.dejalango.app.appGraph
 import dev.dejalango.app.service.ListenService
 import kotlinx.coroutines.flow.MutableStateFlow
 
-/** Hosts the bench. Owns nothing: audio and models live in ListenService. */
+/** Consumer host. Audio and model ownership remain in ListenService across navigation/recreation. */
 class MainActivity : ComponentActivity() {
 
     private val service = MutableStateFlow<ListenService?>(null)
     private var bound = false
+    private var permissionError by mutableStateOf<String?>(null)
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -41,21 +45,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
-        if (granted[Manifest.permission.RECORD_AUDIO] == true) ListenService.start(this)
+    private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            permissionError = null
+            ListenService.start(this)
+        } else permissionError = "Microphone access is off. Allow it in Android app settings, then try listening again."
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
-                Surface(modifier = Modifier.fillMaxSize(), color = Color.Black, contentColor = Color.White) {
+            CompanionTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
                     val svc by service.collectAsState()
-                    BenchScreen(
+                    CompanionHost(
                         service = svc,
                         graph = appGraph,
-                        onStartListening = ::startListening,
-                        onStopListening = { ListenService.stop(this) },
+                        permissionError = permissionError,
+                        onStart = ::startListening,
+                        onStop = { ListenService.stop(this) },
                     )
                 }
             }

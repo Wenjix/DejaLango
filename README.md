@@ -2,78 +2,70 @@
 
 **You, in any language.** DejaLango is an on-device conversation assistant that shows what someone
 said and suggests replies in their language, phrased in your voice. The Android app connects a
-Kotlin conversation engine to a phone bench and a browser HUD. Its model adapters target Gemma 4 E2B
+Kotlin conversation engine to the native Companion app and a synchronized browser HUD. Its model adapters target Gemma 4 E2B
 for audio and replies, and EmbeddingGemma 2 for retrieval of your past sentences.
 
 Built for the Google Gemma Hardware Hackathon at AGI House, October 24, 2026.
 
 ## Status
 
-| Component | Implementation and verification |
-|---|---|
-| `:engine` | Turn segmentation, prompts, JSON parsing, retrieval, HUD state and traces implemented; **90 JVM tests pass**. |
-| `:app` | Mobile and Meta VR fake-model APKs build successfully; **24 JVM tests and 4 on-device tests pass** (prompt rendering; EmbeddingGemma; Gemma on the TPU). Installed and launched on a Pixel; listening/HUD checks pending. |
-| LiteRT-LM adapters | Optional mobile APK builds against **LiteRT-LM 0.18.1**, including separate Tensor and Qualcomm runtime variants. Gemma 4 E2B and EmbeddingGemma 2 run on the Pixel 11 Pro XL's TPU; replaying the demo fixture through the app gives replies about 7 s after a turn, against about 10 s on the GPU ([findings](docs/FINDINGS.md)). |
-| Fake model | Default implementation for exercising the pipeline without model weights; replies are canned. |
-| Browser HUD and simulator | `/hud` serves the HUD; `/sim` places it over a laptop camera or a generated background. Device-to-browser verification pending. |
+The Companion Soft press implementation provides Today, Live and Your voice, a persistent Talk/Done
+controller, regional language pairs, word hints, automatic spoken-reply matching and reversible speaker
+correction. The developer bench remains behind Settings → Developer tools. There are no consumer modes
+or manual Use step. The [implementation record](docs/implementation/companion-soft-press.md) explains
+architecture, scope and draft timing assumptions; [verification](docs/implementation/verification.md)
+records the current checks and limits.
 
-The accelerated backends, real audio inference and latency targets are implemented paths to verify,
-not measured device results. See [architecture](docs/ARCHITECTURE.md) for the contracts and current limits.
+The engine and Android adapter have host tests. The native UI has an explicit debug walkthrough with
+20 beats across Colombia, Mainland Mandarin, Taiwan Mandarin and UK English fixtures, plus emulator
+interaction/accessibility checks. It uses synthetic content and never starts audio or saves a profile.
+Future practice is a labelled static concept, not a learning engine.
 
-## Run the engine and app
+Real LiteRT-LM inference remains local. Earlier Pixel measurements are in [FINDINGS.md](docs/FINDINGS.md);
+they do not establish the new Talk/Done candidate's performance. The physical demo phone and installed
+build remain unchanged during this feature-branch implementation. Missing real weights produce an
+honest error; canned inference requires an explicit developer setting and carries a synthetic label.
 
-The project configures and builds with **JDK 22 and Gradle 9.7.1**, targeting Java/Kotlin bytecode 17.
-Use an Android SDK matching `gradle/libs.versions.toml` and an Android device with USB debugging
-enabled. Dependency resolution needs network access on the first build.
+## Build and preview
 
-```bash
-./gradlew :engine:test
-./gradlew :app:testMobileDebugUnitTest
-# With a device connected. Not connectedMobileDebugAndroidTest: it uninstalls the app afterwards, and the
-# pushed models with it. EmbedderAndroidTest is skipped until the EmbeddingGemma bundles are pushed.
-./gradlew :app:installMobileDebug :app:installMobileDebugAndroidTest
-adb shell am instrument -w dev.dejalango.test/androidx.test.runner.AndroidJUnitRunner
-# Replay demo_zh.wav through the whole app (about two minutes; -e backend GPU to compare). Keep the phone awake.
-adb shell am instrument -w -e fixtureRun true -e class dev.dejalango.app.FixtureRunAndroidTest \
-  dev.dejalango.test/androidx.test.runner.AndroidJUnitRunner
-adb uninstall dev.dejalango.test
-# Offline alternative, using compiler/runtime jars from a local Gradle distribution:
-scripts/engine_offline_test.sh /path/to/gradle-distribution
+Use a full **JDK 25** (including `jlink`), the pinned Android SDK and Gradle wrapper. The project targets
+Java/Kotlin bytecode 17. Dependency resolution may require network access on the first build.
 
-./gradlew :app:installMobileDebug
-adb shell am start -n dev.dejalango/dev.dejalango.app.ui.MainActivity
+```sh
+./gradlew :engine:test :app:testMobileDebugUnitTest
+./gradlew :app:assembleMobileDebug :app:assembleMobileDebugAndroidTest \
+  -PwithLiteRtLm=false -PwithTensorNpu=false -PwithQualcommNpu=false
+
+# Select an emulator explicitly; leave the demo phone alone.
+adb -s EMULATOR_SERIAL install -r app/build/outputs/apk/mobile/debug/app-mobile-debug.apk
+adb -s EMULATOR_SERIAL shell am start -n \
+  dev.dejalango/dev.dejalango.app.ui.CompanionWalkthroughActivity
 ```
 
-Grant microphone and notification permissions. Tap **Start listening** with the fake model enabled.
-Speech detection drives the pipeline; the fake model returns sample text rather than transcribing
-what you say. The mobile application ID is `dev.dejalango`; the Meta VR flavor uses
-`dev.dejalango.metavr`. Each installation has its own data and model directory.
+The walkthrough is also available from Settings → Developer tools. The real app opens at
+`dev.dejalango.app.ui.MainActivity`, with a complete empty state until you choose to listen. Grant
+microphone access for real conversations. The mobile application ID is `dev.dejalango`; the Meta VR
+flavor uses `dev.dejalango.metavr`, with separate data/model storage. Do not run `connectedAndroidTest`
+on the demo phone: it can uninstall app data and weights. Use explicit instrumentation class lists on
+a selected emulator for UI validation.
 
-## Open the glasses simulator
+## Glasses simulator
 
-With the app listening and the device connected:
+While a real or explicitly synthetic runtime is listening, use:
 
-```bash
-scripts/hud_forward.sh
-# Built-in simulator: http://localhost:8765/sim
-# Without a camera:  http://localhost:8765/sim?bg=photo
-# Raw HUD:           http://localhost:8765/hud
+```sh
+ANDROID_SERIAL=DEVICE_SERIAL scripts/hud_forward.sh
 ```
 
-The script prints the URLs to open and picks another laptop port when 8765 is busy, or takes one as
-an argument: `scripts/hud_forward.sh 9876`. Without an argument, it reuses an existing forward to
-the phone, so a rerun prints the same URLs.
+Copy the current tokenized HUD link from Developer tools → Bench. Keep its token when replacing
+`/hud` with `/sim`. The simulator starts with a bundled synthetic café; camera preview is an explicit
+button. T/ArrowUp invokes Talk, C Done, left/right browses replies, S corrects the latest line,
+U undoes, and P pauses the display. `cut` on the wire means guarded Done; operator Cut remains a
+separate bench action.
 
-Allow the browser to use the laptop camera, or choose `?bg=photo` or `?bg=black`. Arrow keys select
-a reply, Enter confirms it, P switches phrasebook/personalized text, C cuts a turn, Escape clears
-the HUD, and F toggles fullscreen in the simulator. If multiple devices are connected, set
-`ANDROID_SERIAL` before running the helper scripts.
-
-Inference stays on the Android device. The HUD server sends conversation state to the connected
-browser over USB forwarding. It binds to localhost by default; the optional LAN setting exposes it
-to the local network. It answers only its own pages and local clients such as curl, not other
-websites in current browsers. `/action` accepts POST only and still answers only on localhost. The
-simulator camera is a browser background and is not sent to the model.
+The bridge binds to loopback by default. State, actions and WebSocket upgrades require a capability
+that rotates when the runtime restarts; actions also carry its session ID. The optical layer is green
+and transparent. Simulator video is a local browser background and is never sent to the model.
 
 ## Install model weights
 
@@ -99,9 +91,9 @@ For the Meta VR flavor, install and launch that flavor, then run
 `scripts/push_models.sh dev.dejalango.metavr`. Models must be pushed into the directory for the
 application ID actually installed.
 
-In **knobs**, disable the fake model, tap **Stop**, then **Start listening**. Check the model name
-and backend in the glass box: unavailable weights or adapters can select the fake model as a
-fallback. `AUTO` tries a device-specific accelerator order and ends with CPU; selecting a backend
+In Settings → Developer tools → Bench → **knobs**, select real inference and restart listening.
+Check the model name and backend in the glass box. Unavailable weights or adapters produce an error;
+they never silently select the fake model. `AUTO` tries a device-specific accelerator order and ends with CPU; selecting a backend
 explicitly tries that backend, then CPU. The audio encoder defaults to CPU. Vendor runtime versions
 are pinned to 2.3.0; vendor-runtime APK builds pass. On a Pixel 11 Pro XL, `AUTO` puts Gemma on
 the TPU (`NPU`); Qualcomm initialization remains to be verified.
@@ -115,7 +107,7 @@ weights; [findings](docs/FINDINGS.md) records dated measurements from one Pixel 
 
 ```text
 engine/   Pure Kotlin audio, turns, conversation, voice, prompts, model interfaces, HUD and traces
-app/      Android service, platform adapters, bench UI, HUD server and optional LiteRT-LM source root
+app/      Native Companion UI, listening service, platform adapters, debug bench, secured HUD bridge
 docs/     ARCHITECTURE.md and DEMO.md
 scripts/  Model downloads/pushes, HUD forwarding, trace export and offline engine tests
 ```

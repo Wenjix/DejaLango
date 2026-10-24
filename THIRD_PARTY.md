@@ -9,5 +9,11 @@
 | NanoHTTPD + nanohttpd-websocket | BSD-3-Clause | Local HUD server |
 | AndroidX / Jetpack Compose / Room / DataStore | Apache-2.0 | App |
 | kotlinx.coroutines / kotlinx.serialization | Apache-2.0 | Engine |
+| Nunito and Fredoka, local variable TTFs from the approved study assets | SIL Open Font License 1.1 | Native Companion typography; license texts in `app/src/main/assets/companion/` |
 
 The Gradle wrapper retains its Apache-2.0 license headers.
+
+The Companion pose sheet and synthetic café are reused from the approved local design studies.
+They were generated for this project; their origins are recorded in
+`app/src/main/assets/companion/ORIGINS.md`, with the pose sheet's original generation provenance.
+Icons are authored geometric marks. Duolingo/Mobbin reference artwork is not included in the app.

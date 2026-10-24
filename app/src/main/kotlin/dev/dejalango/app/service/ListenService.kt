@@ -18,6 +18,8 @@ import dev.dejalango.app.appGraph
 import dev.dejalango.app.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +45,12 @@ class ListenService : Service() {
     val runtimeFlow: StateFlow<PipelineRuntime?> = _runtime.asStateFlow()
     val runtime: PipelineRuntime? get() = _runtime.value
     val started: Boolean get() = _runtime.value != null
+    private val _starting = MutableStateFlow(false)
+    val starting: StateFlow<Boolean> = _starting.asStateFlow()
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+    private var startJob: Job? = null
+    private var closingRuntime: PipelineRuntime? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -51,21 +59,37 @@ class ListenService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> if (_runtime.value == null) {
-                val rt = PipelineRuntime(this, appGraph, scope)
-                _runtime.value = rt
+            ACTION_START -> if (startJob?.isActive != true && (_runtime.value == null || _runtime.value?.hud?.value?.modelReady == false)) {
+                _runtime.value?.let { it.stop(); closingRuntime = it }
+                _runtime.value = null
                 startForeground(NOTIFICATION_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-                scope.launch {
+                _starting.value = true
+                _error.value = null
+                startJob = scope.launch {
                     try {
+                        appGraph.configStore.awaitReady()
+                        closingRuntime?.awaitClosed()
+                        closingRuntime = null
+                        val rt = PipelineRuntime(this@ListenService, appGraph, scope)
+                        _runtime.value = rt
                         rt.start()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
                     } catch (t: Throwable) {
                         Log.e(TAG, "runtime failed to start", t)
+                        _runtime.value?.let { it.stop(); closingRuntime = it }
+                        _runtime.value = null
+                        _error.value = t.message ?: "Couldn't start listening. Please try again."
+                    } finally {
+                        _starting.value = false
                     }
                 }
             }
             ACTION_STOP -> {
-                _runtime.value?.stop()
+                startJob?.cancel(); startJob = null
+                _runtime.value?.let { it.stop(); closingRuntime = it }
                 _runtime.value = null
+                _starting.value = false
                 stopForeground(Service.STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
@@ -76,6 +100,7 @@ class ListenService : Service() {
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onDestroy() {
+        startJob?.cancel()
         _runtime.value?.stop()
         _runtime.value = null
         scope.cancel()

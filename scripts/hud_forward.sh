@@ -67,15 +67,14 @@ else
 fi
 cat <<EOF
 
-glasses simulator (works offline; the HUD over the laptop camera, glasses bezel, additive blend):
-  open http://localhost:$LAPTOP_PORT/sim            (allow the camera; F = fullscreen)
-  open http://localhost:$LAPTOP_PORT/sim?bg=photo   (no camera)   ?bg=black (plain)
-  arrow keys select a reply, Enter confirms, P flips phrasebook ⇄ you, C cuts, Esc clears
+Open the current HUD link from Developer tools → Bench. Its session token is required.
+For the simulator, replace /hud with /sim in that same link, retaining ?token=… .
+Replace its port with $LAPTOP_PORT. The phone server is on port $PHONE_PORT.
+The simulator starts with a bundled synthetic café. Camera preview is an explicit button.
 
-raw HUD page in a tab:     open http://localhost:$LAPTOP_PORT/hud
-current state as JSON:     curl -s http://localhost:$LAPTOP_PORT/state
-send an action without WS: curl -s -X POST "http://localhost:$LAPTOP_PORT/action?a=%7B%22action%22%3A%22next%22%7D"
-
-If /sim doesn't load, or shows "connecting to phone…": the app isn't listening (tap Start listening; the HUD
-server starts with it), or adb lost the device (adb devices; re-run this script).
+T / ArrowUp = Talk, C = Done, left/right = browse, S = latest-line correction,
+U = Undo, P = pause display. There is no Use or operational mode key.
+Tokens rotate when the listening runtime restarts; an older link cannot read or control it.
+One-shot HTTP actions use POST /action?token=…&a=… with the current session ID in the
+URL-encoded JSON action. Send no request body. State and WebSocket access need the token too.
 EOF

@@ -27,6 +27,12 @@ object RequestTag {
     const val WORD = "word"
     const val TRANSCRIBE = "transcribe"
     const val VOICE_CARD = "voiceCard"
+    const val THEIRS = "transcribeThem"
+    const val YOURS = "transcribeYou"
+    const val SAY_IT = "sayIt"
+    const val HINT = "hint"
+
+    fun usesReplySystem(tag: String): Boolean = tag in setOf(STAGE_B, SINGLE, SAY_IT)
 }
 
 data class GenerateRequest(

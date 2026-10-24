@@ -1,59 +1,56 @@
 package dev.dejalango.app.hud
 
-import dev.dejalango.engine.config.Mode
-import dev.dejalango.engine.hud.HudAction
-import dev.dejalango.engine.hud.HudState
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import dev.dejalango.engine.hud.*
+import dev.dejalango.engine.conversation.Speaker
+import kotlinx.serialization.json.*
 
-/**
- * Wire format between the pipeline and any web renderer (/sim and /hud in a laptop browser; later, an
- * Android XR thin client). One JSON object per state change; actions come back as small objects.
- */
+/** Small public wire format. No voice profile, model path, trace, access token, or private debug data. */
 object HudJson {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
-
     fun encode(s: HudState): String = buildJsonObject {
-        put("phase", s.phase.name)
-        put("mode", s.mode.name)
-        put("level", s.level)
-        put("heard", s.heard?.let { h -> buildJsonObject { put("text", h.text); put("lang", h.lang); put("translation", h.translation ?: "") } } ?: JsonNull)
-        put("replies", buildJsonArray {
-            s.replies.forEach { r ->
-                add(buildJsonObject { put("plain", r.plain); put("yours", r.yours); put("roman", r.roman ?: ""); put("back", r.back ?: "") })
-            }
+        fun line(value: Line?): JsonElement = value?.let { buildJsonObject {
+            put("id", it.id); put("text", it.text); put("lang", it.lang)
+            put("translation", it.translation.orEmpty()); put("roman", it.roman.orEmpty())
+        } } ?: JsonNull
+        put("session", s.sessionId); put("phase", s.phase.name)
+        put("capture", buildJsonObject {
+            put("phase", s.capture.phase.name); put("mine", s.capture.myTurn)
+            put("ready", s.capture.ready); put("closed", s.capture.closedTurnId?.let(::JsonPrimitive) ?: JsonNull)
         })
-        put("selected", s.selectedReply?.let { JsonPrimitive(it) } ?: JsonNull)
-        put("showPlain", s.showPlain)
-        put("wordHint", s.wordHint ?: "")
-        put("wordAlternatives", JsonArray(s.wordAlternatives.map { JsonPrimitive(it) }))
-        put("learnedToday", s.learnedToday)
-        put("status", s.statusLine ?: "")
-        put("error", s.error ?: "")
-        put("trace", s.trace?.summary() ?: "")
-        put("exemplars", buildJsonArray { s.exemplarsUsed.forEach { e -> add(buildJsonObject { put("text", e.text); put("score", e.score) }) } })
-        put("model", s.model?.let { m -> buildJsonObject { put("name", m.name); put("backend", m.backend); put("tps", m.lastDecodeTokensPerSec ?: 0.0) } } ?: JsonNull)
-        put("card", s.voiceCard?.describe() ?: "")
+        put("pair", buildJsonObject { put("me", s.pair.me.label); put("them", s.pair.them.label); put("roman", s.pair.them.romanization != null) })
+        put("pendingPair", s.pendingPair != null); put("paused", s.displayPaused)
+        put("listening", s.listening); put("modelReady", s.modelReady); put("processing", s.processing)
+        put("heard", line(s.heard)); put("wearer", line(s.wearer)); put("aside", line(s.aside))
+        val latest = if (s.correction?.let { it.to == Speaker.THEM && !it.pending && it.text.isNotBlank() && it.text == s.heard?.text } == true) s.heard
+            else s.aside ?: s.wearer ?: s.heard
+        put("latestLineId", latest?.id?.let(::JsonPrimitive) ?: JsonNull)
+        put("replies", buildJsonArray { s.replies.forEach { r -> add(buildJsonObject {
+            put("yours", r.yours); put("roman", r.roman.takeIf { s.pair.them.romanization != null }.orEmpty()); put("back", r.back.orEmpty())
+        }) } })
+        put("selected", s.selectedReply?.let(::JsonPrimitive) ?: JsonNull)
+        put("kind", s.replyKind.name); put("matched", s.matched)
+        put("hint", buildJsonObject { put("phase", s.hint.phase.name); put("word", s.hint.word); put("roman", s.hint.roman.orEmpty()); put("meaning", s.hint.meaning.orEmpty()) })
+        put("correction", s.correction?.let { r -> buildJsonObject {
+            put("id", r.id); put("lineId", r.lineId); put("text", r.text); put("roman", r.roman.orEmpty())
+            put("to", r.to.name); put("pending", r.pending); put("whole", r.canMoveWhole); put("message", r.message.orEmpty())
+        } } ?: JsonNull)
+        put("error", s.error.orEmpty()); put("status", s.statusLine.orEmpty()); put("synthetic", s.synthetic)
     }.toString()
 
-    fun decodeAction(text: String): HudAction? {
-        val o = runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: return null
-        val action = (o["action"] as? JsonPrimitive)?.content ?: return null
-        return when (action) {
+    /** IDs protect Undo/flip from stale clients; session binding protects controls after restart. */
+    fun decodeAction(text: String, currentSession: String): HudAction? {
+        if (text.length > 2048) return null
+        val o = runCatching { Json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: return null
+        fun value(k: String) = (o[k] as? JsonPrimitive)?.content
+        if (currentSession.isBlank() || value("session") != currentSession) return null
+        return when (value("action")) {
+            "talk" -> HudAction.Talk
+            "done", "cut" -> HudAction.Done
             "next" -> HudAction.Next
             "prev" -> HudAction.Prev
-            "confirm" -> HudAction.Confirm
-            "select" -> (o["index"] as? JsonPrimitive)?.content?.toIntOrNull()?.let { HudAction.Select(it) }
-            "togglePlain" -> HudAction.TogglePlain
-            "clear" -> HudAction.Clear
-            "cut" -> HudAction.CutNow
-            "mode" -> (o["mode"] as? JsonPrimitive)?.content?.let { m -> runCatching { Mode.valueOf(m) }.getOrNull() }?.let { HudAction.SetMode(it) }
+            "pause" -> HudAction.ToggleDisplay
+            "select" -> value("index")?.toIntOrNull()?.takeIf { it in 0..9 }?.let(HudAction::Select)
+            "flip" -> value("lineId")?.toLongOrNull()?.let { HudAction.Repair(it, value("whole") == "true") }
+            "undo" -> value("correctionId")?.toLongOrNull()?.let(HudAction::Undo)
             else -> null
         }
     }

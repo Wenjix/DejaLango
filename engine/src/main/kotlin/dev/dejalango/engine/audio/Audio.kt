@@ -49,6 +49,8 @@ class RingBuffer(val sampleRate: Int = DEFAULT_SAMPLE_RATE, seconds: Int = 30) {
     /** Total samples ever appended. */
     private var written = 0L
     private var originMs: Long? = null
+    var droppedSamples: Long = 0
+        private set
 
     val isEmpty: Boolean get() = written == 0L
 
@@ -61,13 +63,23 @@ class RingBuffer(val sampleRate: Int = DEFAULT_SAMPLE_RATE, seconds: Int = 30) {
     @Synchronized
     fun append(frame: AudioFrame) {
         if (originMs == null) originMs = frame.tMs
+        val frameIndex = (frame.tMs - originMs!!) * sampleRate / 1000L
+        val missing = (frameIndex - written).coerceAtLeast(0)
+        if (missing > 0) {
+            droppedSamples += missing
+            if (missing >= capacity) {
+                buf.fill(0f)
+                written += missing
+            } else repeat(missing.toInt()) { buf[(written++ % capacity).toInt()] = 0f }
+        }
+        val overlap = (written - frameIndex).coerceAtLeast(0).coerceAtMost(frame.pcm.size.toLong()).toInt()
         var pos = (written % capacity).toInt()
-        for (s in frame.pcm) {
-            buf[pos] = s
+        for (i in overlap until frame.pcm.size) {
+            buf[pos] = frame.pcm[i]
             pos++
             if (pos == capacity) pos = 0
         }
-        written += frame.pcm.size
+        written += frame.pcm.size - overlap
     }
 
     /** Copy of the samples between two timestamps, clamped to what the buffer still holds. */
@@ -94,6 +106,7 @@ class RingBuffer(val sampleRate: Int = DEFAULT_SAMPLE_RATE, seconds: Int = 30) {
     fun reset() {
         written = 0L
         originMs = null
+        droppedSamples = 0
     }
 
     companion object {

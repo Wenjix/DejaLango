@@ -23,8 +23,9 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.1.0-companion.20261024.1306-PDT"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "BUILD_TIMESTAMP", "\"2026-10-24T13:06:00-07:00\"")
         buildConfigField("boolean", "WITH_LITERTLM", withLiteRtLm.toString())
         buildConfigField("boolean", "WITH_TENSOR_NPU", withTensorNpu.toString())
         buildConfigField("boolean", "WITH_QUALCOMM_NPU", withQualcommNpu.toString())
@@ -143,6 +144,11 @@ dependencies {
     }
 
     testImplementation(libs.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.test.junit4)
+    androidTestImplementation(libs.androidx.compose.test.accessibility)
+    debugImplementation(libs.androidx.compose.test.manifest)
 }

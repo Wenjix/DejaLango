@@ -259,7 +259,7 @@ class LiteRtLmModel(
 
     /** Transcription and voice-card building stand alone; the reply-writing system prompt would only steer them off format. */
     private fun usesSystemPrompt(tag: String): Boolean =
-        tag != RequestTag.STAGE_A && tag != RequestTag.TRANSCRIBE && tag != RequestTag.VOICE_CARD
+        RequestTag.usesReplySystem(tag)
 
     /** The spare if its kind fits. One that doesn't is closed, so the request's conversation is the only one alive. */
     private fun takeSpare(withSystem: Boolean): Conversation? {

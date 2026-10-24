@@ -11,12 +11,12 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-data class StageAResult(val speaker: Speaker, val lang: String, val heard: String, val heardL1: String, val repaired: Boolean = false)
+data class StageAResult(val speaker: Speaker, val lang: String, val heard: String, val heardL1: String, val repaired: Boolean = false, val roman: String? = null)
 
 /** A JSON object pulled out of model text. [repaired] means the text was patched to parse, such as truncated output closed up. */
 data class Extracted(val obj: JsonObject, val repaired: Boolean)
 
-data class WordHint(val word: String, val alternatives: List<String>, val confidence: Float)
+data class WordHint(val word: String, val alternatives: List<String>, val confidence: Float, val roman: String? = null, val meaning: String? = null, val lang: String = "")
 
 data class TranscriptResult(val lang: String, val text: String)
 
@@ -37,7 +37,7 @@ class TurnResultParser {
         return extractFrom(stripped)
             // A 2B model sometimes opens a key it never writes (`"back":"…","},{…`); drop the dangling `,"` and retry.
             ?: DANGLING_KEY.replace(stripped, "$1").takeIf { it != stripped }?.let { extractFrom(it)?.copy(repaired = true) }
-            // A verbatim copy of the prompt's skeleton keeps its `"me"|"them"`; read it as "them", the prompt's pick when unclear.
+            // A copied legacy skeleton keeps its speaker alternatives; it is still subject to placeholder rejection.
             ?: SPEAKER_CHOICE.replace(stripped, "\"them\"").takeIf { it != stripped }?.let { extractFrom(it)?.copy(repaired = true) }
     }
 
@@ -67,10 +67,7 @@ class TurnResultParser {
 
     fun parseStageA(e: Extracted): StageAResult? {
         val o = e.obj
-        // A value copied from the prompt's skeleton ("<verbatim transcript>", "...") is not an answer.
         fun field(key: String): String? = o.str(key)?.trim()?.takeUnless { PLACEHOLDER_ECHO.matches(it) }
-        // A copied transcript counts as no speech, as in parseTranscript, so the turn ends there. Null would show the
-        // raw text as their line instead and ask Stage B to answer it.
         val heard = if (o.str("heard") == null) return null else field("heard").orEmpty()
         val speaker = when (o.str("speaker")?.lowercase()?.trim()) {
             "me", "wearer", "user" -> Speaker.ME
@@ -83,6 +80,7 @@ class TurnResultParser {
             heard = heard,
             heardL1 = field("heard_l1") ?: field("heardL1") ?: field("translation") ?: heard,
             repaired = e.repaired,
+            roman = o.str("roman")?.takeIf { it.isNotBlank() && it != "null" },
         )
     }
 
@@ -119,7 +117,7 @@ class TurnResultParser {
         val word = o.str("word")?.trim() ?: return null
         val alts = (o["alternatives"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content?.trim()?.takeIf { s -> s.isNotEmpty() } } ?: emptyList()
         val conf = (o["confidence"] as? JsonPrimitive)?.content?.toFloatOrNull()?.coerceIn(0f, 1f) ?: if (word.isEmpty()) 0f else 0.5f
-        return WordHint(word, alts, conf)
+        return WordHint(word, alts, conf, o.str("roman")?.takeIf { it.isNotBlank() && it != "null" }, o.str("meaning"), o.str("lang").orEmpty())
     }
 
     fun parseTranscript(text: String): TranscriptResult? {

@@ -80,10 +80,10 @@ class AppGraph(private val context: Context) {
                 return cls.getConstructor(Context::class.java, ModelFiles::class.java, Backend::class.java, AudioBackend::class.java, Int::class.javaPrimitiveType, Boolean::class.javaPrimitiveType)
                     .newInstance(context, modelFiles, cfg.backend, cfg.audioBackend, 2048, true) as SpeechLanguageModel
             } catch (t: Throwable) {
-                Log.e(TAG, "LiteRT-LM adapter failed to load; falling back to the fake model", t)
+                throw IllegalStateException("The local speech model couldn't start. Check the model setup and retry.", t)
             }
         } else if (!useFake) {
-            Log.w(TAG, "real model requested but unavailable (WITH_LITERTLM=${BuildConfig.WITH_LITERTLM}, soc=${status.socModel}, generic=${status.gemmaGeneric}, soc bundle=${status.gemmaSoc}); using the fake model")
+            throw IllegalStateException(if (BuildConfig.DEBUG) "The local speech model isn't available. Open the labelled walkthrough, or finish model setup in the developer bench." else "The language model isn't available on this phone. Finish local model setup, then start listening again.")
         }
         return FakeSpeechModel(l1 = cfg.l1.code, l2 = cfg.l2.code)
     }

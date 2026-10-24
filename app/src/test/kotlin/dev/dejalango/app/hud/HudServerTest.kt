@@ -16,7 +16,7 @@ class HudServerTest {
     private val fired = mutableListOf<HudAction>()
 
     private fun action(vararg parameters: Pair<String, String>): Response =
-        HudServer.serveAction(parameters.associate { (k, v) -> k to listOf(v) }) { fired += it }
+        HudServer.serveAction(parameters.associate { (k, v) -> k to listOf(v) }, "session") { fired += it }
 
     @Test
     fun `a request with a body gets 400 and closes its connection, since NanoHTTPD would read the body as the next request`() {
@@ -36,8 +36,8 @@ class HudServerTest {
 
     @Test
     fun `an action in the query string fires`() {
-        // scripts/hud_forward.sh's hint, ?a=%7B%22action%22%3A%22next%22%7D, as NanoHTTPD decodes it.
-        assertEquals(Response.Status.OK, action("a" to """{"action":"next"}""").status)
+        // NanoHTTPD decodes the query action; the current session still binds the discrete press.
+        assertEquals(Response.Status.OK, action("a" to """{"action":"next","session":"session"}""").status)
         assertEquals(listOf(HudAction.Next), fired)
     }
 
@@ -46,7 +46,22 @@ class HudServerTest {
         assertEquals(Response.Status.BAD_REQUEST, action().status)
         assertEquals(Response.Status.BAD_REQUEST, action("x" to "1").status)
         assertEquals(Response.Status.BAD_REQUEST, action("a" to "next").status)
-        assertEquals(Response.Status.BAD_REQUEST, action("a" to """{"action":"dance"}""").status)
+        assertEquals(Response.Status.BAD_REQUEST, action("a" to """{"action":"dance","session":"session"}""").status)
         assertEquals(emptyList<HudAction>(), fired)
+    }
+    @Test
+    fun `an action without the current session gets 400 and fires nothing`() {
+        for (json in listOf("""{"action":"talk"}""", """{"action":"talk","session":"old"}""")) {
+            assertEquals(Response.Status.BAD_REQUEST, action("a" to json).status)
+        }
+        val parameters = mapOf("a" to listOf("""{"action":"talk","session":"session"}"""))
+        assertEquals(Response.Status.BAD_REQUEST, HudServer.serveAction(parameters, "") { fired += it }.status)
+        assertTrue(fired.isEmpty())
+    }
+
+    @Test
+    fun `the current session maps a Done press without a body`() {
+        assertEquals(Response.Status.OK, action("a" to """{"action":"done","session":"session"}""").status)
+        assertEquals(listOf(HudAction.Done), fired)
     }
 }

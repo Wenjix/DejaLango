@@ -196,6 +196,7 @@ class TurnProcessor(
                 conversation.dismissSuggestions()
                 _hud.update { it.copy(phase = Phase.IDLE, heard = null, replies = emptyList(), selectedReply = null, wordHint = null, wordAlternatives = emptyList(), exemplarsUsed = emptyList(), statusLine = null, error = null) }
             }
+            HudAction.Talk, HudAction.Done, is HudAction.Repair, is HudAction.Undo, HudAction.ToggleDisplay -> Unit
             is HudAction.SetMode, HudAction.CutNow -> Unit // app-level: config and segmenter are owned there
         }
     }
