@@ -42,8 +42,9 @@ class FakeSpeechModel(
     @Volatile var prepareCalls: Int = 0
         private set
 
-    override suspend fun prepare() {
+    override suspend fun prepare(upcoming: List<String>, structured: Boolean): Boolean {
         prepareCalls++
+        return false
     }
 
     override val info: ModelInfo = ModelInfo(name = "fake-gemma", backend = "fake", file = null, lastDecodeTokensPerSec = 999.0)

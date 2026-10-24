@@ -11,6 +11,9 @@ data class Turn(
     val tMs: Long,
 )
 
+/** A reply suggested to ME, in L2: the personalized line and its phrasebook version. Reading either one aloud counts. */
+data class SuggestedReply(val yours: String, val plain: String)
+
 /**
  * The running two-party conversation. Single-writer (the TurnProcessor); readers get snapshots.
  * Bounded so the prompt window and memory stay small.
@@ -23,9 +26,13 @@ class ConversationState(private val maxTurns: Int = 40) {
     var learnedToday: Int = 0
         private set
 
-    /** Replies most recently suggested to ME, in L2 — matched against my next utterance. */
+    /**
+     * The suggestion set on offer to ME, matched against my next utterance. Empty once it is consumed (a reply was
+     * read aloud or confirmed) or dismissed, so cards that stay rendered on the HUD can never match again.
+     */
     @Volatile
-    var lastSuggested: List<String> = emptyList()
+    var lastSuggested: List<SuggestedReply> = emptyList()
+        private set
 
     /** L1 text of the last THEM turn — the SINGLE pipeline shape retrieves exemplars from it. */
     @Volatile
@@ -51,10 +58,39 @@ class ConversationState(private val maxTurns: Int = 40) {
         learnedToday++
     }
 
+    /** The reply I just confirmed on the HUD. I usually say it next; that reading is absorbed once, not taken as a new line. */
+    private var confirmedEcho: SuggestedReply? = null
+
+    @Synchronized
+    fun suggest(replies: List<SuggestedReply>) {
+        lastSuggested = replies
+        confirmedEcho = null
+    }
+
+    /** Takes the suggestion set on offer and leaves none, so each set is used at most once; empty if already taken. */
+    @Synchronized
+    fun takeSuggestions(): List<SuggestedReply> = lastSuggested.also { lastSuggested = emptyList() }
+
+    /** [takeSuggestions] for a reply confirmed on the HUD, remembering it as the echo to expect; empty if already taken. */
+    @Synchronized
+    fun confirm(reply: SuggestedReply): List<SuggestedReply> = takeSuggestions().also { if (it.isNotEmpty()) confirmedEcho = reply }
+
+    /** The confirmed reply, once: gone whether or not the next utterance turns out to be my reading of it. */
+    @Synchronized
+    fun takeEcho(): SuggestedReply? = confirmedEcho.also { confirmedEcho = null }
+
+    /** The cards were cleared or a new line superseded them: nothing on offer, no echo to expect. */
+    @Synchronized
+    fun dismissSuggestions() {
+        lastSuggested = emptyList()
+        confirmedEcho = null
+    }
+
     @Synchronized
     fun clear() {
         turns.clear()
         lastSuggested = emptyList()
+        confirmedEcho = null
         lastHeardL1 = null
         learnedToday = 0
     }
@@ -73,8 +109,21 @@ object ReplyMatcher {
         return sb.toString()
     }
 
-    /** Index of the best candidate within [threshold] (normalized distance), or null. */
-    fun match(spoken: String, candidates: List<String>, threshold: Double = 0.3): Int? {
+    /** Strict enough that what THEY say next is not mistaken for my reading of a suggestion. */
+    const val THRESHOLD = 0.35
+
+    /** Under this many normalized characters a reply allows about one slip: their echo of it sits within 0.35. */
+    private const val SHORT_REPLY_CHARS = 10
+    private const val SHORT_REPLY_THRESHOLD = 0.2
+
+    /** A partial reading needs at least this many characters (CJK or letters) and half of the reply. */
+    const val MIN_CONTAINED_CHARS = 4
+
+    /**
+     * Index of the closest candidate within [threshold] (normalized edit distance; tighter for short candidates), or
+     * null. Reading the start of a reply also matches. THEM echoing a reply inside a longer line does not.
+     */
+    fun match(spoken: String, candidates: List<String>, threshold: Double = THRESHOLD): Int? {
         val a = normalize(spoken)
         if (a.isEmpty()) return null
         var best: Int? = null
@@ -82,13 +131,17 @@ object ReplyMatcher {
         candidates.forEachIndexed { i, c ->
             val b = normalize(c)
             if (b.isEmpty()) return@forEachIndexed
-            val d = levenshtein(a, b).toDouble() / maxOf(a.length, b.length)
-            if (d < bestScore) {
+            val longer = maxOf(a.length, b.length)
+            val ratio = levenshtein(a, b).toDouble() / longer
+            val partial = a.length >= MIN_CONTAINED_CHARS && a.length * 2 >= b.length && b.startsWith(a)
+            val d = if (partial) minOf(ratio, 0.15) else ratio
+            val limit = if (longer < SHORT_REPLY_CHARS) minOf(threshold, SHORT_REPLY_THRESHOLD) else threshold
+            if (d <= limit && d < bestScore) {
                 bestScore = d
                 best = i
             }
         }
-        return if (bestScore <= threshold) best else null
+        return best
     }
 
     fun levenshtein(a: String, b: String): Int {

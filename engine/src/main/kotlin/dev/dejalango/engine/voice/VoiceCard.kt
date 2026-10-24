@@ -13,7 +13,7 @@ enum class Confidence {
     /** Built from ~60 s of a judge talking. In-memory only. */
     QUICK,
 
-    /** No card yet; prompts fall back to a neutral register. */
+    /** No card yet; the system prompt leaves the voice card out. */
     NONE,
 }
 
@@ -37,31 +37,39 @@ data class VoiceCard(
     val notes: String = "",
     val confidence: Confidence = Confidence.NONE,
 ) {
-    /** Compact natural-language rendering for the system prompt. */
-    fun describe(): String {
-        if (confidence == Confidence.NONE) return "(no voice card yet — use a neutral, friendly spoken register)"
-        val sb = StringBuilder()
-        sb.append("register ${scale(register, "very casual", "very formal")}; ")
-        sb.append("directness ${scale(directness, "hedged", "blunt")}; ")
-        sb.append("warmth ${scale(warmth, "reserved", "very warm")}; ")
-        sb.append("humor ${scale(humor, "none", "constant")}; ")
-        sb.append("sentences about $avgSentenceWords words.")
-        if (fillers.isNotEmpty()) sb.append("\nfillers: ${fillers.joinToString(", ")}")
-        if (openers.isNotEmpty()) sb.append("\nopeners: ${openers.joinToString(" | ")}")
-        if (closers.isNotEmpty()) sb.append("\nclosers: ${closers.joinToString(" | ")}")
-        if (signaturePhrases.isNotEmpty()) sb.append("\nsignature phrases: ${signaturePhrases.joinToString(" | ")}")
-        if (avoids.isNotEmpty()) sb.append("\nnever says: ${avoids.joinToString(" | ")}")
-        if (notes.isNotBlank()) sb.append("\nnotes: $notes")
-        if (confidence == Confidence.QUICK) sb.append("\n(low confidence: built from one minute of speech)")
-        return sb.toString()
+    /**
+     * Compact rendering for the system prompt, every part capped so a long card can't bloat prefill. Blank without a
+     * card, so the prompt's voice-card section drops out. Scale values of 3 say nothing and are left out; so are
+     * avoids, which are L1 phrases an L2 reply can't contain anyway.
+     */
+    fun promptText(): String {
+        if (confidence == Confidence.NONE) return ""
+        val tone = listOfNotNull(
+            tone(register, "very casual", "casual", "polite", "formal"),
+            tone(directness, "very indirect", "indirect", "direct", "blunt"),
+            tone(warmth, "cold", "reserved", "warm", "very warm"),
+            tone(humor, "no humor", "little humor", "playful", "jokey"),
+            when {
+                avgSentenceWords <= 6 -> "very short sentences"
+                avgSentenceWords <= 9 -> "short sentences"
+                else -> null // never "long": the prompt caps every line's length anyway
+            },
+        ).joinToString(", ").ifEmpty { "neutral tone" }
+        val lines = arrayListOf((if (confidence == Confidence.QUICK) "(low confidence) " else "") + tone)
+        val seen = HashSet<String>() // shared, so a phrase listed as both filler and signature appears once
+        // Whole sentences aren't habits: a model that copies them here would teach the reply to copy them too.
+        unique(fillers.filter { it.isPhrase(maxWords = 2) }, seen, MAX_FILLERS).takeIf { it.isNotEmpty() }?.let { lines += "fillers: " + it.joinToString(", ") }
+        unique((signaturePhrases + openers + closers).filter { it.isPhrase(maxWords = 5) }, seen, MAX_MOVES)
+            .takeIf { it.isNotEmpty() }?.let { lines += "signature moves: " + it.joinToString(" | ") }
+        capNotes(notes).takeIf { it.isNotEmpty() }?.let { lines += it }
+        return lines.joinToString("\n")
     }
 
-    private fun scale(v: Int, lo: String, hi: String): String = when (v.coerceIn(1, 5)) {
-        1 -> lo
-        2 -> "fairly $lo"
-        3 -> "middle of the road"
-        4 -> "fairly $hi"
-        else -> hi
+    /** The card as the bench and HUD show it: [promptText] plus what I never say. */
+    fun describe(): String {
+        if (confidence == Confidence.NONE) return "(no voice card yet)"
+        val never = unique(avoids, HashSet(), Int.MAX_VALUE)
+        return promptText() + if (never.isEmpty()) "" else "\nnever says: " + never.joinToString(" | ")
     }
 
     fun toJson(): JsonObject = buildJsonObject {
@@ -78,6 +86,51 @@ data class VoiceCard(
     }
 
     companion object {
+        private const val MAX_FILLERS = 3
+        private const val MAX_MOVES = 4
+        private const val MAX_NOTES = 120
+        private const val TRAILING = " \t\n,;:，；：、"
+
+        /** The word for a 1..5 scale value; the middle value says nothing. */
+        private fun tone(v: Int, w1: String, w2: String, w4: String, w5: String): String? = when (v.coerceIn(1, 5)) {
+            1 -> w1
+            2 -> w2
+            4 -> w4
+            5 -> w5
+            else -> null
+        }
+
+        /** Han and kana are written without spaces; Hangul is spaced, so whitespace already counts Korean words. */
+        private val UNSPACED_SCRIPTS = setOf(Character.UnicodeScript.HAN, Character.UnicodeScript.HIRAGANA, Character.UnicodeScript.KATAKANA)
+
+        /** A habit, not a sentence: at most [maxWords] words, an unspaced run counting as one word per ~1.5 characters. */
+        private fun String.isPhrase(maxWords: Int): Boolean {
+            val s = trim()
+            val words = s.split(Regex("\\s+")).filter { it.isNotEmpty() }.sumOf { token ->
+                val unspaced = token.count { Character.UnicodeScript.of(it.code) in UNSPACED_SCRIPTS }
+                if (unspaced == 0) 1 else (unspaced * 2 + 2) / 3 // ceil(unspaced / 1.5)
+            }
+            return words in 1..maxWords && s.length <= maxWords * 8
+        }
+
+        /** Trimmed, without trailing separators (ASCII or full-width); keeps . ? ! */
+        private fun clean(s: String): String = s.trim().trimEnd { it in TRAILING }.trim()
+
+        /** Dedupe key: lowercase letters and digits in any script, everything else collapsed to single spaces. */
+        private fun key(s: String): String =
+            s.lowercase().map { if (it.isLetterOrDigit()) it else ' ' }.joinToString("").split(' ').filter { it.isNotEmpty() }.joinToString(" ")
+
+        /** The first [limit] cleaned items whose key isn't in [seen]; lazy, so only kept items claim a key. */
+        private fun unique(items: List<String>, seen: MutableSet<String>, limit: Int): List<String> =
+            items.asSequence().map(::clean).filter { it.isNotEmpty() }.filter { key(it).let { k -> k.isNotEmpty() && seen.add(k) } }.take(limit).toList()
+
+        private fun capNotes(notes: String): String {
+            val n = notes.split(Regex("\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
+            if (n.length <= MAX_NOTES) return n
+            val cut = n.take(MAX_NOTES).let { c -> c.lastIndexOf(' ').takeIf { it > 0 }?.let { c.substring(0, it) } ?: c }
+            return clean(cut) + "…"
+        }
+
         fun none(l1: String, l2: String): VoiceCard = VoiceCard(l1 = l1, l2 = l2, confidence = Confidence.NONE)
 
         /** Tolerant: every field optional, scales clamped, lists of non-strings dropped. */

@@ -15,8 +15,8 @@ class PromptTemplatesAndroidTest {
     @Test
     fun templatesRenderAndRejectUnfilledVariablesOnAndroid() {
         val system = PromptBuilder().system(PipelineConfig(), null)
-        assertTrue(system.contains("DejaLango"))
         assertTrue(system.contains("Mandarin Chinese"))
+        assertTrue(system.contains("Hanyu Pinyin"))
         assertFalse(system.contains("{{"))
 
         val custom = PromptSet.DEFAULT.withOverrides(mapOf(PromptSet.TRANSCRIBE to "Missing {{value_0}}"))
