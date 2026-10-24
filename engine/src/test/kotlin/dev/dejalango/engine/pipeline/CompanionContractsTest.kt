@@ -28,6 +28,18 @@ class CompanionContractsTest {
         }
     }
 
+    @Test fun `the reply system prompt asks for my voice and shows its example as format only`() {
+        // On the phone, "Write short", a second "Invent no facts" and an unlabelled example gave terse, evasive cards.
+        val prompts = CompanionPrompts()
+        for (me in Language.VARIETIES) for (them in Language.VARIETIES.filter { it.base != me.base }) {
+            val system = prompts.system(PipelineConfig(l1 = me, l2 = them), null)
+            assertTrue(system, system.contains("max one signature move"))
+            assertTrue(system, system.contains("Example (format only):\n" + PromptSet.example(me, them)))
+            assertFalse(system, system.contains("Write short"))
+            assertFalse(system, system.contains("Invent no facts"))
+        }
+    }
+
     @Test fun `all regional pairs fit the system budget and role-free constrained schemas`() {
         var count = 0
         for (me in Language.VARIETIES) for (them in Language.VARIETIES.filter { it.base != me.base }) {

@@ -355,7 +355,7 @@ behavior needs measurement; automatic thermal adaptation is not implemented.
 
 ## 8. Verification of the earlier bench pipeline
 
-For the Companion build, 131 engine and 31 app JVM tests pass, and the app has 14 instrumentation
+For the Companion build, 132 engine and 31 app JVM tests pass, and the app has 14 instrumentation
 tests in 8 classes. The rest of this section records the earlier installed build and must not be
 read as measurements of the Companion build.
 
