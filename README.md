@@ -23,7 +23,7 @@ labelled static concept, not a learning engine.
 |---|---|
 | JVM tests | **127 engine and 31 app tests pass.** |
 | On-device tests | 14 tests in 8 classes: Companion UI, startup, HUD server, voice ownership, prompt rendering, EmbeddingGemma, Gemma on the TPU and an opt-in fixture replay. The last device runs on record are from October 23, before the Companion app ([findings](docs/FINDINGS.md)). |
-| Inference | Every build compiles the LiteRT-LM adapter against **LiteRT-LM 0.18.1** and bundles the Google Tensor NPU runtime. On October 23, on a Pixel 11 Pro XL, Gemma 4 E2B and EmbeddingGemma 2 ran on the TPU, and the earlier pipeline gave replies a median 7.1 s after a turn (10.1 s on the GPU, one replay each). These figures don't cover the Companion app. |
+| Inference | A default build compiles the LiteRT-LM adapter against **LiteRT-LM 0.18.1** and bundles the Google Tensor NPU runtime. On October 23, on a Pixel 11 Pro XL, Gemma 4 E2B and EmbeddingGemma 2 ran on the TPU, and the earlier pipeline gave replies a median 7.1 s after a turn (10.1 s on the GPU, one replay each). These figures don't cover the Companion app. |
 | Phone-to-browser HUD | On October 24, a laptop browser opened `/sim` from the phone through `scripts/hud_forward.sh`, on the build before the Companion app. The Companion build's tokenized `/sim` hasn't been checked from a phone. |
 
 Missing weights produce an error that asks for model setup. Canned inference needs an explicit
@@ -111,6 +111,12 @@ Install the test APK and run classes with `am instrument`, not `connectedMobileD
 uninstalls the app afterwards, and the pushed weights with it. Run the Companion UI tests on an
 emulator.
 
+EmbedderAndroidTest is skipped until EmbeddingGemma is pushed, and GemmaAcceleratorAndroidTest until
+this phone's accelerator bundles are (`tensor_g6` on a Pixel 11). Its audio test and
+`FixtureRunAndroidTest` also need the demo fixture, which isn't committed: add
+`app/src/debug/assets/fixtures/demo_zh.wav` before you build (see the README in that folder). The
+replay runs only with `-e fixtureRun true`.
+
 ```bash
 export ANDROID_SERIAL=DEVICE_SERIAL
 ./gradlew :app:installMobileDebug :app:installMobileDebugAndroidTest
@@ -118,11 +124,6 @@ adb shell am instrument -w -e class dev.dejalango.app.GemmaAcceleratorAndroidTes
   dev.dejalango.test/androidx.test.runner.AndroidJUnitRunner
 adb uninstall dev.dejalango.test
 ```
-
-EmbedderAndroidTest and GemmaAcceleratorAndroidTest are skipped until the weights are pushed.
-`FixtureRunAndroidTest` replays the demo fixture through the app with `-e fixtureRun true`. The
-fixture isn't committed: add `app/src/debug/assets/fixtures/demo_zh.wav` before you build (see the
-README in that folder).
 
 ## Repository map
 
