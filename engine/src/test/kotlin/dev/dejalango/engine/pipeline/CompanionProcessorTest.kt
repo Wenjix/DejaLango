@@ -304,7 +304,7 @@ class CompanionProcessorTest {
     @Test fun `their line that hits the scene shows its prepared replies at once, and reading one is a match`() = runTest {
         val embedder = FixedEmbedder()
         val index = PlaybookIndex.build(Playbook.parse(PLAYBOOK), embedder)
-        val (model, processor) = warmed(PipelineConfig(playbookScene = "restaurant")) { index }
+        val (model, processor) = warmed(PipelineConfig(playbookScene = "restaurant", playbookFastPath = false)) { index } // the embedding match; CompanionFastPathTest has the text one
         model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "您好，几位", "Hello, how many?", ZH_REPLIES))
         processor.onInput(ended(1, Speaker.THEM)); advanceUntilIdle()
         val shown = processor.hud.value
@@ -338,7 +338,7 @@ class CompanionProcessorTest {
 
     @Test fun `with every scene on, their line from a second scene hits it`() = runTest {
         val index = PlaybookIndex.build(Playbook.parse(PLAYBOOK), FixedEmbedder())
-        val (model, processor) = warmed(PipelineConfig(playbookScene = PipelineConfig.ALL_SCENES)) { index }
+        val (model, processor) = warmed(PipelineConfig(playbookScene = PipelineConfig.ALL_SCENES, playbookFastPath = false)) { index }
         model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "您想喝点什么", "What would you like to drink?", ZH_REPLIES))
         processor.onInput(ended(1, Speaker.THEM)); advanceUntilIdle()
         val shown = processor.hud.value

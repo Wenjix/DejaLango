@@ -117,6 +117,8 @@ data class PipelineConfig(
     val playbookThreshold: Float = 0.85f,
     /** How far a playbook hit must beat every other moment's local lines. */
     val playbookMargin: Float = 0.03f,
+    /** Stops their Stage A once its transcript matches a scene line as text, before the translation is written. */
+    val playbookFastPath: Boolean = true,
 ) {
     val pair: LanguagePair get() = LanguagePair(l1, l2)
     val maxUnitsText: String

@@ -3,6 +3,7 @@ package dev.dejalango.engine.llm
 import dev.dejalango.engine.audio.AudioTurn
 import dev.dejalango.engine.audio.Clock
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 
 /** Shown on the bench. The Gemma team will ask. */
 data class ModelInfo(
@@ -79,22 +80,27 @@ interface SpeechLanguageModel {
 
 class Generated(val text: String, val stats: DecodeStats?, val firstTokenMs: Long?, val doneMs: Long)
 
-/** Collect a streamed generation into text, recording first-token and completion times. */
+/**
+ * Collect a streamed generation into text, recording first-token and completion times. [stopWhen] sees the text so far
+ * after each chunk; true stops collecting, which cancels the generation (adapters cancel their decode on cancellation).
+ */
 suspend fun SpeechLanguageModel.generateText(
     req: GenerateRequest,
     clock: Clock = Clock.system(),
-    onChunk: ((String) -> Unit)? = null,
+    stopWhen: ((String) -> Boolean)? = null,
+    onChunk: ((String) -> Unit)? = null, // last, so callers' trailing lambdas still bind here
 ): Generated {
     val sb = StringBuilder()
     var first: Long? = null
     var stats: DecodeStats? = null
-    generate(req).collect { chunk ->
-        if (chunk.text.isNotEmpty()) {
-            if (first == null) first = clock.nowMs()
-            sb.append(chunk.text)
-            onChunk?.invoke(sb.toString())
-        }
+    generate(req).firstOrNull { chunk ->
         if (chunk.stats != null) stats = chunk.stats
+        if (chunk.text.isEmpty()) return@firstOrNull false
+        if (first == null) first = clock.nowMs()
+        sb.append(chunk.text)
+        val text = sb.toString()
+        onChunk?.invoke(text)
+        stopWhen?.invoke(text) == true
     }
     return Generated(sb.toString(), stats, first, clock.nowMs())
 }
