@@ -471,12 +471,22 @@ class TurnProcessor(
         showReplies(obj?.let { parser.parseReplies(it) } ?: emptyList(), gen.text, cfg, retrieved, trace)
     }
 
+    /**
+     * Records a line of mine that gets no replies. The cards on screen answer their line, so that line stays above
+     * them; with no cards, mine shows, so I see it was heard. The turn began on "transcribing speech…", so the status
+     * becomes my turn while the cards are on offer, or waiting for their response once one was used.
+     */
     private fun recordAside(a: StageAResult, tMs: Long, trace: TurnTrace) {
-        conversation.add(a.speaker, a.lang, a.heard, a.heardL1, tMs)
+        conversation.add(Speaker.ME, a.lang, a.heard, a.heardL1, tMs)
         _hud.update {
+            val cards = it.replies.isNotEmpty()
             it.copy(
-                heard = Line(a.heard, a.lang, a.heardL1),
-                statusLine = if (it.replies.isNotEmpty() && conversation.lastSuggested.isNotEmpty()) YOUR_TURN else null,
+                heard = if (cards) it.heard else Line(a.heard, a.lang, a.heardL1),
+                statusLine = when {
+                    !cards -> null
+                    conversation.lastSuggested.isNotEmpty() -> YOUR_TURN
+                    else -> "listening for their response…"
+                },
                 trace = trace.copy(),
             ).let { s -> s.copy(phase = restingPhase(s)) }
         }

@@ -172,9 +172,38 @@ class TurnProcessorTest {
 
             assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
             assertEquals(replies, rig.processor.hud.value.replies)
-            assertEquals("I need a minute.", rig.processor.hud.value.heard?.text)
+            assertEquals("their line stays above the cards that answer it", "你是第一次来北京吗？", rig.processor.hud.value.heard?.text)
             assertEquals("your turn: read a reply aloud (or tap it + 'I said this one')", rig.processor.hud.value.statusLine)
             assertEquals(listOf("THEM", "ME"), rig.conversation.snapshot().map { it.speaker.name })
+        } finally {
+            rig.close()
+        }
+    }
+
+    @Test
+    fun `an aside after a matched reply keeps their line and the spent cards`() = runBlocking {
+        val rig = Rig()
+        try {
+            rig.processor.warm(null)
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE)) // 你是第一次来北京吗？
+            rig.awaitTraces(1)
+            val shown = rig.processor.hud.value.replies
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", "对啊，第一次来，还在到处转悠呢", "Yeah, first time, still wandering around"))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(2)
+            assertEquals(0, rig.processor.hud.value.selectedReply)
+
+            // An aside while the used cards are still up: their line stays, and the status waits for their response.
+            rig.model.enqueue(FakeSpeechModel.ScriptedTurn("me", "en", "I need a minute.", "I need a minute."))
+            rig.processor.onEvent(TurnEvent.TurnEnded(rig.turn(), EndReason.SILENCE))
+            rig.awaitTraces(3)
+            val s = rig.processor.hud.value
+            assertEquals(1, rig.model.requests.count { it.tag == RequestTag.STAGE_B })
+            assertEquals(shown, s.replies)
+            assertEquals(0, s.selectedReply)
+            assertEquals("你是第一次来北京吗？", s.heard?.text)
+            assertEquals("listening for their response…", s.statusLine)
+            assertEquals(listOf("THEM", "ME", "ME"), rig.conversation.snapshot().map { it.speaker.name })
         } finally {
             rig.close()
         }
