@@ -123,8 +123,9 @@ Mandarin (Mainland).
 With a scene on, each of the local's lines is checked against that scene before Gemma writes
 replies:
 
-- If the transcript matches one of the scene's lines exactly, Gemma stops transcribing at once, and
-  the moment's cards show with the scene's translation of the line.
+- If the transcript matches a line of exactly one moment, ignoring case, spaces and punctuation, and
+  none of your own lines, Gemma stops transcribing at once. The moment's cards show with the scene's
+  translation of the line.
 - Otherwise EmbeddingGemma compares the transcript with the scene's lines. A line that scores at
   least 0.85, and at least 0.03 ahead of every other moment, shows that moment's cards with Gemma's
   own translation.

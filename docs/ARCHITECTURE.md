@@ -23,9 +23,13 @@ pause state. Reply use does not automatically create personal style samples.
 With a playbook scene on, the partner's turn tries the playbook before Stage B. After listening
 starts, `PipelineRuntime` embeds every scene's local and wearer lines into a `PlaybookIndex`, in
 batches of 16 that run between turns under `CompanionProcessor.exclusive {}`. While Stage A streams,
-the fast path stops it once the top-level `heard` equals one moment's local line exactly, after NFKC
-and with spaces and punctuation removed, and `lang` is L2. It waits for `lang` whenever the prompt
-asks for it. That moment's cards then show with the seed line's translation (`THEM_PLAYBOOK_FAST`).
+the fast path stops it once the top-level `heard` equals a local line of exactly one moment, after
+NFKC, lowercasing and removing spaces and punctuation, and no wearer line matches it too. When the
+prompt asks for `lang`, as it does with forgotten-tap detection on (the default), the fast path waits
+for it, and `lang` must be L2. Without forgotten-tap detection it stops on `heard` alone. That
+moment's cards then show with the seed line's translation (`THEM_PLAYBOOK_FAST`). The saved setting
+`playbookFastPath`, on by default and with no bench control, turns the fast path off; the replay
+test takes `-e fastPath false`.
 Otherwise `playbookReplies` embeds the transcript under the model lock. A hit needs a local line as
 the nearest, a score of at least `playbookThreshold` (0.85) and a lead of `playbookMargin` (0.03)
 over every other moment's local lines. It shows that moment's cards with Gemma's own translation and
