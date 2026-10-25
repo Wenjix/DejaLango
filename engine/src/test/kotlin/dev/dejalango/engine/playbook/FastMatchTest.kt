@@ -42,13 +42,24 @@ class FastMatchTest {
         assertEquals("你是第一次来北京吗？", find("你是第一次来北京吗")?.text)
     }
 
-    @Test fun `a close match hits only above the bar and with a margin over other moments`() {
-        assertEquals("你打算在这儿待多久？", find("你打算在这待多久")?.text) // one character dropped of nine
-        assertNull(find("你是哪国人")) // a near miss below the bar goes to the embedding match
+    @Test fun `only an exact match hits, never a near one`() {
+        assertNull(find("你打算在这待多久")) // one character dropped of nine: the embedding match decides, with its own translation
+        val ride = listOf(L("您好，手机尾号三八二七是吧？", "ride.pickup"))
+        assertNull(find("您好，手机尾号三八二八是吧？", ride)) // one digit off a seed whose translation names 3827
+        assertEquals("您好，手机尾号三八二七是吧？", find("您好 手机尾号三八二七是吧", ride)?.text)
+        assertNull(find("你是哪国人"))
         assertNull(find("我想喝一杯咖啡")) // unrelated
         assertNull(find(""))
-        val twins = listOf(L("你今天累不累啊", "a"), L("你今天累不累呀", "b")) // two moments one character apart
-        assertNull(find("你今天累不累", twins))
+    }
+
+    @Test fun `an exact match with lines of two moments hits neither, and one moment's phrasings share it`() {
+        assertNull(find("你好", listOf(L("你好！", "a"), L("你好。", "b"))))
+        assertEquals("你好！", find("你好", listOf(L("你好！", "a"), L("你好。", "a")))?.text)
+    }
+
+    @Test fun `closedFields reads the top-level lang along with heard`() {
+        assertEquals(mapOf("speaker" to "them", "lang" to "en", "heard" to "您好"), FastMatch.closedFields("""{"speaker":"them","lang":"en","heard":"您好","heard_l1":"He"""))
+        assertEquals(mapOf("lang" to "zh"), FastMatch.closedFields("""{"x":{"lang":"en"},"lang":"zh","heard":"您"""))
     }
 
     @Test fun `a wearer line as close or closer never fast-paths`() {

@@ -41,10 +41,10 @@ class CompanionFastPathTest {
 
     private class Run(val hud: HudState, val model: Recording)
 
-    private suspend fun TestScope.their(vararg lines: String, cfg: PipelineConfig = PipelineConfig(playbookScene = "restaurant")): Run {
+    private suspend fun TestScope.their(vararg lines: String, cfg: PipelineConfig = PipelineConfig(playbookScene = "restaurant"), lang: String = "zh"): Run {
         val index = PlaybookIndex.build(Playbook.parse(PLAYBOOK), HashingEmbedder())
         val fake = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0, chunks = 40)
-        for (l in lines) fake.enqueue(FakeSpeechModel.ScriptedTurn("them", "zh", l, "GEMMA'S TRANSLATION"))
+        for (l in lines) fake.enqueue(FakeSpeechModel.ScriptedTurn("them", lang, l, "GEMMA'S TRANSLATION"))
         val model = Recording(fake)
         val processor = CompanionProcessor(model, MutableStateFlow(cfg), this, playbook = { index })
         processor.warm()
@@ -65,7 +65,7 @@ class CompanionFastPathTest {
         assertFalse("stopped before heard_l1: ${run.model.streamed.single()}", run.model.streamed.single().contains("heard_l1"))
     }
 
-    @Test fun `a near miss below the bar lets Stage A finish for the embedding match`() = runTest {
+    @Test fun `a near miss lets Stage A finish for the embedding match`() = runTest {
         val run = their("嗯，几位")
         assertNotEquals("THEM_PLAYBOOK_FAST", run.hud.trace?.shape)
         assertTrue(run.model.streamed.first().contains("heard_l1"))
@@ -81,6 +81,14 @@ class CompanionFastPathTest {
         val run = their("一位。")
         assertNotEquals("THEM_PLAYBOOK_FAST", run.hud.trace?.shape)
         assertTrue(run.model.streamed.first().contains("heard_l1"))
+    }
+
+    @Test fun `a scene line labelled in my language lets Stage A finish for the forgotten-tap check`() = runTest {
+        val mine = their("您好，几位？", lang = "en")
+        assertNotEquals("THEM_PLAYBOOK_FAST", mine.hud.trace?.shape)
+        assertTrue(mine.model.streamed.first().contains("heard_l1"))
+        val unlabelled = their("您好，几位？", lang = "")
+        assertEquals("in Chinese script, a line with no lang is theirs either way", "THEM_PLAYBOOK_FAST", unlabelled.hud.trace?.shape)
     }
 
     @Test fun `with no scene on, or the fast path off, Stage A always finishes`() = runTest {

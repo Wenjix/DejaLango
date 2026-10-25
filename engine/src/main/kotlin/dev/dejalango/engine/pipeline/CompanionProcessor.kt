@@ -413,19 +413,27 @@ class CompanionProcessor(
         val index = playbook() ?: return null
         if (index.playbook.l1 != cfg.l1.tag || index.playbook.l2 != cfg.l2.tag) return null
         val scene = cfg.playbookScene.takeUnless { it == PipelineConfig.ALL_SCENES } // null matches every scene
-        return FastStop(index.entries.filter { scene == null || it.scene.id == scene })
+        return FastStop(index.entries.filter { scene == null || it.scene.id == scene }, cfg.l2.base,
+            needsLang = cfg.catchForgottenTaps && cfg.l1.cjk == cfg.l2.cjk)
     }
 
-    /** Stops once "heard" closes on a confident text match ([FastMatch]); it checks that once, so a miss lets Stage A finish. */
-    private class FastStop(private val lines: List<IndexedLine>) {
+    /**
+     * Stops once "heard" closes on an exact scene line ([FastMatch]); it checks that once, so a miss lets Stage A finish.
+     * As in the full turn, a lang other than their [l2] may be a forgotten tap, and so may a missing one when [needsLang]
+     * (one script for both languages): those lines are the finished turn's to place.
+     */
+    private class FastStop(private val lines: List<IndexedLine>, private val l2: String, private val needsLang: Boolean) {
         var heard = ""
         var hit: IndexedLine? = null
         private var checked = false
 
         fun stop(text: String): Boolean {
             if (checked) return false
-            heard = FastMatch.closedHeard(text) ?: return false
+            val fields = FastMatch.closedFields(text)
+            heard = fields["heard"] ?: return false
             checked = true
+            val lang = fields["lang"]?.substringBefore('-')?.lowercase()?.takeIf { it.isNotBlank() }
+            if (lang != l2 && (lang != null || needsLang)) return false
             hit = FastMatch.find(heard, lines, { it.text }, { it.kind == LineKind.LOCAL }, { it.moment.id })
             return hit != null
         }
