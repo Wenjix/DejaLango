@@ -32,6 +32,11 @@
     text('replyText', reply ? reply.yours : s.wearer ? 'You: ' + s.wearer.text : c.mine ? 'Capturing your turn' : '');
     text('roman', reply && s.pair.roman ? reply.roman : !reply && s.wearer ? s.wearer.roman : '');
     text('back', reply ? reply.back : '');
+    // The next card shows smaller beneath the selected one, so both choices are visible at a glance.
+    const other = s.replies.length > 1 ? s.replies[(index + 1) % s.replies.length] : null;
+    $('other').hidden = !other;
+    text('otherText', other ? other.yours : '');
+    text('otherDetail', other ? [s.pair.roman ? other.roman : '', other.back].filter(Boolean).join(' · ') : '');
     text('error', s.error || s.pendingPair && 'Language pair changes next turn' || '');
   }
   function action(action, extra = {}) {

@@ -9,6 +9,7 @@
 #word { font-size:32px; line-height:1.35; min-height:44px } #wordRoman,#wordMeaning { font-size:20px }
 #reply { flex:1; display:flex; flex-direction:column; justify-content:center; gap:8px; min-height:0 }
 #replyText { font-size:32px; line-height:1.3; max-height:170px; overflow:hidden } #roman { font-size:22px; line-height:1.4; max-height:64px; overflow:hidden } #back { font-size:18px; line-height:1.4; color:var(--dim); max-height:50px; overflow:hidden }
+#other { display:flex; flex-direction:column; gap:2px; border-top:1px solid rgba(140,255,157,.35); padding-top:8px } #otherText { font-size:24px; line-height:1.3; max-height:64px; overflow:hidden } #otherDetail { font-size:17px; line-height:1.35; color:var(--dim); max-height:46px; overflow:hidden }
 #position,#error { font-size:17px; line-height:1.35 } #keys { font-size:14px; color:var(--dim) } #connection { position:absolute; inset:0; display:grid; place-items:center; color:var(--green); font-size:22px; padding:40px; text-align:center; background:transparent }
 .hidden,[hidden] { display:none!important } html.embedded #keys { display:none }
 </style></head><body>
@@ -17,6 +18,7 @@
 <div><div id="heard"></div><div id="heardRoman"></div><div id="meaning"></div></div>
 <div><div id="word"></div><div id="wordRoman"></div><div id="wordMeaning"></div></div>
 <div id="reply"><div id="position"></div><div id="replyText"></div><div id="roman"></div><div id="back"></div></div>
+<div id="other" hidden><div id="otherText"></div><div id="otherDetail"></div></div>
 <div id="error"></div><div id="keys">T Talk · C Done · ← → browse · P pause display · S flip · U Undo</div>
 </main><div id="connection" role="status">Open the current HUD link from the phone.</div>
 <script src="/hud.js"></script></body></html>

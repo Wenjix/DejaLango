@@ -51,7 +51,18 @@ for (const [extra, label] of [[{source:undefined}, 'Reply'], [{source:'MODEL'}, 
   show({...fixtures.undo, replies, ...extra});
   assert.equal(node('position').textContent, label + ' · 1/2');
   assert.equal(node('replyText').textContent, '不用，謝謝。');
+  assert.equal(node('other').hidden, false);
+  assert.equal(node('otherText').textContent, '要一點。');
 }
+// Browsing to card 2 moves card 1 beneath it.
+show({...fixtures.undo, replies, source:'PLAYBOOK', selected:1});
+assert.equal(node('position').textContent, 'Prepared · 2/2');
+assert.equal(node('replyText').textContent, '要一點。');
+assert.equal(node('otherText').textContent, '不用，謝謝。');
+// One card leaves the second slot hidden.
+show({...fixtures.undo, replies:[replies[0]]});
+assert.equal(node('other').hidden, true);
+assert.equal(node('otherText').textContent, '');
 render('paused');
 assert.equal(node('lens').hidden, true);
-console.log('PASS: actual HudJson split, unavailable, whole-line, Undo and display-pause payloads; model, playbook and variant card labels');
+console.log('PASS: actual HudJson split, unavailable, whole-line, Undo and display-pause payloads; model, playbook and variant card labels; both cards shown');
