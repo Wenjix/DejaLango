@@ -528,6 +528,30 @@
        "id": "restaurant.bill.l5",
        "text": "好的，六十八块钱。",
        "l1": "Sure, sixty-eight yuan."
+      },
+      {
+       "id": "restaurant.bill.d1",
+       "text": "一共68块。",
+       "l1": "That's sixty-eight yuan altogether.",
+       "matchOnly": true
+      },
+      {
+       "id": "restaurant.bill.d2",
+       "text": "我算一下啊，一共68。",
+       "l1": "Let me add it up... sixty-eight in total.",
+       "matchOnly": true
+      },
+      {
+       "id": "restaurant.bill.d3",
+       "text": "您这桌一共68。",
+       "l1": "Your table comes to sixty-eight.",
+       "matchOnly": true
+      },
+      {
+       "id": "restaurant.bill.d5",
+       "text": "好的，68块钱。",
+       "l1": "Sure, sixty-eight yuan.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -887,6 +911,12 @@
        "id": "market.price.l5",
        "text": "一百五，绝对值！",
        "l1": "A hundred fifty, totally worth it!"
+      },
+      {
+       "id": "market.price.d1",
+       "text": "这条150块。",
+       "l1": "This one is a hundred and fifty yuan.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -926,6 +956,14 @@
        "roman": "Tài guì le, bú yào le.",
        "back": "Too expensive, I'll pass.",
        "next": "market.counter"
+      },
+      {
+       "id": "market.price.e4",
+       "text": "60块行吗？",
+       "roman": "Liùshí kuài xíng ma?",
+       "back": "Would sixty work?",
+       "next": "market.counter",
+       "matchOnly": true
       }
      ]
     },
@@ -957,6 +995,12 @@
        "id": "market.counter.l5",
        "text": "给您少三十，一百二。",
        "l1": "Thirty off for you: a hundred twenty."
+      },
+      {
+       "id": "market.counter.d2",
+       "text": "给您打个8折，一百二。",
+       "l1": "I'll give you twenty percent off: a hundred twenty.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -996,6 +1040,22 @@
        "roman": "Suàn le, wǒ bú yào le.",
        "back": "Never mind, I'll pass.",
        "next": "market.final"
+      },
+      {
+       "id": "market.counter.e1",
+       "text": "80块行吗？",
+       "roman": "Bāshí kuài xíng ma?",
+       "back": "Would eighty work?",
+       "next": "market.final",
+       "matchOnly": true
+      },
+      {
+       "id": "market.counter.e4",
+       "text": "70块吧。",
+       "roman": "Qīshí kuài ba.",
+       "back": "Seventy, then.",
+       "next": "market.final",
+       "matchOnly": true
       }
      ]
     },
@@ -1027,6 +1087,12 @@
        "id": "market.final.l5",
        "text": "一百，一分都不能少了。",
        "l1": "A hundred, not a cent less."
+      },
+      {
+       "id": "market.final.d2",
+       "text": "100块，这是底价了。",
+       "l1": "A hundred yuan, that's my bottom price.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -1456,6 +1522,36 @@
        "id": "ride.pickup.l5",
        "text": "那个，您手机尾号是三八二七吧？",
        "l1": "Um, your phone ends in 3827, right?"
+      },
+      {
+       "id": "ride.pickup.d1",
+       "text": "您好，手机尾号3827是吧？",
+       "l1": "Hi, your phone number ends in 3827, right?",
+       "matchOnly": true
+      },
+      {
+       "id": "ride.pickup.d2",
+       "text": "是尾号3827的乘客吗？",
+       "l1": "Are you the passenger ending in 3827?",
+       "matchOnly": true
+      },
+      {
+       "id": "ride.pickup.d3",
+       "text": "尾号3827？",
+       "l1": "Ending in 3827?",
+       "matchOnly": true
+      },
+      {
+       "id": "ride.pickup.d4",
+       "text": "哎，您好！是尾号3827吗？",
+       "l1": "Hey, hi! Is it the one ending in 3827?",
+       "matchOnly": true
+      },
+      {
+       "id": "ride.pickup.d5",
+       "text": "那个，您手机尾号是3827吧？",
+       "l1": "Um, your phone ends in 3827, right?",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -1495,6 +1591,14 @@
        "roman": "Duì duì duì, shì wǒ.",
        "back": "Yes, yes, that's me.",
        "next": "ride.dest"
+      },
+      {
+       "id": "ride.pickup.e3",
+       "text": "是的，我是3827。",
+       "roman": "Shì de, wǒ shì sān bā èr qī.",
+       "back": "Yes, I'm 3827.",
+       "next": "ride.dest",
+       "matchOnly": true
       }
      ]
     },
@@ -1678,6 +1782,36 @@
        "id": "ride.traffic.l5",
        "text": "导航说四十分钟，今天车有点多。",
        "l1": "The navigation says forty minutes; lots of cars today."
+      },
+      {
+       "id": "ride.traffic.d1",
+       "text": "这会儿有点堵，得40分钟左右。",
+       "l1": "It's a bit jammed right now, about forty minutes.",
+       "matchOnly": true
+      },
+      {
+       "id": "ride.traffic.d2",
+       "text": "路上有点堵车，大概40来分钟。",
+       "l1": "There's some traffic, roughly forty minutes.",
+       "matchOnly": true
+      },
+      {
+       "id": "ride.traffic.d3",
+       "text": "这个点儿正赶上高峰，得40分钟。",
+       "l1": "It's rush hour right now, so forty minutes.",
+       "matchOnly": true
+      },
+      {
+       "id": "ride.traffic.d4",
+       "text": "前面堵着呢，差不多40分钟能到。",
+       "l1": "It's backed up ahead; we'll get there in about forty minutes.",
+       "matchOnly": true
+      },
+      {
+       "id": "ride.traffic.d5",
+       "text": "导航说40分钟，今天车有点多。",
+       "l1": "The navigation says forty minutes; lots of cars today.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -1717,6 +1851,14 @@
        "roman": "Sìshí fēnzhōng, méi wèntí.",
        "back": "Forty minutes, no problem.",
        "next": "ride.chat"
+      },
+      {
+       "id": "ride.traffic.e5",
+       "text": "40分钟，没问题。",
+       "roman": "Sìshí fēnzhōng, méi wèntí.",
+       "back": "Forty minutes, no problem.",
+       "next": "ride.chat",
+       "matchOnly": true
       }
      ]
     },
@@ -2042,6 +2184,12 @@
        "id": "ride.subway.l5",
        "text": "您往那边走，看见地铁口就是了。",
        "l1": "Head that way until you see the subway entrance."
+      },
+      {
+       "id": "ride.subway.d2",
+       "text": "往前走5分钟，就能看见地铁站。",
+       "l1": "Walk straight ahead for five minutes and you'll see the station.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -2604,6 +2752,36 @@
        "id": "social.route.l5",
        "text": "不远，坐一号线到天安门东就行。",
        "l1": "It's not far: take Line 1 to Tiananmen East."
+      },
+      {
+       "id": "social.route.d1",
+       "text": "坐地铁1号线，天安门东站下车。",
+       "l1": "Take subway Line 1 and get off at Tiananmen East.",
+       "matchOnly": true
+      },
+      {
+       "id": "social.route.d2",
+       "text": "地铁最方便，1号线，天安门东站下。",
+       "l1": "The subway's easiest: Line 1, get off at Tiananmen East.",
+       "matchOnly": true
+      },
+      {
+       "id": "social.route.d3",
+       "text": "打车也行，不过坐1号线到天安门东更方便。",
+       "l1": "A taxi works too, but Line 1 to Tiananmen East is easier.",
+       "matchOnly": true
+      },
+      {
+       "id": "social.route.d4",
+       "text": "坐1号线到天安门东，走过去就到了。",
+       "l1": "Take Line 1 to Tiananmen East and walk over from there.",
+       "matchOnly": true
+      },
+      {
+       "id": "social.route.d5",
+       "text": "不远，坐1号线到天安门东就行。",
+       "l1": "It's not far: take Line 1 to Tiananmen East.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -2643,6 +2821,14 @@
        "roman": "Hǎo de, xièxie nǐ!",
        "back": "OK, thank you!",
        "next": "social.wechat"
+      },
+      {
+       "id": "social.route.e3",
+       "text": "1号线，记住了！",
+       "roman": "Yī hào xiàn, jìzhù le!",
+       "back": "Line 1, got it!",
+       "next": "social.food",
+       "matchOnly": true
       }
      ]
     },
@@ -3173,6 +3359,12 @@
        "id": "cafe.milk.l5",
        "text": "奶要换吗？我们有燕麦奶。",
        "l1": "Change the milk? We have oat milk."
+      },
+      {
+       "id": "cafe.milk.d4",
+       "text": "燕麦奶加3块，需要吗？",
+       "l1": "Oat milk is three yuan extra. Want it?",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -3383,6 +3575,30 @@
        "id": "cafe.pay.l5",
        "text": "总共三十二块，请扫码。",
        "l1": "32 in total, please scan the code."
+      },
+      {
+       "id": "cafe.pay.d1",
+       "text": "一共32，扫码还是刷卡？",
+       "l1": "That's 32 in total. Scan or card?",
+       "matchOnly": true
+      },
+      {
+       "id": "cafe.pay.d2",
+       "text": "32块，扫这儿就行。",
+       "l1": "32 yuan, just scan here.",
+       "matchOnly": true
+      },
+      {
+       "id": "cafe.pay.d3",
+       "text": "一共32元，怎么付？",
+       "l1": "32 yuan altogether. How will you pay?",
+       "matchOnly": true
+      },
+      {
+       "id": "cafe.pay.d5",
+       "text": "总共32块，请扫码。",
+       "l1": "32 in total, please scan the code.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -3453,6 +3669,18 @@
        "id": "cafe.number.l5",
        "text": "收到了，取餐号三十八，稍等一会儿。",
        "l1": "Got it. Pickup number 38, wait a little."
+      },
+      {
+       "id": "cafe.number.d1",
+       "text": "您的取餐号是38号，请稍等。",
+       "l1": "Your pickup number is 38, please wait a moment.",
+       "matchOnly": true
+      },
+      {
+       "id": "cafe.number.d3",
+       "text": "请稍等，大概5分钟。",
+       "l1": "Please wait, about five minutes.",
+       "matchOnly": true
       }
      ],
      "replies": [
@@ -3523,6 +3751,24 @@
        "id": "cafe.ready.l5",
        "text": "三十八号，三十八号，来取一下咖啡！",
        "l1": "Number 38, number 38, come get your coffee!"
+      },
+      {
+       "id": "cafe.ready.d1",
+       "text": "38号，您的拿铁好了！",
+       "l1": "Number 38, your latte is ready!",
+       "matchOnly": true
+      },
+      {
+       "id": "cafe.ready.d2",
+       "text": "38号取餐！",
+       "l1": "Number 38, pickup!",
+       "matchOnly": true
+      },
+      {
+       "id": "cafe.ready.d5",
+       "text": "38号，38号，来取一下咖啡！",
+       "l1": "Number 38, number 38, come get your coffee!",
+       "matchOnly": true
       }
      ],
      "replies": [
