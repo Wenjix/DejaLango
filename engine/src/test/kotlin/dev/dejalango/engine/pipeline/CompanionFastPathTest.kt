@@ -16,11 +16,16 @@ import dev.dejalango.engine.turn.CaptureEvent
 import dev.dejalango.engine.voice.HashingEmbedder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -31,21 +36,33 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class CompanionFastPathTest {
     /** Records what each request streamed as the processor read it, so a stopped generation shows where it stopped. */
-    private class Recording(val fake: FakeSpeechModel) : SpeechLanguageModel by fake {
+    private class Recording(val fake: FakeSpeechModel, val heardFirst: Boolean = false) : SpeechLanguageModel by fake {
         val streamed = ArrayList<StringBuilder>()
         override fun generate(req: GenerateRequest): Flow<TokenChunk> {
             val text = StringBuilder().also { streamed += it }
-            return fake.generate(req).onEach { text.append(it.text) }
+            val chunks = if (heardFirst && req.tag == RequestTag.THEIRS) heardFirst(fake.generate(req)) else fake.generate(req)
+            return chunks.onEach { text.append(it.text) }
+        }
+
+        /** The same Stage A with "heard" moved ahead of "lang", streamed a few characters at a time. */
+        private fun heardFirst(chunks: Flow<TokenChunk>): Flow<TokenChunk> = flow {
+            val all = chunks.toList()
+            val json = Json.parseToJsonElement(all.joinToString("") { it.text }).jsonObject
+            val text = JsonObject(mapOf("heard" to json.getValue("heard")) + json.filterKeys { it != "heard" }).toString()
+            text.chunked(4).forEach { emit(TokenChunk(it)) }
+            emit(all.last())
         }
     }
 
     private class Run(val hud: HudState, val model: Recording)
 
-    private suspend fun TestScope.their(vararg lines: String, cfg: PipelineConfig = PipelineConfig(playbookScene = "restaurant"), lang: String = "zh"): Run {
+    private suspend fun TestScope.their(
+        vararg lines: String, cfg: PipelineConfig = PipelineConfig(playbookScene = "restaurant"), lang: String = "zh", heardFirst: Boolean = false,
+    ): Run {
         val index = PlaybookIndex.build(Playbook.parse(PLAYBOOK), HashingEmbedder())
         val fake = FakeSpeechModel(stageADelayMs = 0, stageBDelayMs = 0, chunks = 40)
         for (l in lines) fake.enqueue(FakeSpeechModel.ScriptedTurn("them", lang, l, "GEMMA'S TRANSLATION"))
-        val model = Recording(fake)
+        val model = Recording(fake, heardFirst)
         val processor = CompanionProcessor(model, MutableStateFlow(cfg), this, playbook = { index })
         processor.warm()
         lines.forEachIndexed { i, _ ->
@@ -89,6 +106,14 @@ class CompanionFastPathTest {
         assertTrue(mine.model.streamed.first().contains("heard_l1"))
         val unlabelled = their("您好，几位？", lang = "")
         assertEquals("in Chinese script, a line with no lang is theirs either way", "THEM_PLAYBOOK_FAST", unlabelled.hud.trace?.shape)
+    }
+
+    @Test fun `a heard that closes before lang waits for it`() = runTest {
+        val theirs = their("您好，几位？", heardFirst = true)
+        assertEquals("THEM_PLAYBOOK_FAST", theirs.hud.trace?.shape)
+        assertFalse("stopped before heard_l1: ${theirs.model.streamed.single()}", theirs.model.streamed.single().contains("heard_l1"))
+        val mine = their("您好，几位？", lang = "en", heardFirst = true)
+        assertNotEquals("THEM_PLAYBOOK_FAST", mine.hud.trace?.shape)
     }
 
     @Test fun `with no scene on, or the fast path off, Stage A always finishes`() = runTest {
