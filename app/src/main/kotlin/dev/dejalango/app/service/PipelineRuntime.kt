@@ -14,6 +14,8 @@ import dev.dejalango.engine.hud.HudState
 import dev.dejalango.engine.llm.FakeSpeechModel
 import dev.dejalango.engine.llm.SpeechLanguageModel
 import dev.dejalango.engine.pipeline.CompanionProcessor
+import dev.dejalango.engine.playbook.Playbook
+import dev.dejalango.engine.playbook.PlaybookIndex
 import dev.dejalango.engine.prompts.PromptBuilder
 import dev.dejalango.engine.turn.EndReason
 import dev.dejalango.engine.turn.TurnEvent
@@ -29,6 +31,7 @@ import dev.dejalango.engine.voice.TextEmbedder
 import dev.dejalango.engine.voice.VoiceCard
 import dev.dejalango.engine.voice.VoiceCardBuilder
 import dev.dejalango.engine.voice.HashingEmbedder
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,11 +42,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
+import java.io.FileNotFoundException
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -81,10 +87,16 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
      */
     val savesVoice: Boolean = model !is FakeSpeechModel && embedder !is HashingEmbedder
 
+    /** The playbook's lines, embedded after start: null until they are, and whenever the playbook is unavailable. */
+    @Volatile
+    var playbookIndex: PlaybookIndex? = null
+        private set
+
     val processor: CompanionProcessor = CompanionProcessor(
         model, config, llmScope, retriever, PromptBuilder(graph.promptSet),
         hintOutcome = { turn, pause, ready -> serviceScope.launch(audioDispatcher) { input.hintResult(turn, pause, ready).forEach(processorInput) } },
         audioSlice = { from, to -> withContext(audioDispatcher) { input.slice(from, to) } },
+        playbook = { playbookIndex },
     )
     private val processorInput: (dev.dejalango.engine.turn.CaptureEvent) -> Unit get() = processor::onInput
     val hud: StateFlow<HudState> get() = processor.hud
@@ -98,6 +110,17 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
 
     private val _exemplarCounts = MutableStateFlow(ExemplarCounts())
     val exemplarCounts: StateFlow<ExemplarCounts> = _exemplarCounts.asStateFlow()
+
+    /** A scene of the loaded playbook, as the bench offers it: [id] is what the config stores as its playbook scene. */
+    data class PlaybookScene(val id: String, val title: String)
+
+    private val _playbookStatus = MutableStateFlow("playbook: off")
+    /** The bench's playbook line: off, loading, indexing n/N, ready, or unavailable and why. */
+    val playbookStatus: StateFlow<String> = _playbookStatus.asStateFlow()
+
+    private val _playbookScenes = MutableStateFlow<List<PlaybookScene>>(emptyList())
+    /** The loaded playbook's scenes, for the bench to choose from; empty while it is unavailable. */
+    val playbookScenes: StateFlow<List<PlaybookScene>> = _playbookScenes.asStateFlow()
 
     private var audioJob: Job? = null
     private var source: AudioSource? = null
@@ -121,6 +144,7 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
         withContext(llmDispatcher) { processor.warm(card) }
         if (!hud.value.modelReady) return@ownerOperation
         withContext(llmDispatcher) { embedder.warm() } // its accelerator build, or what it fell back to: the bench says which
+        jobs += llmScope.launch { loadPlaybook(config.value) } // in batches between turns; until it is ready, Stage B writes every reply
         refreshExemplarCounts()
 
         // 2. Side channels: traces → CSV; used replies → exemplar store (L2, PICKED_REPLY) + optional TTS; config → policy.
@@ -290,6 +314,66 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
         refreshExemplarCounts()
     }
 
+    /**
+     * Reads `assets/playbook/<L2 tag>.json` and, once a scene is chosen, embeds its lines into [playbookIndex]: each
+     * batch under the model lock and between turns, so it never overlaps a generation. Any failure leaves the playbook
+     * unavailable, and every reply is Stage B's, as before.
+     */
+    private suspend fun loadPlaybook(cfg: PipelineConfig) {
+        val tag = cfg.l2.tag
+        try {
+            _playbookStatus.value = "playbook: loading"
+            val playbook = withContext(Dispatchers.IO) {
+                val json = try {
+                    context.assets.open("playbook/$tag.json").use { it.readBytes().toString(Charsets.UTF_8) }
+                } catch (_: FileNotFoundException) {
+                    null
+                }
+                json?.let { Playbook.parse(it) }
+            } ?: return playbookUnavailable("no playbook for $tag")
+            // CompanionProcessor skips a playbook for another pair: say so here rather than look ready.
+            if (playbook.l1 != cfg.l1.tag || playbook.l2 != tag) return playbookUnavailable("for ${playbook.l1}→${playbook.l2}, not ${cfg.l1.tag}→$tag")
+            // Hashing vectors carry no meaning, so every hit would be a guess.
+            if (embedder is HashingEmbedder || embedder.description.contains("hashing", ignoreCase = true)) return playbookUnavailable("embedder is ${embedder.description}")
+            _playbookScenes.value = playbook.scenes.map { PlaybookScene(it.id, it.title) }
+            if (config.value.playbookScene.isBlank()) {
+                _playbookStatus.value = "playbook: off · ${playbook.scenes.size} scenes"
+                config.first { it.playbookScene.isNotBlank() } // index only once a scene is chosen: off does no model work
+            }
+            val t0 = System.nanoTime()
+            val total = playbook.scenes.sumOf { scene -> scene.moments.sumOf { it.local.size + it.replies.size + it.others.size } }
+            var done = 0
+            _playbookStatus.value = "playbook: indexing 0/$total"
+            val index = PlaybookIndex.build(playbook, embedder, PLAYBOOK_BATCH) { batch ->
+                hud.first { !it.processing } // no batch starts during a turn, so a turn waits for one batch at most
+                processor.exclusive {
+                    if (closing.get()) throw CancellationException("Runtime stopped") // stop() is about to close the embedder
+                    batch()
+                }
+                done = minOf(done + PLAYBOOK_BATCH, total)
+                _playbookStatus.value = "playbook: indexing $done/$total"
+            }
+            // A fallback while indexing leaves vectors that no query compares with: PlaybookIndex.match would miss every line.
+            if (index.description != embedder.description || index.description.contains("hashing", ignoreCase = true)) {
+                return playbookUnavailable("embedder changed while indexing: ${index.description}")
+            }
+            playbookIndex = index
+            val ms = (System.nanoTime() - t0) / 1_000_000
+            _playbookStatus.value = "playbook: ready · ${index.size} lines · ${"%.1f".format(Locale.ROOT, ms / 1000.0)} s · ${index.description}"
+            Log.i(TAG, "playbook $tag: ${index.size} lines indexed in $ms ms by ${index.description}")
+        } catch (t: Throwable) {
+            if (t is CancellationException) throw t
+            playbookUnavailable(t.message?.removePrefix("playbook: ") ?: t.javaClass.simpleName, t)
+        }
+    }
+
+    private fun playbookUnavailable(reason: String, error: Throwable? = null) {
+        playbookIndex = null
+        _playbookScenes.value = emptyList()
+        _playbookStatus.value = "playbook: unavailable ($reason)"
+        Log.w(TAG, "playbook unavailable: $reason", error)
+    }
+
     private suspend fun refreshExemplarCounts() {
         runCatching { ExemplarCounts(total = graph.exemplarStore.count(), l1 = graph.exemplarStore.all(config.value.l1.code).size) }
             .onSuccess { _exemplarCounts.value = it }
@@ -330,5 +414,6 @@ class PipelineRuntime(private val context: Context, private val graph: AppGraph,
         const val TAG = "PipelineRuntime"
         const val MAX_CHUNK_MS = 28_000L // under Gemma's 30 s audio cap
         const val MIN_CHUNK_MS = 1_000L
+        const val PLAYBOOK_BATCH = 16 // lines per embedding call: the longest a turn waits for the model lock while indexing
     }
 }

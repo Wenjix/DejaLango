@@ -8,9 +8,11 @@ import dev.dejalango.engine.hud.HudState
 import dev.dejalango.engine.hud.Line
 import dev.dejalango.engine.hud.Phase
 import dev.dejalango.engine.hud.Reply
+import dev.dejalango.engine.hud.ReplySource
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.sin
@@ -63,5 +65,14 @@ class JvmAdaptersTest {
         assertEquals(null, HudJson.decodeAction("""{"action":"confirm","session":"test"}""", "test"))
         assertEquals(null, HudJson.decodeAction("""{"action":"dance","session":"test"}""", "test"))
         assertEquals(null, HudJson.decodeAction("not json", "test"))
+    }
+
+    @Test
+    fun `hud json says who wrote the cards but never sends the bench's playbook note`() {
+        val s = HudState(phase = Phase.SHOWING, replies = listOf(Reply("一位。", "一位。", "Yí wèi.", "Just one.")), selectedReply = 0)
+        assertTrue(HudJson.encode(s).contains("\"source\":\"MODEL\""))
+        val prepared = HudJson.encode(s.copy(replySource = ReplySource.PLAYBOOK, playbookNote = "hit restaurant.greet 0.912 (next 0.701) 「您好，几位？」"))
+        assertTrue(prepared.contains("\"source\":\"PLAYBOOK\""))
+        assertFalse(prepared.contains("restaurant.greet"))
     }
 }

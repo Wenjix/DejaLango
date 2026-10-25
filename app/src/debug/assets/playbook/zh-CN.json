@@ -1,0 +1,3571 @@
+{
+ "version": 1,
+ "l1": "en-US",
+ "l2": "zh-CN",
+ "scenes": [
+  {
+   "id": "restaurant",
+   "title": "Lunch at a family restaurant",
+   "setting": "Lunchtime at a small family-run home-style restaurant in Beijing, where the server seats the traveler, takes the order and settles the bill.",
+   "localRole": "server",
+   "start": "restaurant.greet",
+   "moments": [
+    {
+     "id": "restaurant.greet",
+     "intent": "greets, asks party size",
+     "local": [
+      {
+       "id": "restaurant.greet.l1",
+       "text": "欢迎光临！几位？",
+       "l1": "Welcome! How many?"
+      },
+      {
+       "id": "restaurant.greet.l2",
+       "text": "您好，几位啊？",
+       "l1": "Hello, how many of you?"
+      },
+      {
+       "id": "restaurant.greet.l3",
+       "text": "来啦！几位？",
+       "l1": "Hi there! How many?"
+      },
+      {
+       "id": "restaurant.greet.l4",
+       "text": "哎，您好！几个人吃饭？",
+       "l1": "Oh, hello! How many for lunch?"
+      },
+      {
+       "id": "restaurant.greet.l5",
+       "text": "请问几位？",
+       "l1": "May I ask how many?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.greet.r1",
+       "text": "一个人。",
+       "roman": "Yí gè rén.",
+       "back": "Just one.",
+       "next": "restaurant.seat"
+      },
+      {
+       "id": "restaurant.greet.r2",
+       "text": "就我一个，坐哪儿？",
+       "roman": "Jiù wǒ yí gè, zuò nǎr?",
+       "back": "Just me. Where should I sit?",
+       "next": "restaurant.seat"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.greet.o1",
+       "text": "一位。",
+       "roman": "Yí wèi.",
+       "back": "One.",
+       "next": "restaurant.seat"
+      },
+      {
+       "id": "restaurant.greet.o2",
+       "text": "就我自己。",
+       "roman": "Jiù wǒ zìjǐ.",
+       "back": "Just myself.",
+       "next": "restaurant.seat"
+      },
+      {
+       "id": "restaurant.greet.o3",
+       "text": "一个人，有位子吗？",
+       "roman": "Yí gè rén, yǒu wèizi ma?",
+       "back": "One. Do you have a seat?",
+       "next": "restaurant.seat"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.seat",
+     "intent": "seats the guest, gives the menu",
+     "local": [
+      {
+       "id": "restaurant.seat.l1",
+       "text": "这边请，这是菜单。",
+       "l1": "This way, please. Here's the menu."
+      },
+      {
+       "id": "restaurant.seat.l2",
+       "text": "您坐这儿吧，菜单给您。",
+       "l1": "Have a seat here. Here's the menu."
+      },
+      {
+       "id": "restaurant.seat.l3",
+       "text": "随便坐，菜单在桌上。",
+       "l1": "Sit anywhere. The menu's on the table."
+      },
+      {
+       "id": "restaurant.seat.l4",
+       "text": "坐靠窗那儿吧，菜单您先看看。",
+       "l1": "Take the spot by the window and have a look at the menu."
+      },
+      {
+       "id": "restaurant.seat.l5",
+       "text": "来，这边坐，菜单您拿着。",
+       "l1": "Come, sit over here. Here's a menu for you."
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.seat.r1",
+       "text": "有什么推荐的？",
+       "roman": "Yǒu shénme tuījiàn de?",
+       "back": "What do you recommend?",
+       "next": "restaurant.spicy"
+      },
+      {
+       "id": "restaurant.seat.r2",
+       "text": "来一碗炸酱面。",
+       "roman": "Lái yì wǎn zhájiàngmiàn.",
+       "back": "A bowl of zhajiang noodles, please.",
+       "next": "restaurant.more"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.seat.o1",
+       "text": "我想吃北京菜。",
+       "roman": "Wǒ xiǎng chī Běijīng cài.",
+       "back": "I'd like some Beijing food.",
+       "next": "restaurant.recommend"
+      },
+      {
+       "id": "restaurant.seat.o2",
+       "text": "你们的招牌菜是什么？",
+       "roman": "Nǐmen de zhāopáicài shì shénme?",
+       "back": "What's your signature dish?",
+       "next": "restaurant.recommend"
+      },
+      {
+       "id": "restaurant.seat.o3",
+       "text": "来一份西红柿炒鸡蛋。",
+       "roman": "Lái yí fèn xīhóngshì chǎo jīdàn.",
+       "back": "Tomato and egg stir-fry, please.",
+       "next": "restaurant.more"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.spicy",
+     "intent": "asks if the guest eats spicy food",
+     "local": [
+      {
+       "id": "restaurant.spicy.l1",
+       "text": "您能吃辣吗？",
+       "l1": "Can you eat spicy food?"
+      },
+      {
+       "id": "restaurant.spicy.l2",
+       "text": "您怕辣吗？",
+       "l1": "Does spicy food bother you?"
+      },
+      {
+       "id": "restaurant.spicy.l3",
+       "text": "有忌口吗？辣的能吃吗？",
+       "l1": "Anything you don't eat? Is spicy OK?"
+      },
+      {
+       "id": "restaurant.spicy.l4",
+       "text": "我先问一下，您吃辣吗？",
+       "l1": "Let me ask first: do you eat spicy food?"
+      },
+      {
+       "id": "restaurant.spicy.l5",
+       "text": "辣椒您能吃吗？",
+       "l1": "Can you eat chili peppers?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.spicy.r1",
+       "text": "不要辣，谢谢。",
+       "roman": "Bú yào là, xièxie.",
+       "back": "No spice, thanks.",
+       "next": "restaurant.recommend"
+      },
+      {
+       "id": "restaurant.spicy.r2",
+       "text": "微辣就行。",
+       "roman": "Wēilà jiù xíng.",
+       "back": "Mildly spicy is fine.",
+       "next": "restaurant.recommend"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.spicy.o1",
+       "text": "不要太辣。",
+       "roman": "Bú yào tài là.",
+       "back": "Not too spicy.",
+       "next": "restaurant.recommend"
+      },
+      {
+       "id": "restaurant.spicy.o2",
+       "text": "不要辣，也不要香菜。",
+       "roman": "Bú yào là, yě bú yào xiāngcài.",
+       "back": "No spice, and no cilantro.",
+       "next": "restaurant.recommend"
+      },
+      {
+       "id": "restaurant.spicy.o3",
+       "text": "少放点儿辣。",
+       "roman": "Shǎo fàng diǎnr là.",
+       "back": "Go easy on the spice.",
+       "next": "restaurant.recommend"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.recommend",
+     "intent": "recommends the house dish",
+     "local": [
+      {
+       "id": "restaurant.recommend.l1",
+       "text": "那您尝尝京酱肉丝，我们家招牌。",
+       "l1": "Then try the shredded pork in sweet bean sauce, our signature."
+      },
+      {
+       "id": "restaurant.recommend.l2",
+       "text": "我推荐京酱肉丝，卷豆皮吃，特香。",
+       "l1": "I'd go for the jingjiang pork. Wrap it in tofu skin, so good."
+      },
+      {
+       "id": "restaurant.recommend.l3",
+       "text": "我们家京酱肉丝卖得最好，您试试？",
+       "l1": "Our jingjiang pork sells best. Want to try it?"
+      },
+      {
+       "id": "restaurant.recommend.l4",
+       "text": "京酱肉丝吧，北京特色，甜口儿的。",
+       "l1": "Get the jingjiang pork: a Beijing specialty, a bit sweet."
+      },
+      {
+       "id": "restaurant.recommend.l5",
+       "text": "嗯，京酱肉丝不错，客人都爱点。",
+       "l1": "Hmm, the jingjiang pork is good. Everyone orders it."
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.recommend.r1",
+       "text": "好，来一份！",
+       "roman": "Hǎo, lái yí fèn!",
+       "back": "OK, I'll have that!",
+       "next": "restaurant.more"
+      },
+      {
+       "id": "restaurant.recommend.r2",
+       "text": "我想吃木须肉。",
+       "roman": "Wǒ xiǎng chī mùxūròu.",
+       "back": "I'd like the moo shu pork.",
+       "next": "restaurant.more"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.recommend.o1",
+       "text": "听着不错，就要这个。",
+       "roman": "Tīngzhe búcuò, jiù yào zhège.",
+       "back": "Sounds good, I'll take it.",
+       "next": "restaurant.more"
+      },
+      {
+       "id": "restaurant.recommend.o2",
+       "text": "好，再来一碗米饭。",
+       "roman": "Hǎo, zài lái yì wǎn mǐfàn.",
+       "back": "OK, and a bowl of rice.",
+       "next": "restaurant.more"
+      },
+      {
+       "id": "restaurant.recommend.o3",
+       "text": "我想试试炸酱面。",
+       "roman": "Wǒ xiǎng shìshi zhájiàngmiàn.",
+       "back": "I'd like to try the zhajiang noodles.",
+       "next": "restaurant.more"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.more",
+     "intent": "asks if they want anything else",
+     "local": [
+      {
+       "id": "restaurant.more.l1",
+       "text": "好嘞，还要别的吗？",
+       "l1": "Got it. Anything else?"
+      },
+      {
+       "id": "restaurant.more.l2",
+       "text": "还要加个菜吗？",
+       "l1": "Would you like to add a dish?"
+      },
+      {
+       "id": "restaurant.more.l3",
+       "text": "行，记下了。还点别的吗？",
+       "l1": "OK, noted. Anything else to order?"
+      },
+      {
+       "id": "restaurant.more.l4",
+       "text": "还要别的菜不？凉菜什么的？",
+       "l1": "Any other dishes? A cold dish, maybe?"
+      },
+      {
+       "id": "restaurant.more.l5",
+       "text": "别的还要吗？",
+       "l1": "Want anything else?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.more.r1",
+       "text": "再来个拍黄瓜。",
+       "roman": "Zài lái gè pāi huánggua.",
+       "back": "And a smashed cucumber salad.",
+       "next": "restaurant.drink"
+      },
+      {
+       "id": "restaurant.more.r2",
+       "text": "不用了，够了。",
+       "roman": "Bú yòng le, gòu le.",
+       "back": "No, that's enough.",
+       "next": "restaurant.drink"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.more.o1",
+       "text": "再来一碗米饭。",
+       "roman": "Zài lái yì wǎn mǐfàn.",
+       "back": "A bowl of rice too.",
+       "next": "restaurant.drink"
+      },
+      {
+       "id": "restaurant.more.o2",
+       "text": "先这些吧。",
+       "roman": "Xiān zhèxiē ba.",
+       "back": "That's it for now.",
+       "next": "restaurant.drink"
+      },
+      {
+       "id": "restaurant.more.o3",
+       "text": "就这些，谢谢。",
+       "roman": "Jiù zhèxiē, xièxie.",
+       "back": "That's all, thanks.",
+       "next": "restaurant.drink"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.drink",
+     "intent": "asks what they'd like to drink",
+     "local": [
+      {
+       "id": "restaurant.drink.l1",
+       "text": "喝点儿什么？",
+       "l1": "What would you like to drink?"
+      },
+      {
+       "id": "restaurant.drink.l2",
+       "text": "您喝点儿啥？",
+       "l1": "What'll you have to drink?"
+      },
+      {
+       "id": "restaurant.drink.l3",
+       "text": "要不要来点儿喝的？",
+       "l1": "Would you like something to drink?"
+      },
+      {
+       "id": "restaurant.drink.l4",
+       "text": "喝的呢？饮料啤酒都有。",
+       "l1": "And to drink? We have soft drinks and beer."
+      },
+      {
+       "id": "restaurant.drink.l5",
+       "text": "喝点儿啥？冰的常温的都有。",
+       "l1": "What to drink? We have it cold or room temperature."
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.drink.r1",
+       "text": "来一杯酸梅汤。",
+       "roman": "Lái yì bēi suānméitāng.",
+       "back": "A sour plum drink, please.",
+       "next": "restaurant.taste"
+      },
+      {
+       "id": "restaurant.drink.r2",
+       "text": "不用了，谢谢。",
+       "roman": "Bú yòng le, xièxie.",
+       "back": "No, thank you.",
+       "next": "restaurant.taste"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.drink.o1",
+       "text": "来一瓶可乐。",
+       "roman": "Lái yì píng kělè.",
+       "back": "A bottle of cola.",
+       "next": "restaurant.taste"
+      },
+      {
+       "id": "restaurant.drink.o2",
+       "text": "来杯热水就行。",
+       "roman": "Lái bēi rèshuǐ jiù xíng.",
+       "back": "Just a cup of hot water.",
+       "next": "restaurant.taste"
+      },
+      {
+       "id": "restaurant.drink.o3",
+       "text": "来一壶茶。",
+       "roman": "Lái yì hú chá.",
+       "back": "A pot of tea.",
+       "next": "restaurant.taste"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.taste",
+     "intent": "asks how the meal was",
+     "local": [
+      {
+       "id": "restaurant.taste.l1",
+       "text": "吃得怎么样？还合口味吗？",
+       "l1": "How was everything? Was it to your taste?"
+      },
+      {
+       "id": "restaurant.taste.l2",
+       "text": "味道怎么样？",
+       "l1": "How did it taste?"
+      },
+      {
+       "id": "restaurant.taste.l3",
+       "text": "觉得怎么样？",
+       "l1": "What did you think?"
+      },
+      {
+       "id": "restaurant.taste.l4",
+       "text": "吃着还行吧？",
+       "l1": "Did it taste all right?"
+      },
+      {
+       "id": "restaurant.taste.l5",
+       "text": "还合您胃口吧？",
+       "l1": "I hope it was to your liking?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.taste.r1",
+       "text": "很好吃！买单吧。",
+       "roman": "Hěn hǎochī! Mǎidān ba.",
+       "back": "Delicious! The bill, please.",
+       "next": "restaurant.bill"
+      },
+      {
+       "id": "restaurant.taste.r2",
+       "text": "吃饱了，多少钱？",
+       "roman": "Chī bǎo le, duōshao qián?",
+       "back": "I'm full. How much is it?",
+       "next": "restaurant.bill"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.taste.o1",
+       "text": "太好吃了！结账吧。",
+       "roman": "Tài hǎochī le! Jiézhàng ba.",
+       "back": "So good! Let's settle up.",
+       "next": "restaurant.bill"
+      },
+      {
+       "id": "restaurant.taste.o2",
+       "text": "挺好的，买单。",
+       "roman": "Tǐng hǎo de, mǎidān.",
+       "back": "Pretty good. Check, please.",
+       "next": "restaurant.bill"
+      },
+      {
+       "id": "restaurant.taste.o3",
+       "text": "不错，多少钱？",
+       "roman": "Búcuò, duōshao qián?",
+       "back": "Not bad. How much?",
+       "next": "restaurant.bill"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.bill",
+     "intent": "tells the total",
+     "local": [
+      {
+       "id": "restaurant.bill.l1",
+       "text": "一共六十八块。",
+       "l1": "That's sixty-eight yuan altogether."
+      },
+      {
+       "id": "restaurant.bill.l2",
+       "text": "我算一下啊，一共六十八。",
+       "l1": "Let me add it up... sixty-eight in total."
+      },
+      {
+       "id": "restaurant.bill.l3",
+       "text": "您这桌一共六十八。",
+       "l1": "Your table comes to sixty-eight."
+      },
+      {
+       "id": "restaurant.bill.l4",
+       "text": "嗯，算好了，六十八。",
+       "l1": "OK, all added up: sixty-eight."
+      },
+      {
+       "id": "restaurant.bill.l5",
+       "text": "好的，六十八块钱。",
+       "l1": "Sure, sixty-eight yuan."
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.bill.r1",
+       "text": "我用微信付。",
+       "roman": "Wǒ yòng Wēixìn fù.",
+       "back": "I'll pay with WeChat.",
+       "next": "restaurant.scan"
+      },
+      {
+       "id": "restaurant.bill.r2",
+       "text": "支付宝可以吗？",
+       "roman": "Zhīfùbǎo kěyǐ ma?",
+       "back": "Can I use Alipay?",
+       "next": "restaurant.scan"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.bill.o1",
+       "text": "微信可以吗？",
+       "roman": "Wēixìn kěyǐ ma?",
+       "back": "Is WeChat OK?",
+       "next": "restaurant.scan"
+      },
+      {
+       "id": "restaurant.bill.o2",
+       "text": "能用手机付吗？",
+       "roman": "Néng yòng shǒujī fù ma?",
+       "back": "Can I pay by phone?",
+       "next": "restaurant.scan"
+      },
+      {
+       "id": "restaurant.bill.o3",
+       "text": "扫好了。",
+       "roman": "Sǎo hǎo le.",
+       "back": "I've scanned it.",
+       "next": "restaurant.bye"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.scan",
+     "intent": "points to the QR code to scan",
+     "local": [
+      {
+       "id": "restaurant.scan.l1",
+       "text": "可以，扫这个码就行。",
+       "l1": "Sure, just scan this code."
+      },
+      {
+       "id": "restaurant.scan.l2",
+       "text": "直接扫码就行。",
+       "l1": "Just scan the code."
+      },
+      {
+       "id": "restaurant.scan.l3",
+       "text": "行啊，墙上有二维码。",
+       "l1": "Sure, the QR code is on the wall."
+      },
+      {
+       "id": "restaurant.scan.l4",
+       "text": "没问题，扫这个码，微信支付宝都行。",
+       "l1": "No problem. Scan this code; WeChat or Alipay both work."
+      },
+      {
+       "id": "restaurant.scan.l5",
+       "text": "您扫我这个码吧。",
+       "l1": "Scan my code here."
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.scan.r1",
+       "text": "好，稍等一下。",
+       "roman": "Hǎo, shāo děng yíxià.",
+       "back": "OK, one moment.",
+       "next": "restaurant.bye"
+      },
+      {
+       "id": "restaurant.scan.r2",
+       "text": "付好了，您看一下。",
+       "roman": "Fù hǎo le, nín kàn yíxià.",
+       "back": "Done. Please take a look.",
+       "next": "restaurant.bye"
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.scan.o1",
+       "text": "好，付好了。",
+       "roman": "Hǎo, fù hǎo le.",
+       "back": "OK, paid.",
+       "next": "restaurant.bye"
+      },
+      {
+       "id": "restaurant.scan.o2",
+       "text": "好的，马上付。",
+       "roman": "Hǎo de, mǎshàng fù.",
+       "back": "OK, paying now.",
+       "next": "restaurant.bye"
+      }
+     ]
+    },
+    {
+     "id": "restaurant.bye",
+     "intent": "confirms payment, says goodbye",
+     "local": [
+      {
+       "id": "restaurant.bye.l1",
+       "text": "收到了，谢谢您！慢走啊！",
+       "l1": "Got it, thank you! Take care!"
+      },
+      {
+       "id": "restaurant.bye.l2",
+       "text": "到账了，您慢走！",
+       "l1": "It came through. Take care!"
+      },
+      {
+       "id": "restaurant.bye.l3",
+       "text": "钱收到了，谢谢啊！",
+       "l1": "Payment received, thanks!"
+      },
+      {
+       "id": "restaurant.bye.l4",
+       "text": "好了，收到了。回见啊！",
+       "l1": "All set, got it. See you!"
+      },
+      {
+       "id": "restaurant.bye.l5",
+       "text": "收到收到，路上慢点儿！",
+       "l1": "Got it, got it. Take care on your way!"
+      }
+     ],
+     "replies": [
+      {
+       "id": "restaurant.bye.r1",
+       "text": "谢谢，再见！",
+       "roman": "Xièxie, zàijiàn!",
+       "back": "Thank you, goodbye!",
+       "next": ""
+      },
+      {
+       "id": "restaurant.bye.r2",
+       "text": "我还会再来的！",
+       "roman": "Wǒ hái huì zài lái de!",
+       "back": "I'll come back!",
+       "next": ""
+      }
+     ],
+     "others": [
+      {
+       "id": "restaurant.bye.o1",
+       "text": "再见！",
+       "roman": "Zàijiàn!",
+       "back": "Bye!",
+       "next": ""
+      },
+      {
+       "id": "restaurant.bye.o2",
+       "text": "拜拜！",
+       "roman": "Bàibài!",
+       "back": "Bye-bye!",
+       "next": ""
+      },
+      {
+       "id": "restaurant.bye.o3",
+       "text": "菜很好吃，谢谢！",
+       "roman": "Cài hěn hǎochī, xièxie!",
+       "back": "The food was great, thanks!",
+       "next": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "market",
+   "title": "Haggling at the Market",
+   "setting": "At a busy tourist street market in Beijing, a friendly, slightly pushy stall vendor selling silk scarves, T-shirts and souvenirs haggles with the traveler over a silk scarf.",
+   "localRole": "stall vendor",
+   "start": "market.greet",
+   "moments": [
+    {
+     "id": "market.greet",
+     "intent": "calls the traveler over",
+     "local": [
+      {
+       "id": "market.greet.l1",
+       "text": "想买点儿什么？过来瞧瞧！",
+       "l1": "What would you like? Come take a look!"
+      },
+      {
+       "id": "market.greet.l2",
+       "text": "您好，想找点儿什么？",
+       "l1": "Hello, what are you looking for?"
+      },
+      {
+       "id": "market.greet.l3",
+       "text": "来来来，丝巾、短袖、纪念品，都有！",
+       "l1": "Come on over: silk scarves, T-shirts, souvenirs, I have it all!"
+      },
+      {
+       "id": "market.greet.l4",
+       "text": "过来看看吧，不买也没关系！",
+       "l1": "Come have a look, it's fine if you don't buy!"
+      },
+      {
+       "id": "market.greet.l5",
+       "text": "找什么呢？我这儿啥都有。",
+       "l1": "Looking for something? I've got everything here."
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.greet.r1",
+       "text": "我随便看看。",
+       "roman": "Wǒ suíbiàn kànkan.",
+       "back": "I'm just looking.",
+       "next": "market.show"
+      },
+      {
+       "id": "market.greet.r2",
+       "text": "我要一条丝巾。",
+       "roman": "Wǒ yào yì tiáo sījīn.",
+       "back": "I'd like a silk scarf.",
+       "next": "market.show"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.greet.o1",
+       "text": "我想看看丝巾。",
+       "roman": "Wǒ xiǎng kànkan sījīn.",
+       "back": "I'd like to look at the silk scarves.",
+       "next": "market.show"
+      },
+      {
+       "id": "market.greet.o2",
+       "text": "不用了，谢谢。",
+       "roman": "Bú yòng le, xièxie.",
+       "back": "No need, thanks.",
+       "next": "market.show"
+      },
+      {
+       "id": "market.greet.o3",
+       "text": "丝巾多少钱？",
+       "roman": "Sījīn duōshao qián?",
+       "back": "How much are the silk scarves?",
+       "next": "market.price"
+      },
+      {
+       "id": "market.greet.o4",
+       "text": "你好！",
+       "roman": "Nǐ hǎo!",
+       "back": "Hello!",
+       "next": "market.show"
+      }
+     ]
+    },
+    {
+     "id": "market.show",
+     "intent": "shows off a silk scarf",
+     "local": [
+      {
+       "id": "market.show.l1",
+       "text": "您看这条丝巾，真丝的！",
+       "l1": "Look at this scarf, it's real silk!"
+      },
+      {
+       "id": "market.show.l2",
+       "text": "这条怎么样？手感特好。",
+       "l1": "How about this one? It feels really nice."
+      },
+      {
+       "id": "market.show.l3",
+       "text": "您摸摸这料子，多滑溜！",
+       "l1": "Feel this fabric, so smooth!"
+      },
+      {
+       "id": "market.show.l4",
+       "text": "这丝巾卖得最好，好多人都买。",
+       "l1": "This scarf is my best seller; lots of people buy it."
+      },
+      {
+       "id": "market.show.l5",
+       "text": "这条送人特有面子！",
+       "l1": "This one makes a really impressive gift!"
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.show.r1",
+       "text": "这个多少钱？",
+       "roman": "Zhège duōshao qián?",
+       "back": "How much is this?",
+       "next": "market.price"
+      },
+      {
+       "id": "market.show.r2",
+       "text": "挺好看的。",
+       "roman": "Tǐng hǎokàn de.",
+       "back": "It's pretty nice.",
+       "next": "market.price"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.show.o1",
+       "text": "多少钱一条？",
+       "roman": "Duōshao qián yì tiáo?",
+       "back": "How much for one?",
+       "next": "market.price"
+      },
+      {
+       "id": "market.show.o2",
+       "text": "这个怎么卖？",
+       "roman": "Zhège zěnme mài?",
+       "back": "What's the price on this?",
+       "next": "market.price"
+      },
+      {
+       "id": "market.show.o3",
+       "text": "我喜欢这条。",
+       "roman": "Wǒ xǐhuan zhè tiáo.",
+       "back": "I like this one.",
+       "next": "market.price"
+      }
+     ]
+    },
+    {
+     "id": "market.price",
+     "intent": "gives the first price",
+     "local": [
+      {
+       "id": "market.price.l1",
+       "text": "这条一百五十块。",
+       "l1": "This one is a hundred and fifty yuan."
+      },
+      {
+       "id": "market.price.l2",
+       "text": "一百五一条，挺划算的。",
+       "l1": "A hundred fifty each, a good deal."
+      },
+      {
+       "id": "market.price.l3",
+       "text": "这个啊，一百五。",
+       "l1": "This one? A hundred fifty."
+      },
+      {
+       "id": "market.price.l4",
+       "text": "您真有眼光！一百五。",
+       "l1": "You've got a good eye! A hundred fifty."
+      },
+      {
+       "id": "market.price.l5",
+       "text": "一百五，绝对值！",
+       "l1": "A hundred fifty, totally worth it!"
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.price.r1",
+       "text": "太贵了，便宜点儿吧。",
+       "roman": "Tài guì le, piányi diǎnr ba.",
+       "back": "Too expensive. A bit cheaper?",
+       "next": "market.counter"
+      },
+      {
+       "id": "market.price.r2",
+       "text": "好，我要了。",
+       "roman": "Hǎo, wǒ yào le.",
+       "back": "OK, I'll take it.",
+       "next": "market.color"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.price.o1",
+       "text": "能便宜点儿吗？",
+       "roman": "Néng piányi diǎnr ma?",
+       "back": "Can you go a bit lower?",
+       "next": "market.counter"
+      },
+      {
+       "id": "market.price.o2",
+       "text": "六十块行吗？",
+       "roman": "Liùshí kuài xíng ma?",
+       "back": "Would sixty work?",
+       "next": "market.counter"
+      },
+      {
+       "id": "market.price.o3",
+       "text": "太贵了，不要了。",
+       "roman": "Tài guì le, bú yào le.",
+       "back": "Too expensive, I'll pass.",
+       "next": "market.counter"
+      }
+     ]
+    },
+    {
+     "id": "market.counter",
+     "intent": "makes a counteroffer",
+     "local": [
+      {
+       "id": "market.counter.l1",
+       "text": "那给您便宜点儿，一百二吧。",
+       "l1": "Then I'll knock it down for you: a hundred twenty."
+      },
+      {
+       "id": "market.counter.l2",
+       "text": "给您打个八折，一百二。",
+       "l1": "I'll give you twenty percent off: a hundred twenty."
+      },
+      {
+       "id": "market.counter.l3",
+       "text": "一百二，就当交个朋友。",
+       "l1": "A hundred twenty, call it a friendship price."
+      },
+      {
+       "id": "market.counter.l4",
+       "text": "哎呀，一百二，够意思了吧？",
+       "l1": "Oh, come on, a hundred twenty. That's generous of me, right?"
+      },
+      {
+       "id": "market.counter.l5",
+       "text": "给您少三十，一百二。",
+       "l1": "Thirty off for you: a hundred twenty."
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.counter.r1",
+       "text": "八十块行吗？",
+       "roman": "Bāshí kuài xíng ma?",
+       "back": "Would eighty work?",
+       "next": "market.final"
+      },
+      {
+       "id": "market.counter.r2",
+       "text": "好，就这个价吧。",
+       "roman": "Hǎo, jiù zhège jià ba.",
+       "back": "OK, that price is fine.",
+       "next": "market.color"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.counter.o1",
+       "text": "还是太贵了。",
+       "roman": "Háishi tài guì le.",
+       "back": "Still too expensive.",
+       "next": "market.final"
+      },
+      {
+       "id": "market.counter.o2",
+       "text": "七十块吧。",
+       "roman": "Qīshí kuài ba.",
+       "back": "Seventy, then.",
+       "next": "market.final"
+      },
+      {
+       "id": "market.counter.o3",
+       "text": "算了，我不要了。",
+       "roman": "Suàn le, wǒ bú yào le.",
+       "back": "Never mind, I'll pass.",
+       "next": "market.final"
+      }
+     ]
+    },
+    {
+     "id": "market.final",
+     "intent": "names the bottom price",
+     "local": [
+      {
+       "id": "market.final.l1",
+       "text": "最低一百，不能再少了。",
+       "l1": "A hundred is my lowest, I can't go any lower."
+      },
+      {
+       "id": "market.final.l2",
+       "text": "一百块，这是底价了。",
+       "l1": "A hundred yuan, that's my bottom price."
+      },
+      {
+       "id": "market.final.l3",
+       "text": "真不行，一百，我都没赚头了。",
+       "l1": "I really can't. A hundred, and I'm barely making anything."
+      },
+      {
+       "id": "market.final.l4",
+       "text": "您给一百吧，再少真不卖了。",
+       "l1": "Give me a hundred. Any less and I won't sell."
+      },
+      {
+       "id": "market.final.l5",
+       "text": "一百，一分都不能少了。",
+       "l1": "A hundred, not a cent less."
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.final.r1",
+       "text": "好吧，那就买了。",
+       "roman": "Hǎo ba, nà jiù mǎi le.",
+       "back": "Fine, I'll buy it then.",
+       "next": "market.color"
+      },
+      {
+       "id": "market.final.r2",
+       "text": "那我再转转。",
+       "roman": "Nà wǒ zài zhuànzhuan.",
+       "back": "Then I'll look around some more.",
+       "next": "market.callback"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.final.o1",
+       "text": "八十，不行就算了。",
+       "roman": "Bāshí, bù xíng jiù suàn le.",
+       "back": "Eighty, or forget it.",
+       "next": "market.callback"
+      },
+      {
+       "id": "market.final.o2",
+       "text": "那算了吧。",
+       "roman": "Nà suàn le ba.",
+       "back": "Forget it, then.",
+       "next": "market.callback"
+      },
+      {
+       "id": "market.final.o3",
+       "text": "行，就一百吧。",
+       "roman": "Xíng, jiù yìbǎi ba.",
+       "back": "OK, a hundred then.",
+       "next": "market.color"
+      }
+     ]
+    },
+    {
+     "id": "market.callback",
+     "intent": "calls the traveler back, gives in",
+     "local": [
+      {
+       "id": "market.callback.l1",
+       "text": "哎，别走啊！八十，拿走吧！",
+       "l1": "Hey, don't go! Eighty, take it!"
+      },
+      {
+       "id": "market.callback.l2",
+       "text": "回来回来，八十卖您了！",
+       "l1": "Come back, come back! Eighty, it's yours!"
+      },
+      {
+       "id": "market.callback.l3",
+       "text": "得，八十，我认了！",
+       "l1": "Fine, eighty. I give in!"
+      },
+      {
+       "id": "market.callback.l4",
+       "text": "等一下！八十，您拿走吧！",
+       "l1": "Hang on! Eighty, it's yours."
+      },
+      {
+       "id": "market.callback.l5",
+       "text": "行行行，八十，真服了您了！",
+       "l1": "OK, OK, eighty. You drive a hard bargain!"
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.callback.r1",
+       "text": "好，成交！",
+       "roman": "Hǎo, chéngjiāo!",
+       "back": "OK, deal!",
+       "next": "market.color"
+      },
+      {
+       "id": "market.callback.r2",
+       "text": "那我要两条。",
+       "roman": "Nà wǒ yào liǎng tiáo.",
+       "back": "Then I'll take two.",
+       "next": "market.color"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.callback.o1",
+       "text": "谢谢老板！",
+       "roman": "Xièxie lǎobǎn!",
+       "back": "Thanks, boss!",
+       "next": "market.color"
+      },
+      {
+       "id": "market.callback.o2",
+       "text": "真的？太好了！",
+       "roman": "Zhēn de? Tài hǎo le!",
+       "back": "Really? Great!",
+       "next": "market.color"
+      },
+      {
+       "id": "market.callback.o3",
+       "text": "八十？好吧。",
+       "roman": "Bāshí? Hǎo ba.",
+       "back": "Eighty? All right.",
+       "next": "market.color"
+      }
+     ]
+    },
+    {
+     "id": "market.color",
+     "intent": "asks which color",
+     "local": [
+      {
+       "id": "market.color.l1",
+       "text": "好嘞！颜色您随便挑。",
+       "l1": "You got it! Pick any color you like."
+      },
+      {
+       "id": "market.color.l2",
+       "text": "哪个颜色？我给您找。",
+       "l1": "Which color? I'll find it for you."
+      },
+      {
+       "id": "market.color.l3",
+       "text": "挑个颜色吧，好多种呢。",
+       "l1": "Pick a color, there are lots."
+      },
+      {
+       "id": "market.color.l4",
+       "text": "颜色多着呢，您喜欢哪个？",
+       "l1": "There are plenty of colors. Which do you like?"
+      },
+      {
+       "id": "market.color.l5",
+       "text": "还有紫的、绿的，您挑挑。",
+       "l1": "There's purple and green too, have a pick."
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.color.r1",
+       "text": "我要红的。",
+       "roman": "Wǒ yào hóng de.",
+       "back": "I'd like the red one.",
+       "next": "market.pay"
+      },
+      {
+       "id": "market.color.r2",
+       "text": "就这个吧。",
+       "roman": "Jiù zhège ba.",
+       "back": "This one is fine.",
+       "next": "market.pay"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.color.o1",
+       "text": "要白色的。",
+       "roman": "Yào báisè de.",
+       "back": "White, please.",
+       "next": "market.pay"
+      },
+      {
+       "id": "market.color.o2",
+       "text": "您帮我挑吧。",
+       "roman": "Nín bāng wǒ tiāo ba.",
+       "back": "You pick for me.",
+       "next": "market.pay"
+      },
+      {
+       "id": "market.color.o3",
+       "text": "一条红的，一条蓝的。",
+       "roman": "Yì tiáo hóng de, yì tiáo lán de.",
+       "back": "One red, one blue.",
+       "next": "market.pay"
+      }
+     ]
+    },
+    {
+     "id": "market.pay",
+     "intent": "asks how the traveler will pay",
+     "local": [
+      {
+       "id": "market.pay.l1",
+       "text": "扫码还是现金？",
+       "l1": "Scan the code, or cash?"
+      },
+      {
+       "id": "market.pay.l2",
+       "text": "您怎么付？扫码还是给现金？",
+       "l1": "How are you paying? Scan or cash?"
+      },
+      {
+       "id": "market.pay.l3",
+       "text": "付现金还是扫码啊？",
+       "l1": "Paying cash, or scanning?"
+      },
+      {
+       "id": "market.pay.l4",
+       "text": "现金还是手机付？",
+       "l1": "Cash, or pay by phone?"
+      },
+      {
+       "id": "market.pay.l5",
+       "text": "钱怎么给？扫码还是现金？",
+       "l1": "How do you want to pay? Scan or cash?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.pay.r1",
+       "text": "我用微信。",
+       "roman": "Wǒ yòng Wēixìn.",
+       "back": "I'll use WeChat.",
+       "next": "market.scan"
+      },
+      {
+       "id": "market.pay.r2",
+       "text": "支付宝可以吗？",
+       "roman": "Zhīfùbǎo kěyǐ ma?",
+       "back": "Is Alipay OK?",
+       "next": "market.scan"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.pay.o1",
+       "text": "微信行吗？",
+       "roman": "Wēixìn xíng ma?",
+       "back": "Is WeChat OK?",
+       "next": "market.scan"
+      },
+      {
+       "id": "market.pay.o2",
+       "text": "我扫码。",
+       "roman": "Wǒ sǎomǎ.",
+       "back": "I'll scan.",
+       "next": "market.scan"
+      },
+      {
+       "id": "market.pay.o3",
+       "text": "用支付宝吧。",
+       "roman": "Yòng Zhīfùbǎo ba.",
+       "back": "Alipay, then.",
+       "next": "market.scan"
+      }
+     ]
+    },
+    {
+     "id": "market.scan",
+     "intent": "points to the payment code",
+     "local": [
+      {
+       "id": "market.scan.l1",
+       "text": "码在这儿，您扫一下。",
+       "l1": "The code's right here, go ahead and scan it."
+      },
+      {
+       "id": "market.scan.l2",
+       "text": "行，扫这个码就行。",
+       "l1": "Sure, just scan this code."
+      },
+      {
+       "id": "market.scan.l3",
+       "text": "可以，对着这儿扫就行。",
+       "l1": "Sure, just scan right here."
+      },
+      {
+       "id": "market.scan.l4",
+       "text": "二维码贴这儿呢，您扫吧。",
+       "l1": "The QR code is stuck right here, go ahead."
+      },
+      {
+       "id": "market.scan.l5",
+       "text": "微信支付宝都能扫，码在这儿。",
+       "l1": "WeChat or Alipay, both work. The code's right here."
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.scan.r1",
+       "text": "我付好了。",
+       "roman": "Wǒ fùhǎo le.",
+       "back": "I've paid.",
+       "next": "market.bye"
+      },
+      {
+       "id": "market.scan.r2",
+       "text": "收到了吗？",
+       "roman": "Shōudào le ma?",
+       "back": "Did it come through?",
+       "next": "market.bye"
+      }
+     ],
+     "others": [
+      {
+       "id": "market.scan.o1",
+       "text": "好，稍等。",
+       "roman": "Hǎo, shāo děng.",
+       "back": "OK, one moment.",
+       "next": "market.bye"
+      },
+      {
+       "id": "market.scan.o2",
+       "text": "付了，您看看。",
+       "roman": "Fù le, nín kànkan.",
+       "back": "Paid, have a look.",
+       "next": "market.bye"
+      },
+      {
+       "id": "market.scan.o3",
+       "text": "扫好了。",
+       "roman": "Sǎohǎo le.",
+       "back": "Done scanning.",
+       "next": "market.bye"
+      }
+     ]
+    },
+    {
+     "id": "market.bye",
+     "intent": "bags it and says goodbye",
+     "local": [
+      {
+       "id": "market.bye.l1",
+       "text": "收到了！袋子给您，慢走啊！",
+       "l1": "Got it! Here's your bag, take care!"
+      },
+      {
+       "id": "market.bye.l2",
+       "text": "到账了！给您装好了，慢走！",
+       "l1": "It came through! All bagged up, take care!"
+      },
+      {
+       "id": "market.bye.l3",
+       "text": "收到啦，给您套个袋儿，下回再来！",
+       "l1": "Got it, I'll pop it in a bag. Come again!"
+      },
+      {
+       "id": "market.bye.l4",
+       "text": "钱收到了，您拿好，慢走啊！",
+       "l1": "Payment received. Hold on to it, take care!"
+      },
+      {
+       "id": "market.bye.l5",
+       "text": "东西给您装好了，玩儿得开心！",
+       "l1": "All bagged up for you. Have fun!"
+      }
+     ],
+     "replies": [
+      {
+       "id": "market.bye.r1",
+       "text": "谢谢，再见！",
+       "roman": "Xièxie, zàijiàn!",
+       "back": "Thanks, bye!",
+       "next": ""
+      },
+      {
+       "id": "market.bye.r2",
+       "text": "祝您生意兴隆！",
+       "roman": "Zhù nín shēngyi xīnglóng!",
+       "back": "May your business thrive!",
+       "next": ""
+      }
+     ],
+     "others": [
+      {
+       "id": "market.bye.o1",
+       "text": "我还会再来的！",
+       "roman": "Wǒ hái huì zài lái de!",
+       "back": "I'll come back again!",
+       "next": ""
+      },
+      {
+       "id": "market.bye.o2",
+       "text": "谢谢老板，再见！",
+       "roman": "Xièxie lǎobǎn, zàijiàn!",
+       "back": "Thanks, boss, bye!",
+       "next": ""
+      },
+      {
+       "id": "market.bye.o3",
+       "text": "好，谢谢您！",
+       "roman": "Hǎo, xièxie nín!",
+       "back": "OK, thank you!",
+       "next": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ride",
+   "title": "DiDi ride to Qianmen",
+   "setting": "An American visitor on a week's vacation takes a DiDi across Beijing to a hotel near Qianmen and chats with the driver on the way.",
+   "localRole": "DiDi driver",
+   "start": "ride.pickup",
+   "moments": [
+    {
+     "id": "ride.pickup",
+     "intent": "confirms the rider by phone tail number",
+     "local": [
+      {
+       "id": "ride.pickup.l1",
+       "text": "您好，手机尾号三八二七是吧？",
+       "l1": "Hi, your phone number ends in 3827, right?"
+      },
+      {
+       "id": "ride.pickup.l2",
+       "text": "是尾号三八二七的乘客吗？",
+       "l1": "Are you the passenger ending in 3827?"
+      },
+      {
+       "id": "ride.pickup.l3",
+       "text": "尾号三八二七？",
+       "l1": "Ending in 3827?"
+      },
+      {
+       "id": "ride.pickup.l4",
+       "text": "哎，您好！是尾号三八二七吗？",
+       "l1": "Hey, hi! Is it the one ending in 3827?"
+      },
+      {
+       "id": "ride.pickup.l5",
+       "text": "那个，您手机尾号是三八二七吧？",
+       "l1": "Um, your phone ends in 3827, right?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.pickup.r1",
+       "text": "对，是我。",
+       "roman": "Duì, shì wǒ.",
+       "back": "Yes, that's me.",
+       "next": "ride.dest"
+      },
+      {
+       "id": "ride.pickup.r2",
+       "text": "对，去前门。",
+       "roman": "Duì, qù Qiánmén.",
+       "back": "Yes, going to Qianmen.",
+       "next": "ride.belt"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.pickup.o1",
+       "text": "是的，我是三八二七。",
+       "roman": "Shì de, wǒ shì sān bā èr qī.",
+       "back": "Yes, I'm 3827.",
+       "next": "ride.dest"
+      },
+      {
+       "id": "ride.pickup.o2",
+       "text": "师傅好，是我。",
+       "roman": "Shīfu hǎo, shì wǒ.",
+       "back": "Hello, it's me.",
+       "next": "ride.dest"
+      },
+      {
+       "id": "ride.pickup.o3",
+       "text": "对对对，是我。",
+       "roman": "Duì duì duì, shì wǒ.",
+       "back": "Yes, yes, that's me.",
+       "next": "ride.dest"
+      }
+     ]
+    },
+    {
+     "id": "ride.dest",
+     "intent": "confirms the destination",
+     "local": [
+      {
+       "id": "ride.dest.l1",
+       "text": "去前门附近的酒店是吧？",
+       "l1": "Going to the hotel near Qianmen, right?"
+      },
+      {
+       "id": "ride.dest.l2",
+       "text": "您是到前门附近的酒店吧？",
+       "l1": "You're headed to the hotel near Qianmen?"
+      },
+      {
+       "id": "ride.dest.l3",
+       "text": "目的地是前门附近的酒店，对吧？",
+       "l1": "Your destination is the hotel near Qianmen, right?"
+      },
+      {
+       "id": "ride.dest.l4",
+       "text": "我确认一下，去前门附近的酒店？",
+       "l1": "Let me check: the hotel near Qianmen?"
+      },
+      {
+       "id": "ride.dest.l5",
+       "text": "咱们去前门附近的酒店，没错吧？",
+       "l1": "We're going to the hotel near Qianmen, correct?"
+      },
+      {
+       "id": "ride.dest.l6",
+       "text": "嗯，前门附近的酒店，对吗？",
+       "l1": "Mm, the hotel near Qianmen, right?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.dest.r1",
+       "text": "对，就是那儿。",
+       "roman": "Duì, jiù shì nàr.",
+       "back": "Yes, that's the place.",
+       "next": "ride.belt"
+      },
+      {
+       "id": "ride.dest.r2",
+       "text": "对。远吗？",
+       "roman": "Duì. Yuǎn ma?",
+       "back": "Yes. Is it far?",
+       "next": "ride.traffic"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.dest.o1",
+       "text": "是的，谢谢师傅。",
+       "roman": "Shì de, xièxie shīfu.",
+       "back": "Yes, thank you.",
+       "next": "ride.belt"
+      },
+      {
+       "id": "ride.dest.o2",
+       "text": "对，麻烦您了。",
+       "roman": "Duì, máfan nín le.",
+       "back": "Yes, thanks for taking me.",
+       "next": "ride.belt"
+      },
+      {
+       "id": "ride.dest.o3",
+       "text": "对。要多长时间？",
+       "roman": "Duì. Yào duō cháng shíjiān?",
+       "back": "Yes. How long will it take?",
+       "next": "ride.traffic"
+      },
+      {
+       "id": "ride.dest.o4",
+       "text": "对，没错。",
+       "roman": "Duì, méi cuò.",
+       "back": "Yes, that's right.",
+       "next": "ride.belt"
+      }
+     ]
+    },
+    {
+     "id": "ride.belt",
+     "intent": "asks to buckle up and sets off",
+     "local": [
+      {
+       "id": "ride.belt.l1",
+       "text": "麻烦系一下安全带，咱们出发了啊。",
+       "l1": "Please fasten your seatbelt, we're setting off."
+      },
+      {
+       "id": "ride.belt.l2",
+       "text": "系好安全带啊，出发了。",
+       "l1": "Buckle up, here we go."
+      },
+      {
+       "id": "ride.belt.l3",
+       "text": "您把安全带系上，我这就开车。",
+       "l1": "Put your seatbelt on and I'll get going."
+      },
+      {
+       "id": "ride.belt.l4",
+       "text": "安全带系一下，咱们准备出发了。",
+       "l1": "Seatbelt on, please, we're about to leave."
+      },
+      {
+       "id": "ride.belt.l5",
+       "text": "好嘞，安全带系上，开车了啊。",
+       "l1": "Alright, seatbelt on, I'm pulling out."
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.belt.r1",
+       "text": "好的，系好了。",
+       "roman": "Hǎo de, jì hǎo le.",
+       "back": "OK, it's fastened.",
+       "next": "ride.traffic"
+      },
+      {
+       "id": "ride.belt.r2",
+       "text": "好。大概要多久？",
+       "roman": "Hǎo. Dàgài yào duō jiǔ?",
+       "back": "OK. About how long will it take?",
+       "next": "ride.traffic"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.belt.o1",
+       "text": "系好了，走吧。",
+       "roman": "Jì hǎo le, zǒu ba.",
+       "back": "Buckled up, let's go.",
+       "next": "ride.traffic"
+      },
+      {
+       "id": "ride.belt.o2",
+       "text": "好的，谢谢提醒。",
+       "roman": "Hǎo de, xièxie tíxǐng.",
+       "back": "OK, thanks for the reminder.",
+       "next": "ride.traffic"
+      },
+      {
+       "id": "ride.belt.o3",
+       "text": "路上堵吗？",
+       "roman": "Lùshang dǔ ma?",
+       "back": "Is there traffic on the way?",
+       "next": "ride.traffic"
+      }
+     ]
+    },
+    {
+     "id": "ride.traffic",
+     "intent": "warns of traffic and gives the travel time",
+     "local": [
+      {
+       "id": "ride.traffic.l1",
+       "text": "这会儿有点堵，得四十分钟左右。",
+       "l1": "It's a bit jammed right now, about forty minutes."
+      },
+      {
+       "id": "ride.traffic.l2",
+       "text": "路上有点堵车，大概四十来分钟。",
+       "l1": "There's some traffic, roughly forty minutes."
+      },
+      {
+       "id": "ride.traffic.l3",
+       "text": "这个点儿正赶上高峰，得四十分钟。",
+       "l1": "It's rush hour right now, so forty minutes."
+      },
+      {
+       "id": "ride.traffic.l4",
+       "text": "前面堵着呢，差不多四十分钟能到。",
+       "l1": "It's backed up ahead; we'll get there in about forty minutes."
+      },
+      {
+       "id": "ride.traffic.l5",
+       "text": "导航说四十分钟，今天车有点多。",
+       "l1": "The navigation says forty minutes; lots of cars today."
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.traffic.r1",
+       "text": "没关系，我不着急。",
+       "roman": "Méi guānxi, wǒ bù zháojí.",
+       "back": "No problem, I'm not in a hurry.",
+       "next": "ride.chat"
+      },
+      {
+       "id": "ride.traffic.r2",
+       "text": "好，正好看看北京。",
+       "roman": "Hǎo, zhènghǎo kànkan Běijīng.",
+       "back": "Good, a chance to see Beijing.",
+       "next": "ride.chat"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.traffic.o1",
+       "text": "好的，谢谢您。",
+       "roman": "Hǎo de, xièxie nín.",
+       "back": "OK, thank you.",
+       "next": "ride.chat"
+      },
+      {
+       "id": "ride.traffic.o2",
+       "text": "没事，您慢慢开。",
+       "roman": "Méi shì, nín mànmàn kāi.",
+       "back": "No worries, take your time.",
+       "next": "ride.chat"
+      },
+      {
+       "id": "ride.traffic.o3",
+       "text": "四十分钟，没问题。",
+       "roman": "Sìshí fēnzhōng, méi wèntí.",
+       "back": "Forty minutes, no problem.",
+       "next": "ride.chat"
+      }
+     ]
+    },
+    {
+     "id": "ride.chat",
+     "intent": "asks if it's the first visit to Beijing or China",
+     "local": [
+      {
+       "id": "ride.chat.l1",
+       "text": "您是第一次来北京吧？",
+       "l1": "Is this your first time in Beijing?"
+      },
+      {
+       "id": "ride.chat.l2",
+       "text": "第一次来北京啊？",
+       "l1": "First time in Beijing?"
+      },
+      {
+       "id": "ride.chat.l3",
+       "text": "哎，您这是头一回来北京吧？",
+       "l1": "Hey, this is your first trip to Beijing, huh?"
+      },
+      {
+       "id": "ride.chat.l4",
+       "text": "是来北京旅游的吧？第一次来？",
+       "l1": "Visiting Beijing as a tourist? First time?"
+      },
+      {
+       "id": "ride.chat.l5",
+       "text": "第一次来中国吧？",
+       "l1": "First time in China, right?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.chat.r1",
+       "text": "对，第一次来。",
+       "roman": "Duì, dì yī cì lái.",
+       "back": "Yes, it's my first time.",
+       "next": "ride.stop"
+      },
+      {
+       "id": "ride.chat.r2",
+       "text": "是的，来玩一个星期。",
+       "roman": "Shì de, lái wán yí gè xīngqī.",
+       "back": "Yes, I'm on vacation for a week.",
+       "next": "ride.stop"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.chat.o1",
+       "text": "对，第一次来中国。",
+       "roman": "Duì, dì yī cì lái Zhōngguó.",
+       "back": "Yes, my first time in China.",
+       "next": "ride.stop"
+      },
+      {
+       "id": "ride.chat.o2",
+       "text": "对，我是从美国来的。",
+       "roman": "Duì, wǒ shì cóng Měiguó lái de.",
+       "back": "Yes, I'm from the US.",
+       "next": "ride.stop"
+      },
+      {
+       "id": "ride.chat.o3",
+       "text": "是啊，北京真大！",
+       "roman": "Shì a, Běijīng zhēn dà!",
+       "back": "Yes, Beijing is so big!",
+       "next": "ride.stop"
+      }
+     ]
+    },
+    {
+     "id": "ride.stop",
+     "intent": "asks where exactly to stop",
+     "local": [
+      {
+       "id": "ride.stop.l1",
+       "text": "一会儿给您停路边还是门口？",
+       "l1": "Shall I stop at the curb or at the entrance?"
+      },
+      {
+       "id": "ride.stop.l2",
+       "text": "停路边行吗，还是要停门口？",
+       "l1": "Is the curb OK, or do you want the entrance?"
+      },
+      {
+       "id": "ride.stop.l3",
+       "text": "您是路边下，还是门口下？",
+       "l1": "Getting out at the curb or at the door?"
+      },
+      {
+       "id": "ride.stop.l4",
+       "text": "停哪儿合适？路边还是门口？",
+       "l1": "Where should I stop? The curb or the entrance?"
+      },
+      {
+       "id": "ride.stop.l5",
+       "text": "那个，停门口还是路边啊？",
+       "l1": "Um, the entrance or the curb?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.stop.r1",
+       "text": "路边就行。",
+       "roman": "Lùbiān jiù xíng.",
+       "back": "The curb is fine.",
+       "next": "ride.arrive"
+      },
+      {
+       "id": "ride.stop.r2",
+       "text": "麻烦停门口。",
+       "roman": "Máfan tíng ménkǒu.",
+       "back": "The entrance, please.",
+       "next": "ride.arrive"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.stop.o1",
+       "text": "门口吧，谢谢。",
+       "roman": "Ménkǒu ba, xièxie.",
+       "back": "The entrance, thanks.",
+       "next": "ride.arrive"
+      },
+      {
+       "id": "ride.stop.o2",
+       "text": "哪儿方便停哪儿。",
+       "roman": "Nǎr fāngbiàn tíng nǎr.",
+       "back": "Wherever is easy for you.",
+       "next": "ride.arrive"
+      },
+      {
+       "id": "ride.stop.o3",
+       "text": "停路边就可以。",
+       "roman": "Tíng lùbiān jiù kěyǐ.",
+       "back": "Stopping at the curb is fine.",
+       "next": "ride.arrive"
+      }
+     ]
+    },
+    {
+     "id": "ride.arrive",
+     "intent": "announces the arrival",
+     "local": [
+      {
+       "id": "ride.arrive.l1",
+       "text": "到了，就是这儿。",
+       "l1": "Here we are, this is it."
+      },
+      {
+       "id": "ride.arrive.l2",
+       "text": "好嘞，到地方了。",
+       "l1": "Alright, we've arrived."
+      },
+      {
+       "id": "ride.arrive.l3",
+       "text": "到了啊，开门注意后面的车。",
+       "l1": "We're here. Watch for cars behind when you open the door."
+      },
+      {
+       "id": "ride.arrive.l4",
+       "text": "到了到了，东西别落下啊。",
+       "l1": "Here we are, don't leave anything behind."
+      },
+      {
+       "id": "ride.arrive.l5",
+       "text": "好了，咱们到了。",
+       "l1": "OK, we're here."
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.arrive.r1",
+       "text": "好的，谢谢师傅！",
+       "roman": "Hǎo de, xièxie shīfu!",
+       "back": "Great, thank you!",
+       "next": "ride.bye"
+      },
+      {
+       "id": "ride.arrive.r2",
+       "text": "我怎么付钱？",
+       "roman": "Wǒ zěnme fù qián?",
+       "back": "How do I pay?",
+       "next": "ride.pay"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.arrive.o1",
+       "text": "可以用微信付吗？",
+       "roman": "Kěyǐ yòng Wēixìn fù ma?",
+       "back": "Can I pay with WeChat?",
+       "next": "ride.pay"
+      },
+      {
+       "id": "ride.arrive.o2",
+       "text": "谢谢，开得真稳！",
+       "roman": "Xièxie, kāi de zhēn wěn!",
+       "back": "Thanks, that was a smooth ride!",
+       "next": "ride.bye"
+      },
+      {
+       "id": "ride.arrive.o3",
+       "text": "请问地铁站怎么走？",
+       "roman": "Qǐngwèn dìtiězhàn zěnme zǒu?",
+       "back": "Excuse me, how do I get to the subway?",
+       "next": "ride.subway"
+      },
+      {
+       "id": "ride.arrive.o4",
+       "text": "多少钱？",
+       "roman": "Duōshao qián?",
+       "back": "How much is it?",
+       "next": "ride.pay"
+      }
+     ]
+    },
+    {
+     "id": "ride.pay",
+     "intent": "explains the fare is paid in the app, not cash",
+     "local": [
+      {
+       "id": "ride.pay.l1",
+       "text": "不用给现金，手机上付就行。",
+       "l1": "No cash needed, just pay on your phone."
+      },
+      {
+       "id": "ride.pay.l2",
+       "text": "车费在软件上付，不收现金。",
+       "l1": "The fare is paid in the app; I don't take cash."
+      },
+      {
+       "id": "ride.pay.l3",
+       "text": "钱不用给我，平台自动扣。",
+       "l1": "Don't pay me; the platform charges you automatically."
+      },
+      {
+       "id": "ride.pay.l4",
+       "text": "那个，车费网上付就可以。",
+       "l1": "Um, you can just pay the fare online."
+      },
+      {
+       "id": "ride.pay.l5",
+       "text": "打车软件上直接付，不用现金啊。",
+       "l1": "You pay right in the ride app; no cash needed."
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.pay.r1",
+       "text": "好的，明白了。",
+       "roman": "Hǎo de, míngbai le.",
+       "back": "OK, got it.",
+       "next": "ride.bye"
+      },
+      {
+       "id": "ride.pay.r2",
+       "text": "好。地铁站怎么走？",
+       "roman": "Hǎo. Dìtiězhàn zěnme zǒu?",
+       "back": "OK. How do I get to the subway?",
+       "next": "ride.subway"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.pay.o1",
+       "text": "好，我用支付宝付。",
+       "roman": "Hǎo, wǒ yòng Zhīfùbǎo fù.",
+       "back": "OK, I'll pay with Alipay.",
+       "next": "ride.bye"
+      },
+      {
+       "id": "ride.pay.o2",
+       "text": "太方便了，谢谢！",
+       "roman": "Tài fāngbiàn le, xièxie!",
+       "back": "That's so convenient, thanks!",
+       "next": "ride.bye"
+      },
+      {
+       "id": "ride.pay.o3",
+       "text": "附近有地铁站吗？",
+       "roman": "Fùjìn yǒu dìtiězhàn ma?",
+       "back": "Is there a subway station nearby?",
+       "next": "ride.subway"
+      },
+      {
+       "id": "ride.pay.o4",
+       "text": "地铁怎么坐啊？",
+       "roman": "Dìtiě zěnme zuò a?",
+       "back": "How do I take the subway?",
+       "next": "ride.subway"
+      }
+     ]
+    },
+    {
+     "id": "ride.subway",
+     "intent": "gives a short direction to the subway",
+     "local": [
+      {
+       "id": "ride.subway.l1",
+       "text": "往前走，过个路口就是地铁站。",
+       "l1": "Go straight; the subway station is just past the intersection."
+      },
+      {
+       "id": "ride.subway.l2",
+       "text": "往前走五分钟，就能看见地铁站。",
+       "l1": "Walk straight ahead for five minutes and you'll see the station."
+      },
+      {
+       "id": "ride.subway.l3",
+       "text": "地铁站挺近的，往那边走几分钟就到。",
+       "l1": "The station is pretty close, just a few minutes' walk that way."
+      },
+      {
+       "id": "ride.subway.l4",
+       "text": "坐地铁啊？顺着这条路一直走就到。",
+       "l1": "Taking the subway? Follow this road straight and you're there."
+      },
+      {
+       "id": "ride.subway.l5",
+       "text": "您往那边走，看见地铁口就是了。",
+       "l1": "Head that way until you see the subway entrance."
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.subway.r1",
+       "text": "明白了，谢谢您！",
+       "roman": "Míngbai le, xièxie nín!",
+       "back": "Got it, thank you!",
+       "next": "ride.bye"
+      },
+      {
+       "id": "ride.subway.r2",
+       "text": "好，那我走过去。",
+       "roman": "Hǎo, nà wǒ zǒu guòqu.",
+       "back": "OK, I'll walk over then.",
+       "next": "ride.bye"
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.subway.o1",
+       "text": "谢谢，我找找看。",
+       "roman": "Xièxie, wǒ zhǎozhao kàn.",
+       "back": "Thanks, I'll look for it.",
+       "next": "ride.bye"
+      },
+      {
+       "id": "ride.subway.o2",
+       "text": "太好了，很近啊！",
+       "roman": "Tài hǎo le, hěn jìn a!",
+       "back": "Great, it's close!",
+       "next": "ride.bye"
+      },
+      {
+       "id": "ride.subway.o3",
+       "text": "我知道了，谢谢！",
+       "roman": "Wǒ zhīdào le, xièxie!",
+       "back": "I see, thanks!",
+       "next": "ride.bye"
+      }
+     ]
+    },
+    {
+     "id": "ride.bye",
+     "intent": "says goodbye",
+     "local": [
+      {
+       "id": "ride.bye.l1",
+       "text": "好嘞，慢走啊，玩儿得开心！",
+       "l1": "Alright, take care, have fun!"
+      },
+      {
+       "id": "ride.bye.l2",
+       "text": "慢走啊，祝您旅途愉快！",
+       "l1": "Take care, have a nice trip!"
+      },
+      {
+       "id": "ride.bye.l3",
+       "text": "行，那您慢走，再见啊！",
+       "l1": "OK, take care, goodbye!"
+      },
+      {
+       "id": "ride.bye.l4",
+       "text": "好，拜拜，玩儿好啊！",
+       "l1": "OK, bye-bye, have a good time!"
+      },
+      {
+       "id": "ride.bye.l5",
+       "text": "得嘞，您慢走！",
+       "l1": "Right then, take care!"
+      }
+     ],
+     "replies": [
+      {
+       "id": "ride.bye.r1",
+       "text": "谢谢，再见！",
+       "roman": "Xièxie, zàijiàn!",
+       "back": "Thanks, goodbye!",
+       "next": ""
+      },
+      {
+       "id": "ride.bye.r2",
+       "text": "师傅辛苦了！",
+       "roman": "Shīfu xīnkǔ le!",
+       "back": "Thanks for driving!",
+       "next": ""
+      }
+     ],
+     "others": [
+      {
+       "id": "ride.bye.o1",
+       "text": "再见，师傅！",
+       "roman": "Zàijiàn, shīfu!",
+       "back": "Goodbye!",
+       "next": ""
+      },
+      {
+       "id": "ride.bye.o2",
+       "text": "您开车小心！",
+       "roman": "Nín kāichē xiǎoxīn!",
+       "back": "Drive safely!",
+       "next": ""
+      },
+      {
+       "id": "ride.bye.o3",
+       "text": "好的，谢谢！",
+       "roman": "Hǎo de, xièxie!",
+       "back": "OK, thanks!",
+       "next": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "social",
+   "title": "Café chat with a local",
+   "setting": "On a quiet afternoon in a Beijing café, a friendly local at the next table notices the traveler is a visitor and starts a chat.",
+   "localRole": "A friendly Beijing local at the next table",
+   "start": "social.from",
+   "moments": [
+    {
+     "id": "social.from",
+     "intent": "asks where the traveler is from",
+     "local": [
+      {
+       "id": "social.from.l1",
+       "text": "你好，你是哪国人啊？",
+       "l1": "Hi! Which country are you from?"
+      },
+      {
+       "id": "social.from.l2",
+       "text": "你从哪儿来的？",
+       "l1": "Where are you from?"
+      },
+      {
+       "id": "social.from.l3",
+       "text": "你是外国人吧？从哪儿来的？",
+       "l1": "You're from abroad, right? Where from?"
+      },
+      {
+       "id": "social.from.l4",
+       "text": "您好，请问您是哪个国家的？",
+       "l1": "Hello, may I ask what country you're from?"
+      },
+      {
+       "id": "social.from.l5",
+       "text": "哎，看你不像本地人，哪国来的呀？",
+       "l1": "Hey, you don't look local. Where are you from?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.from.r1",
+       "text": "我是美国人。",
+       "roman": "Wǒ shì Měiguó rén.",
+       "back": "I'm American.",
+       "next": "social.first"
+      },
+      {
+       "id": "social.from.r2",
+       "text": "美国，以前没来过中国。",
+       "roman": "Měiguó, yǐqián méi láiguo Zhōngguó.",
+       "back": "The US. I've never been to China before.",
+       "next": "social.stay"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.from.o1",
+       "text": "我是从美国来的。",
+       "roman": "Wǒ shì cóng Měiguó lái de.",
+       "back": "I'm from the US.",
+       "next": "social.first"
+      },
+      {
+       "id": "social.from.o2",
+       "text": "美国。",
+       "roman": "Měiguó.",
+       "back": "The US.",
+       "next": "social.first"
+      },
+      {
+       "id": "social.from.o3",
+       "text": "美国人，以前没来过。",
+       "roman": "Měiguó rén, yǐqián méi láiguo.",
+       "back": "American. I've never been here before.",
+       "next": "social.stay"
+      }
+     ]
+    },
+    {
+     "id": "social.first",
+     "intent": "asks if it is their first visit",
+     "local": [
+      {
+       "id": "social.first.l1",
+       "text": "第一次来中国吗？",
+       "l1": "Is this your first time in China?"
+      },
+      {
+       "id": "social.first.l2",
+       "text": "是第一次来北京吧？",
+       "l1": "First time in Beijing, right?"
+      },
+      {
+       "id": "social.first.l3",
+       "text": "头一回来北京啊？",
+       "l1": "Your first trip to Beijing?"
+      },
+      {
+       "id": "social.first.l4",
+       "text": "这是你第一次来中国吗？",
+       "l1": "Is this your first visit to China?"
+      },
+      {
+       "id": "social.first.l5",
+       "text": "您是头一次来中国吧？",
+       "l1": "This is your first time in China, I take it?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.first.r1",
+       "text": "对，以前没来过。",
+       "roman": "Duì, yǐqián méi láiguo.",
+       "back": "Yes, I've never been before.",
+       "next": "social.stay"
+      },
+      {
+       "id": "social.first.r2",
+       "text": "是啊，来玩一个星期。",
+       "roman": "Shì a, lái wán yí gè xīngqī.",
+       "back": "Yes, I'm here for a week of fun.",
+       "next": "social.like"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.first.o1",
+       "text": "对，第一次。",
+       "roman": "Duì, dì yī cì.",
+       "back": "Yes, the first time.",
+       "next": "social.stay"
+      },
+      {
+       "id": "social.first.o2",
+       "text": "对，待一个星期。",
+       "roman": "Duì, dāi yí gè xīngqī.",
+       "back": "Yes, I'm staying a week.",
+       "next": "social.why"
+      }
+     ]
+    },
+    {
+     "id": "social.stay",
+     "intent": "asks how long they are staying",
+     "local": [
+      {
+       "id": "social.stay.l1",
+       "text": "打算在北京待多久？",
+       "l1": "How long are you planning to stay in Beijing?"
+      },
+      {
+       "id": "social.stay.l2",
+       "text": "这次待几天啊？",
+       "l1": "How many days are you here for?"
+      },
+      {
+       "id": "social.stay.l3",
+       "text": "在这儿待多长时间？",
+       "l1": "How long will you be here?"
+      },
+      {
+       "id": "social.stay.l4",
+       "text": "准备住多久啊？",
+       "l1": "How long are you staying?"
+      },
+      {
+       "id": "social.stay.l5",
+       "text": "这趟能待多久？",
+       "l1": "How long can you stay this trip?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.stay.r1",
+       "text": "待一个星期。",
+       "roman": "Dāi yí gè xīngqī.",
+       "back": "For a week.",
+       "next": "social.why"
+      },
+      {
+       "id": "social.stay.r2",
+       "text": "就七天，来度假的。",
+       "roman": "Jiù qī tiān, lái dùjià de.",
+       "back": "Just seven days. I'm on vacation.",
+       "next": "social.like"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.stay.o1",
+       "text": "一个星期左右。",
+       "roman": "Yí gè xīngqī zuǒyòu.",
+       "back": "About a week.",
+       "next": "social.why"
+      },
+      {
+       "id": "social.stay.o2",
+       "text": "一周。",
+       "roman": "Yì zhōu.",
+       "back": "One week.",
+       "next": "social.why"
+      },
+      {
+       "id": "social.stay.o3",
+       "text": "七天，来旅游的。",
+       "roman": "Qī tiān, lái lǚyóu de.",
+       "back": "Seven days, sightseeing.",
+       "next": "social.like"
+      }
+     ]
+    },
+    {
+     "id": "social.why",
+     "intent": "asks what brings them here",
+     "local": [
+      {
+       "id": "social.why.l1",
+       "text": "来北京是旅游还是出差？",
+       "l1": "Are you in Beijing to sightsee or for work?"
+      },
+      {
+       "id": "social.why.l2",
+       "text": "这次是来玩儿还是来办事儿？",
+       "l1": "Is this trip for fun or for work?"
+      },
+      {
+       "id": "social.why.l3",
+       "text": "来出差还是来玩儿的？",
+       "l1": "Here on business, or for fun?"
+      },
+      {
+       "id": "social.why.l4",
+       "text": "你是来工作的，还是来玩儿的？",
+       "l1": "Are you here to work or to have fun?"
+      },
+      {
+       "id": "social.why.l5",
+       "text": "怎么想起来北京了？",
+       "l1": "What made you decide to come to Beijing?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.why.r1",
+       "text": "我是来度假的。",
+       "roman": "Wǒ shì lái dùjià de.",
+       "back": "I'm here on vacation.",
+       "next": "social.like"
+      },
+      {
+       "id": "social.why.r2",
+       "text": "来玩，也想尝尝美食。",
+       "roman": "Lái wán, yě xiǎng chángchang měishí.",
+       "back": "For fun, and to try the food.",
+       "next": "social.food"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.why.o1",
+       "text": "旅游。",
+       "roman": "Lǚyóu.",
+       "back": "Sightseeing.",
+       "next": "social.like"
+      },
+      {
+       "id": "social.why.o2",
+       "text": "就是来玩的。",
+       "roman": "Jiù shì lái wán de.",
+       "back": "Just here to have fun.",
+       "next": "social.like"
+      },
+      {
+       "id": "social.why.o3",
+       "text": "来尝尝北京菜！",
+       "roman": "Lái chángchang Běijīng cài!",
+       "back": "To taste Beijing food!",
+       "next": "social.food"
+      }
+     ]
+    },
+    {
+     "id": "social.like",
+     "intent": "asks how they like Beijing",
+     "local": [
+      {
+       "id": "social.like.l1",
+       "text": "觉得北京怎么样？",
+       "l1": "What do you think of Beijing?"
+      },
+      {
+       "id": "social.like.l2",
+       "text": "北京还不错吧？",
+       "l1": "Beijing's pretty nice, isn't it?"
+      },
+      {
+       "id": "social.like.l3",
+       "text": "喜欢北京吗？",
+       "l1": "Do you like Beijing?"
+      },
+      {
+       "id": "social.like.l4",
+       "text": "对北京印象怎么样？",
+       "l1": "What's your impression of Beijing?"
+      },
+      {
+       "id": "social.like.l5",
+       "text": "北京给你什么感觉？",
+       "l1": "How does Beijing feel to you?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.like.r1",
+       "text": "很喜欢！有什么好玩的？",
+       "roman": "Hěn xǐhuan! Yǒu shénme hǎowán de?",
+       "back": "I love it! What's good to see?",
+       "next": "social.places"
+      },
+      {
+       "id": "social.like.r2",
+       "text": "挺好的，我想尝尝北京菜。",
+       "roman": "Tǐng hǎo de, wǒ xiǎng chángchang Běijīng cài.",
+       "back": "It's great. I want to try Beijing food.",
+       "next": "social.food"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.like.o1",
+       "text": "特别喜欢！",
+       "roman": "Tèbié xǐhuan!",
+       "back": "I really like it!",
+       "next": "social.places"
+      },
+      {
+       "id": "social.like.o2",
+       "text": "很大，很热闹！",
+       "roman": "Hěn dà, hěn rènao!",
+       "back": "It's big and lively!",
+       "next": "social.places"
+      },
+      {
+       "id": "social.like.o3",
+       "text": "有什么好吃的吗？",
+       "roman": "Yǒu shénme hǎochī de ma?",
+       "back": "Is there anything good to eat?",
+       "next": "social.food"
+      }
+     ]
+    },
+    {
+     "id": "social.places",
+     "intent": "recommends places to visit",
+     "local": [
+      {
+       "id": "social.places.l1",
+       "text": "故宫肯定得去，长城的话去慕田峪，人少。",
+       "l1": "The Forbidden City is a must. For the Great Wall, go to Mutianyu: fewer people."
+      },
+      {
+       "id": "social.places.l2",
+       "text": "要我说啊，先逛故宫，再去慕田峪爬长城。",
+       "l1": "If you ask me, see the Forbidden City first, then climb the Great Wall at Mutianyu."
+      },
+      {
+       "id": "social.places.l3",
+       "text": "故宫和长城都值得去，长城推荐慕田峪那段。",
+       "l1": "The Forbidden City and the Great Wall are both worth it; for the Wall, try the Mutianyu section."
+      },
+      {
+       "id": "social.places.l4",
+       "text": "去故宫转转，长城别去八达岭，去慕田峪，人少。",
+       "l1": "Look around the Forbidden City. For the Great Wall, skip Badaling and go to Mutianyu: fewer people."
+      },
+      {
+       "id": "social.places.l5",
+       "text": "故宫值得一看，有空再去慕田峪爬爬长城。",
+       "l1": "The Forbidden City is worth a look; if you have time, climb the Great Wall at Mutianyu."
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.places.r1",
+       "text": "好，我一定去看看！",
+       "roman": "Hǎo, wǒ yídìng qù kànkan!",
+       "back": "Great, I'll be sure to go!",
+       "next": "social.food"
+      },
+      {
+       "id": "social.places.r2",
+       "text": "故宫怎么去？",
+       "roman": "Gùgōng zěnme qù?",
+       "back": "How do I get to the Forbidden City?",
+       "next": "social.route"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.places.o1",
+       "text": "故宫远吗？",
+       "roman": "Gùgōng yuǎn ma?",
+       "back": "Is the Forbidden City far?",
+       "next": "social.route"
+      },
+      {
+       "id": "social.places.o2",
+       "text": "谢谢，我记下了！",
+       "roman": "Xièxie, wǒ jìxià le!",
+       "back": "Thanks, I'll note that down!",
+       "next": "social.food"
+      },
+      {
+       "id": "social.places.o3",
+       "text": "长城我一定要去！",
+       "roman": "Chángchéng wǒ yídìng yào qù!",
+       "back": "I'm definitely going to the Great Wall!",
+       "next": "social.food"
+      }
+     ]
+    },
+    {
+     "id": "social.route",
+     "intent": "explains how to get there",
+     "local": [
+      {
+       "id": "social.route.l1",
+       "text": "坐地铁一号线，天安门东站下车。",
+       "l1": "Take subway Line 1 and get off at Tiananmen East."
+      },
+      {
+       "id": "social.route.l2",
+       "text": "地铁最方便，一号线，天安门东站下。",
+       "l1": "The subway's easiest: Line 1, get off at Tiananmen East."
+      },
+      {
+       "id": "social.route.l3",
+       "text": "打车也行，不过坐一号线到天安门东更方便。",
+       "l1": "A taxi works too, but Line 1 to Tiananmen East is easier."
+      },
+      {
+       "id": "social.route.l4",
+       "text": "坐一号线到天安门东，走过去就到了。",
+       "l1": "Take Line 1 to Tiananmen East and walk over from there."
+      },
+      {
+       "id": "social.route.l5",
+       "text": "不远，坐一号线到天安门东就行。",
+       "l1": "It's not far: take Line 1 to Tiananmen East."
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.route.r1",
+       "text": "好，我坐地铁去。",
+       "roman": "Hǎo, wǒ zuò dìtiě qù.",
+       "back": "OK, I'll take the subway.",
+       "next": "social.food"
+      },
+      {
+       "id": "social.route.r2",
+       "text": "我还是打车吧。",
+       "roman": "Wǒ háishi dǎchē ba.",
+       "back": "I think I'll take a taxi.",
+       "next": "social.wechat"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.route.o1",
+       "text": "一号线，记住了！",
+       "roman": "Yī hào xiàn, jìzhù le!",
+       "back": "Line 1, got it!",
+       "next": "social.food"
+      },
+      {
+       "id": "social.route.o2",
+       "text": "天安门东站，好的！",
+       "roman": "Tiān'ānmén Dōng zhàn, hǎo de!",
+       "back": "Tiananmen East station, OK!",
+       "next": "social.food"
+      },
+      {
+       "id": "social.route.o3",
+       "text": "好的，谢谢你！",
+       "roman": "Hǎo de, xièxie nǐ!",
+       "back": "OK, thank you!",
+       "next": "social.wechat"
+      }
+     ]
+    },
+    {
+     "id": "social.food",
+     "intent": "recommends local food",
+     "local": [
+      {
+       "id": "social.food.l1",
+       "text": "吃的话，一定得尝尝烤鸭和炸酱面，都不辣。",
+       "l1": "For food, you've got to try roast duck and zhajiang noodles. Neither is spicy."
+      },
+      {
+       "id": "social.food.l2",
+       "text": "烤鸭你得吃，老北京炸酱面也特地道，都不辣。",
+       "l1": "You have to have roast duck, and old Beijing zhajiang noodles are the real thing. Neither is spicy."
+      },
+      {
+       "id": "social.food.l3",
+       "text": "烤鸭、炸酱面都得尝尝，都不辣，你肯定爱吃。",
+       "l1": "Try roast duck and zhajiang noodles. Neither is spicy; you'll love them."
+      },
+      {
+       "id": "social.food.l4",
+       "text": "好吃的可多了，烤鸭、炸酱面可别错过，都不辣。",
+       "l1": "There's so much good food. Don't miss roast duck and zhajiang noodles. Neither is spicy."
+      },
+      {
+       "id": "social.food.l5",
+       "text": "烤鸭得吃，再来碗炸酱面，一点儿都不辣。",
+       "l1": "Have roast duck, then a bowl of zhajiang noodles. Not spicy at all."
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.food.r1",
+       "text": "听着就好吃！",
+       "roman": "Tīngzhe jiù hǎochī!",
+       "back": "That sounds delicious!",
+       "next": "social.wechat"
+      },
+      {
+       "id": "social.food.r2",
+       "text": "那正好，我不太能吃辣。",
+       "roman": "Nà zhènghǎo, wǒ bú tài néng chī là.",
+       "back": "Good, since I can't eat very spicy food.",
+       "next": "social.wechat"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.food.o1",
+       "text": "好，我一定尝尝！",
+       "roman": "Hǎo, wǒ yídìng chángchang!",
+       "back": "OK, I'll definitely try them!",
+       "next": "social.wechat"
+      },
+      {
+       "id": "social.food.o2",
+       "text": "烤鸭我早就想吃了！",
+       "roman": "Kǎoyā wǒ zǎo jiù xiǎng chī le!",
+       "back": "I've wanted to try roast duck for ages!",
+       "next": "social.wechat"
+      },
+      {
+       "id": "social.food.o3",
+       "text": "谢谢推荐！",
+       "roman": "Xièxie tuījiàn!",
+       "back": "Thanks for the tip!",
+       "next": "social.wechat"
+      }
+     ]
+    },
+    {
+     "id": "social.wechat",
+     "intent": "suggests adding each other on WeChat",
+     "local": [
+      {
+       "id": "social.wechat.l1",
+       "text": "咱们加个微信吧？有事儿随时找我。",
+       "l1": "Shall we add each other on WeChat? Message me anytime."
+      },
+      {
+       "id": "social.wechat.l2",
+       "text": "加个微信吧，有啥不懂的就问我。",
+       "l1": "Let's add each other on WeChat; ask me if anything's unclear."
+      },
+      {
+       "id": "social.wechat.l3",
+       "text": "要不加个微信？在北京有事儿可以找我。",
+       "l1": "Why don't we add each other on WeChat? If you need anything in Beijing, just ask."
+      },
+      {
+       "id": "social.wechat.l4",
+       "text": "方便加个微信吗？",
+       "l1": "Mind if we add each other on WeChat?"
+      },
+      {
+       "id": "social.wechat.l5",
+       "text": "你有微信吧？咱俩加一下。",
+       "l1": "You have WeChat, right? Let's add each other."
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.wechat.r1",
+       "text": "好啊，我扫你吧。",
+       "roman": "Hǎo a, wǒ sǎo nǐ ba.",
+       "back": "Sure, I'll scan your code.",
+       "next": "social.bye"
+      },
+      {
+       "id": "social.wechat.r2",
+       "text": "不好意思，不太方便。",
+       "roman": "Bù hǎoyìsi, bú tài fāngbiàn.",
+       "back": "Sorry, I'd rather not.",
+       "next": "social.bye"
+      }
+     ],
+     "others": [
+      {
+       "id": "social.wechat.o1",
+       "text": "好，你扫我吧。",
+       "roman": "Hǎo, nǐ sǎo wǒ ba.",
+       "back": "OK, you scan mine.",
+       "next": "social.bye"
+      },
+      {
+       "id": "social.wechat.o2",
+       "text": "好啊，加一个！",
+       "roman": "Hǎo a, jiā yí gè!",
+       "back": "Sure, let's add each other!",
+       "next": "social.bye"
+      },
+      {
+       "id": "social.wechat.o3",
+       "text": "可以，这是我的二维码。",
+       "roman": "Kěyǐ, zhè shì wǒ de èrwéimǎ.",
+       "back": "Sure, here's my QR code.",
+       "next": "social.bye"
+      }
+     ]
+    },
+    {
+     "id": "social.bye",
+     "intent": "says goodbye",
+     "local": [
+      {
+       "id": "social.bye.l1",
+       "text": "那我先走了，祝你玩儿得开心！",
+       "l1": "Well, I'll get going. Have a great time!"
+      },
+      {
+       "id": "social.bye.l2",
+       "text": "我得走了，在北京玩儿好啊！",
+       "l1": "I have to go. Enjoy Beijing!"
+      },
+      {
+       "id": "social.bye.l3",
+       "text": "时间不早了，我先撤了，拜拜！",
+       "l1": "It's getting late, I'm off. Bye!"
+      },
+      {
+       "id": "social.bye.l4",
+       "text": "好嘞，我该走了，玩儿得愉快！",
+       "l1": "Alright, I should get going. Enjoy your trip!"
+      },
+      {
+       "id": "social.bye.l5",
+       "text": "那我先回去了，你慢慢喝啊！",
+       "l1": "I'll head back now. Enjoy your drink!"
+      }
+     ],
+     "replies": [
+      {
+       "id": "social.bye.r1",
+       "text": "谢谢，再见！",
+       "roman": "Xièxie, zàijiàn!",
+       "back": "Thanks, bye!",
+       "next": ""
+      },
+      {
+       "id": "social.bye.r2",
+       "text": "很高兴认识你！",
+       "roman": "Hěn gāoxìng rènshi nǐ!",
+       "back": "It was nice to meet you!",
+       "next": ""
+      }
+     ],
+     "others": [
+      {
+       "id": "social.bye.o1",
+       "text": "慢走！",
+       "roman": "Màn zǒu!",
+       "back": "Take care!",
+       "next": ""
+      },
+      {
+       "id": "social.bye.o2",
+       "text": "谢谢你的推荐！",
+       "roman": "Xièxie nǐ de tuījiàn!",
+       "back": "Thanks for the recommendations!",
+       "next": ""
+      },
+      {
+       "id": "social.bye.o3",
+       "text": "好的，回见！",
+       "roman": "Hǎo de, huíjiàn!",
+       "back": "OK, see you!",
+       "next": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cafe",
+   "title": "Ordering at a café",
+   "setting": "A busy coffee shop in Beijing's Sanlitun, where the barista takes the order at the counter, asks about size, temperature, milk and sugar, takes payment and calls the pickup number.",
+   "localRole": "barista",
+   "start": "cafe.greet",
+   "moments": [
+    {
+     "id": "cafe.greet",
+     "intent": "greets, asks what they'd like",
+     "local": [
+      {
+       "id": "cafe.greet.l1",
+       "text": "您好，想喝点儿什么？",
+       "l1": "Hello, what would you like to drink?"
+      },
+      {
+       "id": "cafe.greet.l2",
+       "text": "欢迎光临！今天喝点儿什么？",
+       "l1": "Welcome! What are you having today?"
+      },
+      {
+       "id": "cafe.greet.l3",
+       "text": "您好，要点什么？",
+       "l1": "Hi, what can I get you?"
+      },
+      {
+       "id": "cafe.greet.l4",
+       "text": "来啦！想喝什么？",
+       "l1": "Hi there! What would you like?"
+      },
+      {
+       "id": "cafe.greet.l5",
+       "text": "您好，现在可以点单了。",
+       "l1": "Hello, I can take your order now."
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.greet.r1",
+       "text": "我要一杯拿铁。",
+       "roman": "Wǒ yào yì bēi nátiě.",
+       "back": "I'd like a latte.",
+       "next": "cafe.size"
+      },
+      {
+       "id": "cafe.greet.r2",
+       "text": "有什么推荐吗？",
+       "roman": "Yǒu shénme tuījiàn ma?",
+       "back": "Any recommendations?",
+       "next": "cafe.recommend"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.greet.o1",
+       "text": "一杯美式，谢谢。",
+       "roman": "Yì bēi měishì, xièxie.",
+       "back": "One Americano, thanks.",
+       "next": "cafe.size"
+      },
+      {
+       "id": "cafe.greet.o2",
+       "text": "我想要一杯咖啡。",
+       "roman": "Wǒ xiǎng yào yì bēi kāfēi.",
+       "back": "I'd like a coffee.",
+       "next": "cafe.size"
+      },
+      {
+       "id": "cafe.greet.o3",
+       "text": "我先看看菜单。",
+       "roman": "Wǒ xiān kànkan càidān.",
+       "back": "Let me look at the menu first.",
+       "next": "cafe.recommend"
+      }
+     ]
+    },
+    {
+     "id": "cafe.recommend",
+     "intent": "recommends the house special",
+     "local": [
+      {
+       "id": "cafe.recommend.l1",
+       "text": "我们家招牌是生椰拿铁，要不要试试？",
+       "l1": "Our signature is the coconut latte. Want to try it?"
+      },
+      {
+       "id": "cafe.recommend.l2",
+       "text": "推荐您试试生椰拿铁，卖得最好。",
+       "l1": "I'd recommend the coconut latte, it's our best seller."
+      },
+      {
+       "id": "cafe.recommend.l3",
+       "text": "生椰拿铁挺受欢迎的，您可以尝尝。",
+       "l1": "The coconut latte is really popular, you could try it."
+      },
+      {
+       "id": "cafe.recommend.l4",
+       "text": "第一次来的话，可以试试我们的生椰拿铁。",
+       "l1": "If it's your first time, try our coconut latte."
+      },
+      {
+       "id": "cafe.recommend.l5",
+       "text": "今天推荐生椰拿铁，不太甜。",
+       "l1": "Today I'd recommend the coconut latte, it's not too sweet."
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.recommend.r1",
+       "text": "好，我要这个。",
+       "roman": "Hǎo, wǒ yào zhège.",
+       "back": "OK, I'll have this one.",
+       "next": "cafe.size"
+      },
+      {
+       "id": "cafe.recommend.r2",
+       "text": "我要普通的拿铁。",
+       "roman": "Wǒ yào pǔtōng de nátiě.",
+       "back": "I'd like a regular latte.",
+       "next": "cafe.size"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.recommend.o1",
+       "text": "听起来不错。",
+       "roman": "Tīng qǐlái búcuò.",
+       "back": "Sounds good.",
+       "next": "cafe.size"
+      },
+      {
+       "id": "cafe.recommend.o2",
+       "text": "那就来一杯吧。",
+       "roman": "Nà jiù lái yì bēi ba.",
+       "back": "Then I'll have one.",
+       "next": "cafe.size"
+      },
+      {
+       "id": "cafe.recommend.o3",
+       "text": "我要一杯美式就好。",
+       "roman": "Wǒ yào yì bēi měishì jiù hǎo.",
+       "back": "Just an Americano for me.",
+       "next": "cafe.size"
+      }
+     ]
+    },
+    {
+     "id": "cafe.size",
+     "intent": "asks what size",
+     "local": [
+      {
+       "id": "cafe.size.l1",
+       "text": "要大杯还是中杯？",
+       "l1": "Large or medium?"
+      },
+      {
+       "id": "cafe.size.l2",
+       "text": "您要什么杯型？",
+       "l1": "What size would you like?"
+      },
+      {
+       "id": "cafe.size.l3",
+       "text": "大杯、中杯还是小杯？",
+       "l1": "Large, medium or small?"
+      },
+      {
+       "id": "cafe.size.l4",
+       "text": "要多大杯的？",
+       "l1": "How big a cup?"
+      },
+      {
+       "id": "cafe.size.l5",
+       "text": "要中杯吗？还是大杯？",
+       "l1": "Medium? Or large?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.size.r1",
+       "text": "我要中杯。",
+       "roman": "Wǒ yào zhōng bēi.",
+       "back": "I'd like a medium.",
+       "next": "cafe.temp"
+      },
+      {
+       "id": "cafe.size.r2",
+       "text": "我要大杯，谢谢。",
+       "roman": "Wǒ yào dà bēi, xièxie.",
+       "back": "A large, please.",
+       "next": "cafe.temp"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.size.o1",
+       "text": "小杯。",
+       "roman": "Xiǎo bēi.",
+       "back": "Small.",
+       "next": "cafe.temp"
+      },
+      {
+       "id": "cafe.size.o2",
+       "text": "要大的。",
+       "roman": "Yào dà de.",
+       "back": "The big one.",
+       "next": "cafe.temp"
+      },
+      {
+       "id": "cafe.size.o3",
+       "text": "中杯吧。",
+       "roman": "Zhōng bēi ba.",
+       "back": "Medium, I guess.",
+       "next": "cafe.temp"
+      }
+     ]
+    },
+    {
+     "id": "cafe.temp",
+     "intent": "asks hot or iced",
+     "local": [
+      {
+       "id": "cafe.temp.l1",
+       "text": "要热的还是冰的？",
+       "l1": "Hot or iced?"
+      },
+      {
+       "id": "cafe.temp.l2",
+       "text": "要冰的还是热的？",
+       "l1": "Iced or hot?"
+      },
+      {
+       "id": "cafe.temp.l3",
+       "text": "饮品要热的还是冰的？",
+       "l1": "Should the drink be hot or iced?"
+      },
+      {
+       "id": "cafe.temp.l4",
+       "text": "喝热的还是冰的？",
+       "l1": "Hot or iced to drink?"
+      },
+      {
+       "id": "cafe.temp.l5",
+       "text": "冰的还是热的？最近冰的卖得多。",
+       "l1": "Iced or hot? Iced sells more these days."
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.temp.r1",
+       "text": "我要冰的。",
+       "roman": "Wǒ yào bīng de.",
+       "back": "Iced, please.",
+       "next": "cafe.milk"
+      },
+      {
+       "id": "cafe.temp.r2",
+       "text": "我要热的，谢谢。",
+       "roman": "Wǒ yào rè de, xièxie.",
+       "back": "Hot, thanks.",
+       "next": "cafe.milk"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.temp.o1",
+       "text": "少冰。",
+       "roman": "Shǎo bīng.",
+       "back": "Light ice.",
+       "next": "cafe.milk"
+      },
+      {
+       "id": "cafe.temp.o2",
+       "text": "去冰。",
+       "roman": "Qù bīng.",
+       "back": "No ice.",
+       "next": "cafe.milk"
+      },
+      {
+       "id": "cafe.temp.o3",
+       "text": "温的可以吗？",
+       "roman": "Wēn de kěyǐ ma?",
+       "back": "Can I have it warm?",
+       "next": "cafe.milk"
+      }
+     ]
+    },
+    {
+     "id": "cafe.milk",
+     "intent": "offers to switch to oat milk",
+     "local": [
+      {
+       "id": "cafe.milk.l1",
+       "text": "牛奶要换成燕麦奶吗？",
+       "l1": "Would you like to switch to oat milk?"
+      },
+      {
+       "id": "cafe.milk.l2",
+       "text": "可以换燕麦奶，要换吗？",
+       "l1": "You can switch to oat milk. Want to?"
+      },
+      {
+       "id": "cafe.milk.l3",
+       "text": "牛奶用普通的还是燕麦的？",
+       "l1": "Regular milk or oat milk?"
+      },
+      {
+       "id": "cafe.milk.l4",
+       "text": "燕麦奶加三块，需要吗？",
+       "l1": "Oat milk is three yuan extra. Want it?"
+      },
+      {
+       "id": "cafe.milk.l5",
+       "text": "奶要换吗？我们有燕麦奶。",
+       "l1": "Change the milk? We have oat milk."
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.milk.r1",
+       "text": "我要燕麦奶。",
+       "roman": "Wǒ yào yànmài nǎi.",
+       "back": "Oat milk, please.",
+       "next": "cafe.sweet"
+      },
+      {
+       "id": "cafe.milk.r2",
+       "text": "我要普通牛奶。",
+       "roman": "Wǒ yào pǔtōng niúnǎi.",
+       "back": "Regular milk, please.",
+       "next": "cafe.sweet"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.milk.o1",
+       "text": "不用换。",
+       "roman": "Bú yòng huàn.",
+       "back": "No need to change.",
+       "next": "cafe.sweet"
+      },
+      {
+       "id": "cafe.milk.o2",
+       "text": "换燕麦奶吧。",
+       "roman": "Huàn yànmài nǎi ba.",
+       "back": "Switch to oat milk.",
+       "next": "cafe.sweet"
+      },
+      {
+       "id": "cafe.milk.o3",
+       "text": "有豆奶吗？",
+       "roman": "Yǒu dòunǎi ma?",
+       "back": "Do you have soy milk?",
+       "next": "cafe.sweet"
+      }
+     ]
+    },
+    {
+     "id": "cafe.sweet",
+     "intent": "asks about sugar",
+     "local": [
+      {
+       "id": "cafe.sweet.l1",
+       "text": "需要加糖吗？",
+       "l1": "Do you want sugar?"
+      },
+      {
+       "id": "cafe.sweet.l2",
+       "text": "甜度呢？正常糖还是少糖？",
+       "l1": "And sweetness? Normal or less sugar?"
+      },
+      {
+       "id": "cafe.sweet.l3",
+       "text": "要加糖浆吗？",
+       "l1": "Would you like syrup?"
+      },
+      {
+       "id": "cafe.sweet.l4",
+       "text": "糖要正常的还是半糖？",
+       "l1": "Normal sugar or half?"
+      },
+      {
+       "id": "cafe.sweet.l5",
+       "text": "甜度怎么选？",
+       "l1": "How sweet would you like it?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.sweet.r1",
+       "text": "我要不加糖的。",
+       "roman": "Wǒ yào bù jiā táng de.",
+       "back": "No sugar, please.",
+       "next": "cafe.stay"
+      },
+      {
+       "id": "cafe.sweet.r2",
+       "text": "我要少糖。",
+       "roman": "Wǒ yào shǎo táng.",
+       "back": "Less sugar, please.",
+       "next": "cafe.stay"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.sweet.o1",
+       "text": "半糖。",
+       "roman": "Bàn táng.",
+       "back": "Half sugar.",
+       "next": "cafe.stay"
+      },
+      {
+       "id": "cafe.sweet.o2",
+       "text": "正常糖就行。",
+       "roman": "Zhèngcháng táng jiù xíng.",
+       "back": "Normal sugar is fine.",
+       "next": "cafe.stay"
+      },
+      {
+       "id": "cafe.sweet.o3",
+       "text": "不要太甜。",
+       "roman": "Búyào tài tián.",
+       "back": "Not too sweet.",
+       "next": "cafe.stay"
+      }
+     ]
+    },
+    {
+     "id": "cafe.stay",
+     "intent": "asks for here or to go",
+     "local": [
+      {
+       "id": "cafe.stay.l1",
+       "text": "在这儿喝还是带走？",
+       "l1": "For here or to go?"
+      },
+      {
+       "id": "cafe.stay.l2",
+       "text": "堂食还是打包？",
+       "l1": "Dine in or take away?"
+      },
+      {
+       "id": "cafe.stay.l3",
+       "text": "您是在店里喝吗？",
+       "l1": "Are you drinking it in the shop?"
+      },
+      {
+       "id": "cafe.stay.l4",
+       "text": "您是打包带走吗？",
+       "l1": "Are you taking it to go?"
+      },
+      {
+       "id": "cafe.stay.l5",
+       "text": "在这儿喝还是外带？",
+       "l1": "Drinking here or taking out?"
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.stay.r1",
+       "text": "我要带走。",
+       "roman": "Wǒ yào dài zǒu.",
+       "back": "To go, please.",
+       "next": "cafe.pay"
+      },
+      {
+       "id": "cafe.stay.r2",
+       "text": "我要在这儿喝。",
+       "roman": "Wǒ yào zài zhèr hē.",
+       "back": "For here, please.",
+       "next": "cafe.pay"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.stay.o1",
+       "text": "打包。",
+       "roman": "Dǎbāo.",
+       "back": "Take away.",
+       "next": "cafe.pay"
+      },
+      {
+       "id": "cafe.stay.o2",
+       "text": "堂食。",
+       "roman": "Tángshí.",
+       "back": "Dine in.",
+       "next": "cafe.pay"
+      },
+      {
+       "id": "cafe.stay.o3",
+       "text": "我拿走。",
+       "roman": "Wǒ ná zǒu.",
+       "back": "I'll take it with me.",
+       "next": "cafe.pay"
+      }
+     ]
+    },
+    {
+     "id": "cafe.pay",
+     "intent": "tells the total, asks how to pay",
+     "local": [
+      {
+       "id": "cafe.pay.l1",
+       "text": "一共三十二，扫码还是刷卡？",
+       "l1": "That's 32 in total. Scan or card?"
+      },
+      {
+       "id": "cafe.pay.l2",
+       "text": "三十二块，扫这儿就行。",
+       "l1": "32 yuan, just scan here."
+      },
+      {
+       "id": "cafe.pay.l3",
+       "text": "一共三十二元，怎么付？",
+       "l1": "32 yuan altogether. How will you pay?"
+      },
+      {
+       "id": "cafe.pay.l4",
+       "text": "好的，三十二，微信支付宝都可以。",
+       "l1": "OK, 32. WeChat or Alipay both work."
+      },
+      {
+       "id": "cafe.pay.l5",
+       "text": "总共三十二块，请扫码。",
+       "l1": "32 in total, please scan the code."
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.pay.r1",
+       "text": "我扫码付。",
+       "roman": "Wǒ sǎo mǎ fù.",
+       "back": "I'll scan to pay.",
+       "next": "cafe.number"
+      },
+      {
+       "id": "cafe.pay.r2",
+       "text": "可以刷卡吗？",
+       "roman": "Kěyǐ shuā kǎ ma?",
+       "back": "Can I pay by card?",
+       "next": "cafe.number"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.pay.o1",
+       "text": "用微信付。",
+       "roman": "Yòng Wēixìn fù.",
+       "back": "I'll pay with WeChat.",
+       "next": "cafe.number"
+      },
+      {
+       "id": "cafe.pay.o2",
+       "text": "支付宝可以吗？",
+       "roman": "Zhīfùbǎo kěyǐ ma?",
+       "back": "Is Alipay OK?",
+       "next": "cafe.number"
+      },
+      {
+       "id": "cafe.pay.o3",
+       "text": "我付现金。",
+       "roman": "Wǒ fù xiànjīn.",
+       "back": "I'll pay cash.",
+       "next": "cafe.number"
+      }
+     ]
+    },
+    {
+     "id": "cafe.number",
+     "intent": "gives the pickup number",
+     "local": [
+      {
+       "id": "cafe.number.l1",
+       "text": "您的取餐号是三十八号，请稍等。",
+       "l1": "Your pickup number is 38, please wait a moment."
+      },
+      {
+       "id": "cafe.number.l2",
+       "text": "这是您的小票，上面是取餐号。",
+       "l1": "Here's your receipt, the pickup number is on it."
+      },
+      {
+       "id": "cafe.number.l3",
+       "text": "请稍等，大概五分钟。",
+       "l1": "Please wait, about five minutes."
+      },
+      {
+       "id": "cafe.number.l4",
+       "text": "付款成功。您拿着小票，在那边等一下。",
+       "l1": "Payment went through. Keep your receipt and wait over there."
+      },
+      {
+       "id": "cafe.number.l5",
+       "text": "收到了，取餐号三十八，稍等一会儿。",
+       "l1": "Got it. Pickup number 38, wait a little."
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.number.r1",
+       "text": "好的，谢谢。",
+       "roman": "Hǎo de, xièxie.",
+       "back": "OK, thanks.",
+       "next": "cafe.ready"
+      },
+      {
+       "id": "cafe.number.r2",
+       "text": "大概要等多久？",
+       "roman": "Dàgài yào děng duō jiǔ?",
+       "back": "About how long is the wait?",
+       "next": "cafe.ready"
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.number.o1",
+       "text": "谢谢！",
+       "roman": "Xièxie!",
+       "back": "Thanks!",
+       "next": "cafe.ready"
+      },
+      {
+       "id": "cafe.number.o2",
+       "text": "我在那边等。",
+       "roman": "Wǒ zài nàbiān děng.",
+       "back": "I'll wait over there.",
+       "next": "cafe.ready"
+      },
+      {
+       "id": "cafe.number.o3",
+       "text": "要等多久？",
+       "roman": "Yào děng duō jiǔ?",
+       "back": "How long is the wait?",
+       "next": "cafe.ready"
+      }
+     ]
+    },
+    {
+     "id": "cafe.ready",
+     "intent": "calls the order",
+     "local": [
+      {
+       "id": "cafe.ready.l1",
+       "text": "三十八号，您的拿铁好了！",
+       "l1": "Number 38, your latte is ready!"
+      },
+      {
+       "id": "cafe.ready.l2",
+       "text": "三十八号取餐！",
+       "l1": "Number 38, pickup!"
+      },
+      {
+       "id": "cafe.ready.l3",
+       "text": "您的咖啡做好了，请慢用。",
+       "l1": "Your coffee is ready, enjoy."
+      },
+      {
+       "id": "cafe.ready.l4",
+       "text": "您的饮品好了，请慢用！",
+       "l1": "Your drink is ready, enjoy!"
+      },
+      {
+       "id": "cafe.ready.l5",
+       "text": "三十八号，三十八号，来取一下咖啡！",
+       "l1": "Number 38, number 38, come get your coffee!"
+      }
+     ],
+     "replies": [
+      {
+       "id": "cafe.ready.r1",
+       "text": "谢谢，辛苦了！",
+       "roman": "Xièxie, xīnkǔ le!",
+       "back": "Thanks, I appreciate it!",
+       "next": ""
+      },
+      {
+       "id": "cafe.ready.r2",
+       "text": "能给我一根吸管吗？",
+       "roman": "Néng gěi wǒ yì gēn xīguǎn ma?",
+       "back": "Could I get a straw?",
+       "next": ""
+      }
+     ],
+     "others": [
+      {
+       "id": "cafe.ready.o1",
+       "text": "太好了，谢谢！",
+       "roman": "Tài hǎo le, xièxie!",
+       "back": "Great, thanks!",
+       "next": ""
+      },
+      {
+       "id": "cafe.ready.o2",
+       "text": "有纸巾吗？",
+       "roman": "Yǒu zhǐjīn ma?",
+       "back": "Do you have napkins?",
+       "next": ""
+      },
+      {
+       "id": "cafe.ready.o3",
+       "text": "拜拜！",
+       "roman": "Bàibài!",
+       "back": "Bye-bye!",
+       "next": ""
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

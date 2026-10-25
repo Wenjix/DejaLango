@@ -28,7 +28,7 @@
     text('wordMeaning', hint.phase === 'READY' ? hint.meaning : '');
     const index = s.selected == null ? 0 : s.selected;
     const reply = s.replies[index];
-    text('position', reply ? (s.kind === 'VARIANTS' ? 'Say it' : 'Reply') + ' · ' + (index + 1) + '/' + s.replies.length : '');
+    text('position', reply ? (s.kind === 'VARIANTS' ? 'Say it' : s.source === 'PLAYBOOK' ? 'Prepared' : 'Reply') + ' · ' + (index + 1) + '/' + s.replies.length : '');
     text('replyText', reply ? reply.yours : s.wearer ? 'You: ' + s.wearer.text : c.mine ? 'Capturing your turn' : '');
     text('roman', reply && s.pair.roman ? reply.roman : !reply && s.wearer ? s.wearer.roman : '');
     text('back', reply ? reply.back : '');
