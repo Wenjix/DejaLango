@@ -9,6 +9,9 @@ import dev.dejalango.engine.conversation.Speaker
 import dev.dejalango.engine.conversation.Turn
 import dev.dejalango.engine.hud.*
 import dev.dejalango.engine.llm.*
+import dev.dejalango.engine.playbook.FastMatch
+import dev.dejalango.engine.playbook.IndexedLine
+import dev.dejalango.engine.playbook.LineKind
 import dev.dejalango.engine.playbook.MissReason
 import dev.dejalango.engine.playbook.PlaybookIndex
 import dev.dejalango.engine.playbook.PlaybookMatch
@@ -237,10 +240,13 @@ class CompanionProcessor(
             trace.tStageAStart = clock.nowMs()
             val single = cfg.shape == PipelineShape.SINGLE && work.event.speaker == Speaker.THEM
             val text = if (single) prompts.single(cfg, context(cfg), emptyList()) else prompts.transcribe(cfg, work.event.speaker == Speaker.ME)
-            val gen = generate(cfg, GenerateRequest(work.event.audio, text, if (single) 320 else 180, cfg.thinking, if (single) RequestTag.SINGLE else if (work.event.speaker == Speaker.ME) RequestTag.YOURS else RequestTag.THEIRS))
+            val request = GenerateRequest(work.event.audio, text, if (single) 320 else 180, cfg.thinking, if (single) RequestTag.SINGLE else if (work.event.speaker == Speaker.ME) RequestTag.YOURS else RequestTag.THEIRS)
+            val fast = fastStop(cfg, request)
+            val gen = generate(cfg, request, fast?.let { it::stop })
             trace.tAFirstToken = gen.firstTokenMs; trace.tAEnd = gen.doneMs; trace.tokensA = gen.stats?.outputTokens ?: 0
             trace.decodeTpsA = gen.stats?.decodeTokensPerSec
             if (!valid(work)) return
+            fast?.hit?.let { line -> fastReplies(work, line, fast.heard, trace); return }
             var result = parser.parseStageA(gen.text)
             if (!single && result != null && result.heard.isNotBlank() &&
                 result.lang.substringBefore('-').lowercase() == cfg.l2.base && !VoiceCardBuilder.inScriptOf(cfg.l2, result.heard)) {
@@ -401,6 +407,55 @@ class CompanionProcessor(
         return true
     }
 
+    /** Watches their Stage A for a scene line to stop at, while a scene is on and its pair is mine; null for other turns. */
+    private fun fastStop(cfg: PipelineConfig, request: GenerateRequest): FastStop? {
+        if (request.tag != RequestTag.THEIRS || cfg.playbookScene.isBlank() || !cfg.playbookFastPath) return null
+        val index = playbook() ?: return null
+        if (index.playbook.l1 != cfg.l1.tag || index.playbook.l2 != cfg.l2.tag) return null
+        val scene = cfg.playbookScene.takeUnless { it == PipelineConfig.ALL_SCENES } // null matches every scene
+        return FastStop(index.entries.filter { scene == null || it.scene.id == scene }, cfg.l2.base,
+            langAsked = cfg.catchForgottenTaps, needsLang = cfg.catchForgottenTaps && cfg.l1.cjk == cfg.l2.cjk)
+    }
+
+    /**
+     * Stops once "heard" closes on an exact scene line ([FastMatch]); it checks that once, so a miss lets Stage A finish.
+     * As in the full turn, a lang other than their [l2] may be a forgotten tap, and so may a missing one when [needsLang]
+     * (one script for both languages): those lines are the finished turn's to place. Where the prompt asks for lang
+     * ([langAsked]), a "heard" that closes first waits for it.
+     */
+    private class FastStop(
+        private val lines: List<IndexedLine>, private val l2: String, private val langAsked: Boolean, private val needsLang: Boolean,
+    ) {
+        var heard = ""
+        var hit: IndexedLine? = null
+        private var checked = false
+
+        fun stop(text: String): Boolean {
+            if (checked) return false
+            val fields = FastMatch.closedFields(text)
+            heard = fields["heard"] ?: return false
+            if (langAsked && "lang" !in fields) return false // it may still come
+            checked = true
+            val lang = fields["lang"]?.substringBefore('-')?.lowercase()?.takeIf { it.isNotBlank() }
+            if (lang != l2 && (lang != null || needsLang)) return false
+            hit = FastMatch.find(heard, lines, { it.text }, { it.kind == LineKind.LOCAL }, { it.moment.id })
+            return hit != null
+        }
+    }
+
+    /** A fast hit: their line as heard, with the seed line's translation and no pinyin, then the moment's prepared cards. */
+    private fun fastReplies(work: Work, line: IndexedLine, heard: String, trace: TurnTrace) {
+        val cfg = work.frozen.cfg
+        if (!valid(work) || work.event.id != latestWritingId) return
+        synchronized(gate) { running[work.version]?.writing = true }
+        val translation = line.moment.local.firstOrNull { it.id == line.id }?.l1.orEmpty()
+        recordTheirs(work, StageAResult(Speaker.THEM, cfg.l2.base, heard, translation.ifBlank { heard }), cfg)
+        trace.shape = "THEM_PLAYBOOK_FAST"
+        trace.tBStart = trace.tAEnd; trace.tBEnd = clock.nowMs()
+        commit(work) { it.copy(playbookNote = "fast ${line.moment.id} 「${line.text}」", exemplarsUsed = emptyList()) }
+        show(work, line.moment.replyCards(), ReplyKind.REPLIES, trace, ReplySource.PLAYBOOK)
+    }
+
     /** Records their line as mine, as ME_L2 records a tapped one, in place of their record under the same id: no writing. */
     private fun recordAsMine(work: Work, result: StageAResult, trace: TurnTrace): Boolean = synchronized(gate) {
         if (!valid(work) || work.event.id != latestWritingId) return@synchronized false
@@ -431,7 +486,7 @@ class CompanionProcessor(
         mutableHud.update { it.copy(heard = question ?: it.heard, replies = replies, selectedReply = if (replies.isEmpty()) null else 0, replyKind = kind, replySource = source, offerId = offer?.id ?: 0, error = if (replies.isEmpty()) "No usable reply came back. Try another line." else null) }
     }
 
-    private suspend fun generate(cfg: PipelineConfig, request: GenerateRequest): Generated = modelLock.withLock {
+    private suspend fun generate(cfg: PipelineConfig, request: GenerateRequest, stopWhen: ((String) -> Boolean)? = null): Generated = modelLock.withLock {
         if (stopped) throw CancellationException("Runtime stopped")
         if (RequestTag.usesReplySystem(request.tag)) {
             val expected = prompts.system(cfg, voiceCard)
@@ -444,7 +499,7 @@ class CompanionProcessor(
             RequestTag.STAGE_B, RequestTag.SAY_IT -> CompanionSchemas.replies
             else -> request.jsonSchema
         }
-        withTimeout(cfg.generationTimeoutMs) { model.generateText(request.copy(jsonSchema = schema), clock) }
+        withTimeout(cfg.generationTimeoutMs) { model.generateText(request.copy(jsonSchema = schema), clock, stopWhen) }
     }
 
     private fun context(cfg: PipelineConfig): List<Turn> = synchronized(gate) { records.takeLast(cfg.contextTurns).map { Turn(it.line.id, it.line.speaker, it.line.lang, it.line.text, it.line.translation, it.capture?.audio?.endMs ?: 0) } }

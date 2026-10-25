@@ -37,6 +37,9 @@ import java.util.Collections
  *     adb shell am instrument -w -e fixtureRun true [-e backend GPU] [-e fixture playbook_social_zh-CN.wav -e playbookScene social] \
  *       -e class dev.dejalango.app.FixtureRunAndroidTest dev.dejalango.test/androidx.test.runner.AndroidJUnitRunner
  *
+ * `-e fixture <file>` replays another debug fixture, `-e playbookScene <id>` turns a playbook scene on (its index loads
+ * after start, so a playbook fixture needs leading silence), and `-e fastPath false` turns its text fast path off.
+ *
  * Keep the screen on meanwhile (`adb shell settings put global stay_on_while_plugged_in 7`, restored afterwards): no
  * foreground service holds the phone awake here, and a dozing phone stretches the replay.
  */
@@ -55,12 +58,22 @@ class FixtureRunAndroidTest {
         assumeTrue("no fixtures/$fixture in the app's assets: add it to app/src/debug/assets/fixtures and rebuild",
             runCatching { ctx.assets.open("fixtures/$fixture").close() }.isSuccess || File(fixture).canRead())
         val scene = args.getString("playbookScene").orEmpty() // e.g. social, or * for every scene; blank keeps the playbook off
-        overrideInMemory(graph.configStore, PipelineConfig(backend = backend, playbookScene = scene)) { it.copy(useFakeModel = false, replayFixture = fixture) }
+        val config = PipelineConfig(backend = backend, playbookScene = scene, playbookFastPath = args.getString("fastPath") != "false")
+        overrideInMemory(graph.configStore, config) { it.copy(useFakeModel = false, replayFixture = fixture) }
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val runtime = PipelineRuntime(ctx, graph, scope)
         val traces = Collections.synchronizedList(ArrayList<TurnTrace>())
-        scope.launch { runtime.processor.traces.collect { traces += it } }
+        scope.launch { runtime.processor.traces.collect { traces += it; Log.i(TAG, "turn ${it.turnId} done · ${runtime.playbookStatus.value}") } }
+        scope.launch { // each new set of cards, the line it answers and where it came from, to check them against the script
+            var last: Any? = null
+            runtime.hud.collect { s ->
+                if (s.replies.isNotEmpty() && s.replies != last) {
+                    last = s.replies
+                    Log.i(TAG, "cards (${s.replySource}) for [${s.heard?.text}]: ${s.replies.joinToString(" || ") { it.yours }} · ${s.playbookNote}")
+                }
+            }
+        }
         try {
             runtime.start()
             Log.i(TAG, "model ${runtime.hud.value.model} · ${runtime.modelStatusLine}")
@@ -87,7 +100,7 @@ class FixtureRunAndroidTest {
                 t.decodeTpsB?.let { "%.1f".format(it) } ?: "–",
             ))
         }
-        if (scene.isNotBlank()) Log.i(TAG, "${runtime.playbookStatus.value} · ${done.count { it.shape == "THEM_PLAYBOOK" }} playbook hits · last note ${runtime.hud.value.playbookNote}")
+        if (scene.isNotBlank()) Log.i(TAG, "${runtime.playbookStatus.value} · ${done.count { it.shape == "THEM_PLAYBOOK" }} playbook hits, ${done.count { it.shape == "THEM_PLAYBOOK_FAST" }} by text · last note ${runtime.hud.value.playbookNote}")
         fun median(xs: List<Long>) = xs.sorted().let { if (it.isEmpty()) null else it[it.size / 2] }
         Log.i(TAG, "%s: %d turns, %d with replies, %d cancelled · median turn end → transcript %s ms, → replies %s ms".format(
             backend, done.size, done.count { it.tBEnd != null }, done.count { it.cancelled },
