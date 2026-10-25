@@ -179,3 +179,9 @@ scripts/  Model downloads/pushes, HUD forwarding, trace export and a HUD rendere
 
 See [the demo script](docs/DEMO.md) for a rehearsal checklist and
 [third-party components](THIRD_PARTY.md) for dependency notices.
+
+## License
+
+Copyright © 2026 Wenjie Fu. All rights reserved; see [LICENSE](LICENSE). Third-party components keep
+their own licenses ([THIRD_PARTY.md](THIRD_PARTY.md), with full texts in [`licenses/`](licenses/)),
+and the Gemma weights are covered by the Gemma Terms of Use.

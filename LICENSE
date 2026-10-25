@@ -1,0 +1,9 @@
+Copyright (c) 2026 Wenjie Fu. All rights reserved.
+
+This repository and its contents are proprietary. No license, express or implied, is granted to
+use, copy, modify, merge, publish, distribute, sublicense or sell any part of it without the prior
+written permission of the copyright holder.
+
+Third-party components in this repository remain under their own licenses; see THIRD_PARTY.md and
+the license texts in licenses/. The Gemma and EmbeddingGemma model weights are not part of this
+repository and are covered by the Gemma Terms of Use.
