@@ -20,6 +20,24 @@ before inference and saved through a serialized actor. Capture closure, processi
 are separate observable states. Corrections can be undone without changing the live input or display
 pause state. Reply use does not automatically create personal style samples.
 
+With a playbook scene on, the partner's turn tries the playbook before Stage B. After listening
+starts, `PipelineRuntime` embeds every scene's local and wearer lines into a `PlaybookIndex`, in
+batches of 16 that run between turns under `CompanionProcessor.exclusive {}`. While Stage A streams,
+the fast path stops it once the top-level `heard` equals a local line of exactly one moment, after
+NFKC, lowercasing and removing spaces and punctuation, and no wearer line matches it too. When the
+prompt asks for `lang`, as it does with forgotten-tap detection on (the default), the fast path waits
+for it, and `lang` must be L2. Without forgotten-tap detection it stops on `heard` alone. That
+moment's cards then show with the seed line's translation (`THEM_PLAYBOOK_FAST`). The saved setting
+`playbookFastPath`, on by default and with no bench control, turns the fast path off; the replay
+test takes `-e fastPath false`.
+Otherwise `playbookReplies` embeds the transcript under the model lock. A hit needs a local line as
+the nearest, a score of at least `playbookThreshold` (0.85) and a lead of `playbookMargin` (0.03)
+over every other moment's local lines. It shows that moment's cards with Gemma's own translation and
+skips Stage B (`THEM_PLAYBOOK`). A near match never shows the seed's translation, because a near line
+can differ in the one word that matters. A strong match to one of the wearer's lines, right after
+their line, is recorded as the wearer's own (`ME_PLAYBOOK`). `HudState.replySource` marks prepared
+cards, and the HUD labels them "Prepared".
+
 The older `TurnProcessor`, `Mode`, segmentation and prompt contracts below remain for compatibility
 and regression tests. Their mode-based examples describe the earlier bench path, not consumer
 controls or the processor constructed by the current `PipelineRuntime`. Room schema version 1 and
@@ -351,12 +369,15 @@ behavior needs measurement; automatic thermal adaptation is not implemented.
 | VAD remains in speech | Maximum turn length ends the turn; the user can also tap **Cut** |
 | Silero cannot load | Log the failure and use energy VAD |
 | Replay fixture missing | Log the failure and use the microphone |
+| Playbook unavailable (no asset for the pair, hashing embedder or a load error) | The bench status says why; every reply comes from Stage B |
+| A line arrives before the playbook index is ready | Stage B writes its cards; later lines match once indexing finishes |
 | HUD server cannot start | Log the failure; the runtime exposes no HUD URL |
 
 ## 8. Verification of the earlier bench pipeline
 
-For the Companion build, 131 engine and 31 app JVM tests pass, and the app has 14 instrumentation
-tests in 8 classes. The rest of this section records the earlier installed build and must not be
+For the Companion build, the engine and app JVM suites pass. The instrumentation tests cover the
+Companion UI, startup, the HUD server, voice ownership, prompt rendering, EmbeddingGemma, Gemma on the
+TPU, playbook calibration and the fixture replay. The rest of this section records the earlier installed build and must not be
 read as measurements of the Companion build.
 
 The earlier engine suite covers turn-policy transitions and timing, ring-buffer behavior, prompt
@@ -425,3 +446,9 @@ DejaLango/
 - Audio payloads, Tensor runtime initialization, embeddings and fixture turns through the app are
   verified on a Pixel 11 Pro XL. Rehearse live turns, with a microphone, before claiming a successful
   device demo.
+- The playbook is a debug asset for English (US) ⇄ Mandarin (Mainland). Its threshold and margin were
+  calibrated within one scene on a Pixel 11 Pro XL. Some lines recur across scenes and come back
+  ambiguous in **All** mode, so demos use one scene at a time.
+- Open playbook checks: the glasses don't show when the index is ready; a pair change while listening
+  needs a restart to reload the playbook; number lines need digit spellings in the asset to match
+  transcripts that write digits.

@@ -21,9 +21,10 @@ labelled static concept, not a learning engine.
 
 | Check | Result |
 |---|---|
-| JVM tests | **131 engine and 31 app tests pass.** |
-| On-device tests | 14 tests in 8 classes: Companion UI, startup, HUD server, voice ownership, prompt rendering, EmbeddingGemma, Gemma on the TPU and an opt-in fixture replay. On October 24, the fixture replay ran the Companion build on a Pixel 10 Pro XL (Tensor G5), and 4 of 5 turns got replies. The earlier device runs are from October 23 ([findings](docs/FINDINGS.md)). |
+| JVM tests | The engine and app suites pass: `./gradlew :engine:test :app:testMobileDebugUnitTest`. |
+| On-device tests | Companion UI, startup, HUD server, voice ownership, prompt rendering, EmbeddingGemma, Gemma on the TPU, playbook calibration and an opt-in fixture replay. On October 24, the fixture replay ran the Companion build on a Pixel 10 Pro XL (Tensor G5), and 4 of 5 turns got replies. The earlier device runs are from October 23 ([findings](docs/FINDINGS.md)). |
 | Inference | A default build compiles the LiteRT-LM adapter against **LiteRT-LM 0.18.1** and bundles the Google Tensor NPU runtime. On October 23, on a Pixel 11 Pro XL, Gemma 4 E2B and EmbeddingGemma 2 ran on the TPU, and the earlier pipeline gave replies a median 7.1 s after a turn (10.1 s on the GPU, one replay each). On October 24, the Companion build on a Pixel 10 Pro XL (Tensor G5) gave replies a median 8.4 s after a turn (one replay). |
+| Playbook | Prepared replies for five Beijing scenes, English (US) → Mandarin (Mainland), in debug builds. On October 24, on a Pixel 11 Pro XL, a scene's lines got cards 0.9–1.9 s after the turn closed when the transcript matched a line exactly, and 1.9–2.8 s on an embedding match. Gemma takes 5.1–7.9 s to write cards. |
 | Phone-to-browser HUD | On October 24, a laptop browser opened `/sim` from the phone through `scripts/hud_forward.sh`, on the build before the Companion app. The Companion build's tokenized `/sim` hasn't been checked from a phone. |
 
 Missing weights produce an error that asks for model setup. Canned inference needs an explicit
@@ -110,6 +111,42 @@ with CPU. An explicit `NPU` or `GOOGLE_TENSOR` falls back to GPU, then CPU; `GPU
 The audio encoder defaults to CPU. Vendor runtimes are pinned to 2.3.0. On a Pixel 11 Pro XL, `AUTO`
 puts Gemma on the TPU (`NPU`). The Qualcomm runtime builds but hasn't been initialized on hardware.
 Pull traces with `scripts/pull_traces.sh dev.dejalango`.
+
+## Playbook
+
+The playbook holds prepared conversations for five Beijing scenes: lunch at a family restaurant,
+ordering at a café, haggling at a market, a DiDi ride, and small talk at a café. Each scene is a
+chain of moments. A moment holds several ways the local might say one thing, and two reply cards. The
+playbook ships as a debug asset, `app/src/debug/assets/playbook/zh-CN.json`, for English (US) ⇄
+Mandarin (Mainland).
+
+With a scene on, each of the local's lines is checked against that scene before Gemma writes
+replies:
+
+- If the transcript matches a line of exactly one moment, ignoring case, spaces and punctuation, and
+  none of your own lines, Gemma stops transcribing at once. The moment's cards show with the scene's
+  translation of the line.
+- Otherwise EmbeddingGemma compares the transcript with the scene's lines. A line that scores at
+  least 0.85, and at least 0.03 ahead of every other moment, shows that moment's cards with Gemma's
+  own translation.
+- Anything else goes to Gemma as before.
+
+Prepared cards say "Prepared" on the glasses instead of "Reply". Reading one aloud right after their
+line, without tapping Talk, still counts as your line.
+
+To use it:
+
+1. Set English (US) ⇄ Mandarin (Mainland), then start listening. The playbook loads for the pair that
+   is active when listening starts.
+2. In Settings → Developer tools → Bench, choose a chip under **playbook scene**. The scene chips
+   appear once listening starts. **All** matches every scene, and **Off**, the default, skips the
+   playbook. The choice is saved.
+3. Wait for **playbook: ready** on the bench before the local speaks. Indexing embeds every scene's
+   lines, which takes about 8.5 s on an idle Pixel 11 Pro XL, and it waits while a turn is in flight.
+   A line spoken before then goes to Gemma.
+
+The bench also sets the match threshold and margin. [The demo script](docs/DEMO.md) shows how to run
+a scene with a second phone playing the local.
 
 ## Test on a device
 
