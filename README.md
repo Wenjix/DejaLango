@@ -159,6 +159,8 @@ These are future work. The current app uses Gemma for transcription and does not
 
 ## License
 
-Copyright © 2026 Wenjie Fu. All rights reserved; see [LICENSE](LICENSE). Third-party components keep
-their own licenses ([THIRD_PARTY.md](THIRD_PARTY.md), with full texts in [`licenses/`](licenses/)),
-and the Gemma weights are covered by the Gemma Terms of Use.
+Copyright © 2026 Wenjie Fu. DejaLango is free software under the GNU Affero General Public License,
+version 3 only (AGPL-3.0-only); see [LICENSE](LICENSE). If you share a modified version, or run one
+that people use over a network, you must offer them its source under the same license.
+Third-party components keep their own licenses ([THIRD_PARTY.md](THIRD_PARTY.md), with full texts
+in [`licenses/`](licenses/)), and the Gemma weights are covered by the Gemma Terms of Use.
