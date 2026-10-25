@@ -20,6 +20,13 @@ class FastMatchTest {
         assertNull(FastMatch.closedHeard("""{"heard":"a\u4f"""))
     }
 
+    @Test fun `only the first top-level object's own heard counts, as parseStageA reads it`() {
+        assertEquals("今天天气真好", FastMatch.closedHeard("""{"debug":{"heard":"您好，几位啊？"},"heard":"今天天气真好""""))
+        assertNull(FastMatch.closedHeard("""{"debug":{"heard":"您好，几位啊？"},"heard":"今天"""))
+        assertEquals("你好", FastMatch.closedHeard("""Sure: "heard": "x" {"lang":"zh","heard":"你好""""))
+        assertNull(FastMatch.closedHeard("""{"lang":"zh"} {"heard":"你好""""))
+    }
+
     private data class L(val text: String, val moment: String, val local: Boolean = true)
 
     private val lines = listOf(

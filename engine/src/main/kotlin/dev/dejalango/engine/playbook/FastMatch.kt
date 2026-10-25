@@ -13,21 +13,31 @@ object FastMatch {
     const val BAR = 0.85
     const val MARGIN = 0.15
 
-    /** "heard"'s value once its closing quote has arrived in a streamed JSON [prefix]; null until then. */
+    /**
+     * "heard"'s value once its closing quote has arrived in a streamed JSON [prefix]; null until then. Like parseStageA,
+     * it reads only the first top-level object's own "heard", never a nested one.
+     */
     fun closedHeard(prefix: CharSequence): String? {
         var lastString: String? = null // the string just read, which is a key if a colon follows
         var valueOf: String? = null // the key whose value comes next
+        var depth = 0 // braces open around the scan
         var i = 0
         while (i < prefix.length) {
             when (prefix[i]) {
                 '"' -> {
                     val (text, end) = readString(prefix, i + 1) ?: return null // not closed yet
-                    if (valueOf == "heard") return text
+                    if (valueOf == "heard" && depth == 1) return text
                     lastString = text; valueOf = null
                     i = end
                 }
                 ':' -> { valueOf = lastString; lastString = null }
-                ',', '{', '}', '[', ']' -> { lastString = null; valueOf = null }
+                '{' -> { depth++; lastString = null; valueOf = null }
+                '}' -> {
+                    if (depth == 1) return null // the first object closed without one
+                    if (depth > 0) depth--
+                    lastString = null; valueOf = null
+                }
+                ',', '[', ']' -> { lastString = null; valueOf = null }
             }
             i++
         }
