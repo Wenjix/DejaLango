@@ -134,6 +134,7 @@ class ConfigStore(private val store: DataStore<Preferences>, private val scope: 
             playbookScene = this[K.playbookScene] ?: d.playbookScene,
             playbookThreshold = this[K.playbookThreshold] ?: d.playbookThreshold,
             playbookMargin = this[K.playbookMargin] ?: d.playbookMargin,
+            playbookFastPath = this[K.playbookFastPath] ?: d.playbookFastPath,
         )
     }
 
@@ -165,6 +166,7 @@ class ConfigStore(private val store: DataStore<Preferences>, private val scope: 
         this[K.playbookScene] = c.playbookScene
         this[K.playbookThreshold] = c.playbookThreshold
         this[K.playbookMargin] = c.playbookMargin
+        this[K.playbookFastPath] = c.playbookFastPath
     }
 
     private fun androidx.datastore.preferences.core.MutablePreferences.write(s: AppSettings) {
@@ -199,6 +201,7 @@ class ConfigStore(private val store: DataStore<Preferences>, private val scope: 
         val playbookScene = stringPreferencesKey("playbookScene")
         val playbookThreshold = floatPreferencesKey("playbookThreshold")
         val playbookMargin = floatPreferencesKey("playbookMargin")
+        val playbookFastPath = booleanPreferencesKey("playbookFastPath")
         val coachingSeen = booleanPreferencesKey("coachingSeen")
     }
 }
