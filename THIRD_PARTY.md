@@ -1,6 +1,6 @@
 # Third-party components
 
-DejaLango itself is proprietary; see [LICENSE](LICENSE). The components below keep their own
+DejaLango itself is licensed under AGPL-3.0-only; see [LICENSE](LICENSE). The components below keep their own
 licenses. Their full license texts are in [`licenses/`](licenses/), or next to the component where
 noted.
 
