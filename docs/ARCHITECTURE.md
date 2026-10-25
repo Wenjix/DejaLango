@@ -79,11 +79,13 @@ OS manifest overlay. Dedicated glasses and spatial renderers are not implemented
 | Module | Responsibility |
 |---|---|
 | `:engine` | Kotlin/JVM audio contracts, turn segmentation, conversation, retrieval, prompts, parsing, HUD state and traces |
-| `:app` | Android foreground service, adapters, Room and DataStore, Compose bench, HTTP/WebSocket server and browser assets |
+| `:app` | Android foreground service, adapters, Room and DataStore, native Companion UI and debug bench, HTTP/WebSocket server and browser assets |
 
 The dependency is `:app` to `:engine`. App packages group platform adapters, service wiring, UI
 and HUD code. LiteRT-LM implementations live in `app/src/litertlm/kotlin` and enter the build only
-with `-PwithLiteRtLm`. `AppGraph` loads them by class name. The fake model is enabled by default.
+when LiteRT-LM is enabled, as it is in the default build. `AppGraph` loads them by class name.
+Real inference is the default. The developer setting enables labelled synthetic inference explicitly;
+missing real speech weights or adapters produce a setup error.
 
 ## 4. Engine
 
@@ -191,8 +193,9 @@ The LiteRT-LM adapter:
 - Streams messages with `sendMessageAsync`, maps cancellation to `cancelProcess()`, and optionally
   supplies a schema through `ResponseFormat.json`.
 
-The optional mobile APK builds against the pinned LiteRT-LM 0.18.1 artifact. Audio encoder support
-and vendor acceleration still need device verification.
+The mobile APK builds against the pinned LiteRT-LM 0.18.1 artifact. The dated Pixel runs in
+[FINDINGS.md](FINDINGS.md) and the README verify audio inference and Tensor acceleration on their
+recorded builds. Qualcomm initialization on hardware remains open.
 
 ### 4.5 Turn processing
 
@@ -276,16 +279,19 @@ directory. The bench displays a summary rather than a full trace visualization.
 ### 5.1 Process layout
 
 `ListenService` is a microphone foreground service that owns `PipelineRuntime`. The runtime owns
-audio, VAD, segmentation, the model, tracing and the HUD server. `MainActivity` hosts the Compose
-bench and binds to the service. Start listening from the foreground after granting permissions.
+audio, VAD, turn capture, the model, tracing and the HUD server. `MainActivity` hosts the native
+Companion app, with the bench behind developer tools, and binds to the service. Start listening
+from the foreground after granting permissions.
 Stopping the service releases model, audio and server resources.
 
 ### 5.2 Dependency injection
 
 `DejaLangoApp` creates `AppGraph`, which supplies lazy stores and adapter factories. Fake and real
-models use the same engine interfaces. Missing weights or an unavailable optional adapter can
-select the fake speech model; embedding failure can select the hashing embedder. Inspect the model
-line and logcat to confirm the real path is active; the bench's `embedder=` field names the bundle and backend.
+models use the same engine interfaces. Missing real speech weights, an unavailable adapter or failed
+speech-model initialization produces a setup error. Synthetic speech inference requires the explicit
+developer setting. Embedding failure can select the logged hashing fallback, which is not used for
+playbook matching. Inspect the model line and logcat to confirm the real path is active; the bench's
+`embedder=` field names the bundle and backend.
 
 ### 5.3 Platform adapters
 
@@ -439,16 +445,16 @@ DejaLango/
 - Use `dev.dejalango` throughout packages, application identity, storage names and helper defaults.
 - Keep English/Mandarin as the default pair, two-stage replies as the default pipeline, CPU audio
   encoding and optional constrained JSON.
-- Use the phone bench and browser HUD/simulator as the implemented displays. Dedicated USB-C,
-  Android XR and Horizon spatial renderers remain future work.
+- Use the native Companion app, debug bench and browser HUD/simulator as the implemented displays.
+  Dedicated USB-C, Android XR and Horizon spatial renderers remain future work.
 - Distribute weights by model download and `scripts/push_models.sh` into internal storage; retain
   fake implementations for development.
 - Audio payloads, Tensor runtime initialization, embeddings and fixture turns through the app are
   verified on a Pixel 11 Pro XL. Rehearse live turns, with a microphone, before claiming a successful
   device demo.
-- The playbook is a debug asset for English (US) ⇄ Mandarin (Mainland). Its threshold and margin were
-  calibrated within one scene on a Pixel 11 Pro XL. Some lines recur across scenes and come back
-  ambiguous in **All** mode, so demos use one scene at a time.
+- The playbook is a debug asset for an English (US) wearer and a Mandarin (Mainland) partner. Its
+  threshold and margin were calibrated within one scene on a Pixel 11 Pro XL. Some lines recur across
+  scenes and come back ambiguous in **All** mode, so demos use one scene at a time.
 - Open playbook checks: the glasses don't show when the index is ready; a pair change while listening
   needs a restart to reload the playbook; number lines need digit spellings in the asset to match
   transcripts that write digits.

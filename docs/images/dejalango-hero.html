@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1440, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>DejaLango · Native travel walkthroughs</title>
+    <style>
+      @font-face {
+        font-family: "Fredoka";
+        src: url("../../app/src/main/res/font/fredoka.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 300 700;
+        font-display: block;
+      }
+
+      @font-face {
+        font-family: "Nunito";
+        src: url("../../app/src/main/res/font/nunito.ttf") format("truetype");
+        font-style: normal;
+        font-weight: 200 1000;
+        font-display: block;
+      }
+
+      :root {
+        --sky: #eaf6ff;
+        --ink: #213d50;
+        --mint: #cdebd7;
+        --blue: #245795;
+        --secondary: #446176;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1440px;
+        height: 940px;
+        margin: 0;
+        background: var(--sky);
+      }
+
+      body {
+        color: var(--ink);
+        font-family: "Nunito", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      ::selection {
+        color: var(--ink);
+        background: var(--mint);
+      }
+
+      h1,
+      h2,
+      p,
+      figure {
+        margin: 0;
+      }
+
+      main {
+        position: relative;
+        width: 1440px;
+        height: 940px;
+      }
+
+      .heading {
+        position: absolute;
+        top: 23px;
+        right: 64px;
+        left: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 70px;
+      }
+
+      .brand {
+        color: var(--blue);
+        font-family: "Fredoka", sans-serif;
+        font-size: 58px;
+        font-weight: 500;
+        line-height: 70px;
+        letter-spacing: -0.025em;
+      }
+
+      .promise {
+        font-size: 31px;
+        font-weight: 700;
+        line-height: 42px;
+      }
+
+      .promise span {
+        background: var(--mint);
+        padding: 0 5px 2px;
+      }
+
+      .walkthroughs {
+        position: absolute;
+        top: 112px;
+        right: 64px;
+        left: 64px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        column-gap: 64px;
+      }
+
+      .walkthrough {
+        min-width: 0;
+        text-align: center;
+      }
+
+      .destination {
+        color: var(--blue);
+        font-family: "Fredoka", sans-serif;
+        font-size: 31px;
+        font-weight: 500;
+        line-height: 39px;
+      }
+
+      .scenario {
+        margin-top: 2px;
+        color: var(--secondary);
+        font-size: 19px;
+        font-weight: 700;
+        line-height: 27px;
+        white-space: nowrap;
+      }
+
+      .native-capture {
+        display: block;
+        width: auto;
+        height: 700px;
+        margin: 17px auto 0;
+        object-fit: contain;
+        outline: 1px solid #bad4e3;
+      }
+
+      .provenance {
+        position: absolute;
+        top: 906px;
+        right: 64px;
+        left: 64px;
+        color: var(--secondary);
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 26px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Fixed 1440 × 940 scene. Native captures retain their full 1170 × 2676 aspect ratio. -->
+    <main aria-label="DejaLango native walkthroughs for meeting someone in Beijing, finding your way in San Francisco, and a takeaway request in Colombia">
+      <header class="heading">
+        <h1 class="brand">DejaLango.</h1>
+        <p class="promise">You, in <span>any language.</span></p>
+      </header>
+
+      <div class="walkthroughs">
+        <figure class="walkthrough">
+          <figcaption>
+            <h2 class="destination">Beijing</h2>
+            <p class="scenario">Meeting someone · Simplified Mandarin</p>
+          </figcaption>
+          <img
+            class="native-capture"
+            src="../../docs/images/native-beijing.png"
+            alt="Native DejaLango walkthrough in Beijing: First time in Beijing? with the Simplified Mandarin reply 对，第一次来。 and pinyin"
+            width="1170"
+            height="2676"
+          />
+        </figure>
+
+        <figure class="walkthrough">
+          <figcaption>
+            <h2 class="destination">San Francisco</h2>
+            <p class="scenario">Finding your way · Mandarin → English</p>
+          </figcaption>
+          <img
+            class="native-capture"
+            src="../../docs/images/native-san-francisco.png"
+            alt="Native DejaLango walkthrough in San Francisco: a Mandarin-speaking traveler asks 車站怎麼走？ and gets How do I get to the station? to say in English"
+            width="1170"
+            height="2676"
+          />
+        </figure>
+
+        <figure class="walkthrough">
+          <figcaption>
+            <h2 class="destination">Colombia</h2>
+            <p class="scenario">A takeaway request · Spanish</p>
+          </figcaption>
+          <img
+            class="native-capture"
+            src="../../docs/images/native-colombia.png"
+            alt="Native DejaLango walkthrough in Colombia turning the user's English takeaway request into the Spanish reply Para llevar, por favor."
+            width="1170"
+            height="2676"
+          />
+        </figure>
+      </div>
+
+      <p class="provenance">Authored travel examples · Synthetic native walkthroughs</p>
+    </main>
+  </body>
+</html>

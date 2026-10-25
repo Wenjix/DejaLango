@@ -1,10 +1,10 @@
 # Companion demo and validation
 
-The native Companion Soft press app replaced the bench flow on October 24. That day the demo phone still ran the earlier build, whose measurements are in [FINDINGS.md](FINDINGS.md); do not present the native walkthrough as a measurement of that build.
+Use the synthetic walkthrough to demonstrate the interface and recorded model replays to assess inference. The [README device results](../README.md#measured-on-devices) distinguish Companion and playbook runs; [FINDINGS.md](FINDINGS.md) records the earlier pipeline.
 
 ## Native walkthrough
 
-Use an explicitly selected emulator and the preview APK from the README's "Build and preview" section. Open Settings → Developer tools → Open synthetic walkthrough. It requests no microphone, runs no inference, and never saves a profile.
+Use an explicitly selected emulator and follow the [emulator preview setup](GETTING_STARTED.md#preview-on-an-emulator). Open Settings → Developer tools → Open synthetic walkthrough. It requests no microphone, runs no inference, and never saves a profile.
 
 1. Choose Colombia. “Next beat” moves through their question, replies, Talk, speech, word help, Done, capture closure and recognition.
 2. Tap Talk and Done individually. Show that the fixed controls remain on Today, Live and Your voice, and distinguish the glasses display pause from listening pause.
@@ -27,7 +27,7 @@ Measure repeatable restaurant fixtures, quick answers at 0/0.2/0.5/1 s gaps, ear
 
 The wearer's phone runs the app, and a second phone plays the local's seeded lines. The soundboard page and the tool that renders the lines aren't in this repository yet.
 
-1. On the wearer's phone, set English (US) ⇄ Mandarin (Mainland) and start listening. Under Settings → Developer tools → Bench → **playbook scene**, choose the scene's chip, then wait for **playbook: ready**. The bench config should say `two_stage`, because the single shape skips the playbook.
+1. On the wearer's phone, set **you: English (US); partner: Mandarin (Mainland)** and start listening. Under Settings → Developer tools → Bench → **playbook scene**, choose the scene's chip, then wait for **playbook: ready**. The bench config should say `two_stage`, because the single shape skips the playbook.
 2. Open the glasses view in `/sim`, as above.
 3. Play one of the local's lines on the second phone. "Prepared" cards should appear a second or two after it ends. Tap Talk, read a card aloud, then play the next line.
 4. To change scenes, press Clear and choose the next scene's chip. The next line uses it, with no re-index.
@@ -53,4 +53,4 @@ Keep these in mind:
 | Browser link stopped working | Reconnect forwarding for the selected device and reopen its current tokenized link. |
 | Prepared cards don't appear | Check the bench: **playbook: ready**, the right scene chip and `two_stage`. Lines spoken before the index is ready go to Gemma. |
 
-Hardware inference, microphone timing, one-handed reach, optics and physical haptics remain separate validation work for this candidate.
+Recorded fixture runs cover limited inference paths. Live microphone timing, sustained latency, one-handed reach, optics and physical haptics still need field validation.

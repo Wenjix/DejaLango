@@ -1,0 +1,100 @@
+{
+  "kind": "authored synthetic README examples",
+  "note": "Display fixtures only. No location detection, inference measurements or trip discovery.",
+  "samples": [
+    {
+      "id": "beijing",
+      "destination": "Beijing",
+      "scenario": "Meeting someone",
+      "fixture": 1,
+      "beat": 2,
+      "script": "hans",
+      "language": "Mandarin · Simplified",
+      "lines": {
+        "question": {
+          "en": "First time in Beijing?",
+          "text": "第一次来北京吗？",
+          "roman": "Dì yī cì lái Běijīng ma?"
+        },
+        "reply0": {
+          "en": "Yes, it’s my first time here.",
+          "text": "对，第一次来。",
+          "roman": "Duì, dì yī cì lái."
+        },
+        "reply1": {
+          "en": "No, I’ve been here before.",
+          "text": "不是，我以前来过。",
+          "roman": "Bú shì, wǒ yǐqián láiguò."
+        },
+        "reply2": {
+          "en": "Yes. What do you recommend?",
+          "text": "对，你有什么推荐吗？",
+          "roman": "Duì, nǐ yǒu shénme tuījiàn ma?"
+        }
+      }
+    },
+    {
+      "id": "san-francisco",
+      "destination": "San Francisco",
+      "scenario": "Finding your way",
+      "fixture": 2,
+      "beat": 12,
+      "pair": {
+        "me": "zh-TW",
+        "them": "en-US"
+      },
+      "script": "en",
+      "ownScript": "hant",
+      "language": "Mandarin (Taiwan) → English (US)",
+      "lines": {
+        "question": {
+          "en": "Where are you headed?",
+          "text": "Where are you headed?",
+          "own": {
+            "text": "要去哪裡？",
+            "roman": "Yào qù nǎlǐ?"
+          }
+        },
+        "help": {
+          "en": "How do I get to the station?",
+          "text": "How do I get to the station?",
+          "own": {
+            "text": "車站怎麼走？",
+            "roman": "Chēzhàn zěnme zǒu?"
+          }
+        },
+        "variant1": {
+          "en": "Could you tell me the way to the station?",
+          "text": "Could you tell me the way to the station?",
+          "own": {
+            "text": "請問，去車站怎麼走？",
+            "roman": "Qǐngwèn, qù chēzhàn zěnme zǒu?"
+          }
+        }
+      }
+    },
+    {
+      "id": "colombia",
+      "destination": "Colombia",
+      "scenario": "A takeaway request",
+      "fixture": 0,
+      "beat": 12,
+      "script": "es",
+      "language": "Spanish · Colombia",
+      "lines": {
+        "question": {
+          "en": "For here or to go?",
+          "text": "¿Para aquí o para llevar?"
+        },
+        "help": {
+          "en": "Could I get this to go?",
+          "text": "Para llevar, por favor."
+        },
+        "variant1": {
+          "en": "Could you pack it to go?",
+          "text": "¿Me lo pueden poner para llevar?"
+        }
+      }
+    }
+  ]
+}
